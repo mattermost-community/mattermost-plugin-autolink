@@ -8,6 +8,9 @@ Go to the [releases page of this Github repository](https://github.com/mattermos
 
 You'll need to modify your config.json to include the types of regexp patterns you wish to match.  You'll need to add a section undernieth `PluginSettings` for this plugin.  Below you'll find an example of what this should look like
 
+Autolinks have 2 parts.  A `Pattern` which is a regular expression search pattern utilizing the https://golang.org/pkg/regexp/ library.  You can create variables with the syntax ` (?P<name>...)` which will then be expanded by the corresponding template.  In the template, a variable is denoted by a substring of the form $name or ${name}, where name is a non-empty sequence of letters, digits, and underscores.  A purely numeric name like $1 refers to the submatch with the corresponding index.  In the $name form, name is taken to be as long as possible: $1x is equivalent to ${1x}, not ${1}x, and, $10 is equivalent to ${10}, not ${1}0.  To insert a literal $ in the output, use $$ in the template.
+
+
 ```JSON
 "PluginSettings": {
     ...
