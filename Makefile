@@ -8,10 +8,8 @@ GOARCH=amd64
 
 all: dist
 
-check-style: .npminstall gofmt
+check-style: gofmt
 	@echo Checking for style guide compliance
-
-	#cd webapp && npm run check
 
 gofmt:
 	@echo Running GOFMT
@@ -30,14 +28,8 @@ gofmt:
 	done
 	@echo "gofmt success"; \
 
-test: .npminstall
+test:
 	go test -v -coverprofile=coverage.txt ./...
-
-.npminstall:
-	@echo Getting dependencies using npm
-
-	cd webapp && npm install
-	#touch $@
 
 vendor: server/Gopkg.lock
 	@echo Run this to updated the go lang dependencies after a major release
@@ -50,11 +42,6 @@ dist: check-style
 	rm -rf dist
 	rm -rf webapp/dist
 	rm -f server/plugin.exe
-
-	# Build and copy files from webapp
-	#cd webapp && npm run build
-	#mkdir -p dist/$(PLUGIN_NAME)/webapp
-	#cp webapp/dist/* dist/$(PLUGIN_NAME)/webapp/
 
 	# Build files from server
 	cd server && go get github.com/mitchellh/gox
