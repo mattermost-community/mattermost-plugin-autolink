@@ -1,23 +1,70 @@
-# mattermost-plugin-filters
+# mattermost-plugin-autolink
 
 This plugin allows you to create various regular expression patterns that will be reformatted into a markdown link before the post is saved into the database.
 
 ## Installation
 
-Go to the [releases page of this Github repository](https://github.com/mattermost/mattermost-plugin-filters/releases) and download the latest release for your server architecture. You can upload this file in the Mattermost system console to install the plugin.
+Go to the [releases page of this Github repository](https://github.com/mattermost/mattermost-plugin-autlink/releases) and download the latest release for your server architecture. You can upload this file in the Mattermost system console to install the plugin.
 
-## Developing
+You'll need to modify your config.json to include the types of regexp patterns you wish to match.  You'll need to add a section undernieth `PluginSettings` for this plugin.  Below you'll find an example of what this should look like
 
-This plugin contains both a server and web app portion.
-
-Use `make dist` to build distributions of the plugin that you can upload to a Mattermost server for testing.
-
-Use `make check-style` to check the style for the whole plugin.
-
-### Server
-
-Inside the `/server` directory, you will find the Go files that make up the server-side of the plugin. Within there, build the plugin like you would any other Go application.
-
-### Web App
-
-Inside the `/webapp` directory, you will find the JS and React files that make up the client-side of the plugin. Within there, modify files and components as necessary. Test your syntax by running `npm run build`.
+```JSON
+"PluginSettings": {
+        ...
+        "Plugins": {
+            "mattermost-autolink": {
+                "links": [
+                    {
+                        "Pattern": "(LHS)",
+                        "Template": "[LHS](https://docs.mattermost.com/process/training.html#lhs)"
+                    },
+                    {
+                        "Pattern": "(RHS)",
+                        "Template": "[RHS](https://docs.mattermost.com/process/training.html#rhs)"
+                    },
+                    {
+                        "Pattern": "(?i)(Mana)",
+                        "Template": "[Mana](https://docs.mattermost.com/process/training.html#mana)"
+                    },
+                    {
+                        "Pattern": "(?i)(ESR)",
+                        "Template": "[ESR](https://docs.mattermost.com/process/training.html#esr)"
+                    },
+                    {
+                        "Pattern": "((?P\u003clevel\u003e0|1|2|3|4|5)/5)",
+                        "Template": "[${level}/5](https://docs.mattermost.com/process/training.html#id8)"
+                    },
+                    {
+                        "Pattern": "(MM)(-)(?P\u003cjira_id\u003e\\d+)",
+                        "Template": "[MM-${jira_id}](https://mattermost.atlassian.net/browse/MM-${jira_id})"
+                    },
+                    {
+                        "Pattern": "https://pre-release\\.mattermost\\.com/core/pl/(?P\u003cid\u003e[a-zA-Z0-9]+)",
+                        "Template": "[\u003cjump to convo\u003e](https://pre-release.mattermost.com/core/pl/${id})"
+                    },
+                    {
+                        "Pattern": "(https://mattermost\\.atlassian\\.net/browse/)(MM)(-)(?P\u003cjira_id\u003e\\d+)",
+                        "Template": "[MM-${jira_id}](https://mattermost.atlassian.net/browse/MM-${jira_id})"
+                    },
+                    {
+                        "Pattern": "https://github\\.com/mattermost/(?P\u003crepo\u003e.+)/pull/(?P\u003cid\u003e\\d+)",
+                        "Template": "[pr-${repo}-${id}](https://github.com/mattermost/${repo}/pull/${id})"
+                    },
+                    {
+                        "Pattern": "https://github\\.com/mattermost/(?P\u003crepo\u003e.+)/issues/(?P\u003cid\u003e\\d+)",
+                        "Template": "[issue-${repo}-${id}](https://github.com/mattermost/${repo}/issues/${id})"
+                    },
+                    {
+                        "Pattern": "(PLT)(-)(?P\u003cjira_id\u003e\\d+)",
+                        "Template": "[PLT-${jira_id}](https://mattermost.atlassian.net/browse/PLT-${jira_id})"
+                    },
+                    {
+                        "Pattern": "(https://mattermost\\.atlassian\\.net/browse/)(PLT)(-)(?P\u003cjira_id\u003e\\d+)",
+                        "Template": "[PLT-${jira_id}](https://mattermost.atlassian.net/browse/PLT-${jira_id})"
+                    }
+                ]
+            },
+        },
+    ...
+    }
+```
