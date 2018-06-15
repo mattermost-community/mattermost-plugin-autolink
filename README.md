@@ -1,4 +1,4 @@
-# mattermost-plugin-autolink
+# Autolink Plugin
 
 This plugin allows you to create various regular expression patterns that will be reformatted into a markdown link before the post is saved into the database.
 
@@ -33,35 +33,35 @@ Autolinks have 2 parts.  A `Pattern` which is a regular expression search patter
                     "Template": "[ESR](https://docs.mattermost.com/process/training.html#esr)"
                 },
                 {
-                    "Pattern": "((?P\u003clevel\u003e0|1|2|3|4|5)/5)",
+                    "Pattern": "((?P<level>0|1|2|3|4|5)/5)",
                     "Template": "[${level}/5](https://docs.mattermost.com/process/training.html#id8)"
                 },
                 {
-                    "Pattern": "(MM)(-)(?P\u003cjira_id\u003e\\d+)",
+                    "Pattern": "(MM)(-)(?P<jira_id>\\d+)",
                     "Template": "[MM-${jira_id}](https://mattermost.atlassian.net/browse/MM-${jira_id})"
                 },
                 {
-                    "Pattern": "https://pre-release\\.mattermost\\.com/core/pl/(?P\u003cid\u003e[a-zA-Z0-9]+)",
-                    "Template": "[\u003cjump to convo\u003e](https://pre-release.mattermost.com/core/pl/${id})"
+                    "Pattern": "https://pre-release\\.mattermost\\.com/core/pl/(?P<id>[a-zA-Z0-9]+)",
+                    "Template": "[<jump to convo>](https://pre-release.mattermost.com/core/pl/${id})"
                 },
                 {
-                    "Pattern": "(https://mattermost\\.atlassian\\.net/browse/)(MM)(-)(?P\u003cjira_id\u003e\\d+)",
+                    "Pattern": "(https://mattermost\\.atlassian\\.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
                     "Template": "[MM-${jira_id}](https://mattermost.atlassian.net/browse/MM-${jira_id})"
                 },
                 {
-                    "Pattern": "https://github\\.com/mattermost/(?P\u003crepo\u003e.+)/pull/(?P\u003cid\u003e\\d+)",
+                    "Pattern": "https://github\\.com/mattermost/(?P<repo>.+)/pull/(?P<id>\\d+)",
                     "Template": "[pr-${repo}-${id}](https://github.com/mattermost/${repo}/pull/${id})"
                 },
                 {
-                    "Pattern": "https://github\\.com/mattermost/(?P\u003crepo\u003e.+)/issues/(?P\u003cid\u003e\\d+)",
+                    "Pattern": "https://github\\.com/mattermost/(?P<repo>.+)/issues/(?P<id>\\d+)",
                     "Template": "[issue-${repo}-${id}](https://github.com/mattermost/${repo}/issues/${id})"
                 },
                 {
-                    "Pattern": "(PLT)(-)(?P\u003cjira_id\u003e\\d+)",
+                    "Pattern": "(PLT)(-)(?P<jira_id>\\d+)",
                     "Template": "[PLT-${jira_id}](https://mattermost.atlassian.net/browse/PLT-${jira_id})"
                 },
                 {
-                    "Pattern": "(https://mattermost\\.atlassian\\.net/browse/)(PLT)(-)(?P\u003cjira_id\u003e\\d+)",
+                    "Pattern": "(https://mattermost\\.atlassian\\.net/browse/)(PLT)(-)(?P<jira_id>\\d+)",
                     "Template": "[PLT-${jira_id}](https://mattermost.atlassian.net/browse/PLT-${jira_id})"
                 }
             ]
