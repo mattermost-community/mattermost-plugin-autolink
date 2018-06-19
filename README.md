@@ -20,7 +20,7 @@ In the template, a variable is denoted by a substring of the form `$name` or `${
 
 Below is an example of regexp patterns used for autolinking, modified in the `config.json` file:
 
-```JSON
+```
 "PluginSettings": {
     ...
     "Plugins": {
