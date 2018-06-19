@@ -1,16 +1,26 @@
 # Autolink Plugin
 
-This plugin allows you to create various regular expression patterns that will be reformatted into a markdown link before the post is saved into the database.
+This plugin creates regular expression (regexp) patterns that are reformatted into a Markdown link before the message is saved into the database.
+
+Use it to add custom auto-linking on your Mattermost system, such as adding links to your issue tracker based on the regexp patterns.
+
+**Supported Mattermost Server Versions: 5.0+**
 
 ## Installation
 
-Go to the [releases page of this Github repository](https://github.com/mattermost/mattermost-plugin-autolink/releases) and download the latest release for your server architecture. You can upload this file in the Mattermost system console to install the plugin.
+1. Go to the [releases page of this Github repository](https://github.com/mattermost/mattermost-plugin-autolink) and download the latest release for your Mattermost server.
+2. Upload this file in the Mattermost **System Console > Plugins > Management** page to install the plugin. To learn more about how to upload a plugin, [see the documentation](https://docs.mattermost.com/administration/plugins.html#plugin-uploads).
+3. Modify your `config.json` file to include the types of regexp patterns you wish to match, under the `PluginSettings`. See below for an example of what this should look like.
 
-You'll need to modify your config.json to include the types of regexp patterns you wish to match. You'll need to add a section underneath `PluginSettings` for this plugin. Below you'll find an example of what this should look like.
+## Usage
 
-Autolinks have 2 parts. A `Pattern` which is a regular expression search pattern utilizing the https://golang.org/pkg/regexp/ library and a `Template` that gets exanded. You can create variables in the pattern with the syntax `(?P<name>...)` which will then be expanded by the corresponding template. In the template, a variable is denoted by a substring of the form $name or ${name}, where name is a non-empty sequence of letters, digits, and underscores. A purely numeric name like $1 refers to the submatch with the corresponding index. In the $name form, name is taken to be as long as possible: $1x is equivalent to ${1x}, not ${1}x, and, $10 is equivalent to ${10}, not ${1}0.  To insert a literal $ in the output, use $$ in the template.
+Autolinks have 2 parts: a **Pattern** which is a regular expression search pattern utilizing the https://golang.org/pkg/regexp/ library, and a **Template** that gets exanded. You can create variables in the pattern with the syntax `(?P<name>...)` which will then be expanded by the corresponding template.
 
-```JSON
+In the template, a variable is denoted by a substring of the form `$name` or `${name}`, where `name` is a non-empty sequence of letters, digits, and underscores. A purely numeric name like $1 refers to the submatch with the corresponding index. In the $name form, name is taken to be as long as possible: $1x is equivalent to ${1x}, not ${1}x, and, $10 is equivalent to ${10}, not ${1}0. To insert a literal $ in the output, use $$ in the template.
+
+Below is an example of regexp patterns used for autolinking, modified in the `config.json` file:
+
+```
 "PluginSettings": {
     ...
     "Plugins": {
