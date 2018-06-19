@@ -4,7 +4,7 @@ This plugin allows you to create various regular expression patterns that will b
 
 ## Installation
 
-Go to the [releases page of this Github repository](https://github.com/mattermost/mattermost-plugin-autlink/releases) and download the latest release for your server architecture. You can upload this file in the Mattermost system console to install the plugin.
+Go to the [releases page of this Github repository](https://github.com/mattermost/mattermost-plugin-autolink/releases) and download the latest release for your server architecture. You can upload this file in the Mattermost system console to install the plugin.
 
 You'll need to modify your config.json to include the types of regexp patterns you wish to match.  You'll need to add a section undernieth `PluginSettings` for this plugin.  Below you'll find an example of what this should look like
 
