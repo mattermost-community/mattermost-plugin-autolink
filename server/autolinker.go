@@ -44,5 +44,12 @@ func (l *AutoLinker) Replace(message string) string {
 		return message
 	}
 
+	// beacuse MMDisableNonWordPrefix DisableNonWordSuffix are greedy then
+	// two matches back to back won't get found.  So we need to run the
+	// replace all twice
+	if !l.link.DisableNonWordPrefix && !l.link.DisableNonWordSuffix {
+		message = string(l.pattern.ReplaceAll([]byte(message), []byte(l.link.Template)))
+	}
+
 	return string(l.pattern.ReplaceAll([]byte(message), []byte(l.link.Template)))
 }

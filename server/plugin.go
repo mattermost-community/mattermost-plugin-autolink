@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"sync/atomic"
 
 	"github.com/mattermost/mattermost-server/mlog"
@@ -54,9 +55,43 @@ func (p *Plugin) OnConfigurationChange() error {
 func (p *Plugin) MessageWillBePosted(post *model.Post) (*model.Post, string) {
 	links := p.links.Load().([]*AutoLinker)
 
-	for _, l := range links {
-		post.Message = l.Replace(post.Message)
+	cbMessages := make([]string, 0)
+	codeBlocks := strings.Split(post.Message, "```")
+	codeBlockSkip := false
+
+	// split and turn linker on/off if we think we're in a code block like ```hello```
+	for _, cb := range codeBlocks {
+		if codeBlockSkip {
+			cbMessages = append(cbMessages, cb)
+			codeBlockSkip = false
+		} else {
+			// split and turn linker on/off if we think we're in a inline code block like `hello`
+			icbMessages := make([]string, 0)
+			icodeBlocks := strings.Split(cb, "`")
+			icodeBlockSkip := false
+			for _, icb := range icodeBlocks {
+				if icodeBlockSkip {
+					icbMessages = append(icbMessages, icb)
+					icodeBlockSkip = false
+				} else {
+					for _, l := range links {
+						icb = l.Replace(icb)
+					}
+					icbMessages = append(icbMessages, icb)
+					icodeBlockSkip = true
+				}
+			}
+
+			cbMessages = append(cbMessages, strings.Join(icbMessages, "`"))
+			codeBlockSkip = true
+		}
 	}
+
+	post.Message = strings.Join(cbMessages, "```")
+
+	// for _, l := range links {
+	// 	post.Message = l.Replace(post.Message)
+	// }
 
 	return post, ""
 }

@@ -29,6 +29,14 @@ func TestAutolink(t *testing.T) {
 		{
 			&Link{
 				Pattern:  "(?P<key>Mattermost)",
+				Template: "[$key](https://mattermost.com)",
+			},
+			"Welcome to Mattermost and have fun with Mattermost!",
+			"Welcome to [Mattermost](https://mattermost.com) and have fun with [Mattermost](https://mattermost.com)!",
+		},
+		{
+			&Link{
+				Pattern:  "(?P<key>Mattermost)",
 				Template: "[${key}](https://mattermost.com)",
 			},
 			"Welcome to Mattermost!",
@@ -111,6 +119,22 @@ func TestAutolink(t *testing.T) {
 			},
 			"Welcome https://mattermost.atlassian.net/browse/MM-12345. should link!",
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345). should link!",
+		},
+		{
+			&Link{
+				Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
+				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+			},
+			"Welcome https://mattermost.atlassian.net/browse/MM-12345. should link https://mattermost.atlassian.net/browse/MM-12346 !",
+			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345). should link [MM-12346](https://mattermost.atlassian.net/browse/MM-12346) !",
+		},
+		{
+			&Link{
+				Pattern:  "(https:\\/\\/mattermost.atlassian.net\\/browse\\/)(MM)(-)(?P<jira_id>\\d+)",
+				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+			},
+			"https://mattermost.atlassian.net/browse/MM-12345 https://mattermost.atlassian.net/browse/MM-12345",
+			"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345) [MM-12345](https://mattermost.atlassian.net/browse/MM-12345)",
 		},
 		{
 			&Link{
