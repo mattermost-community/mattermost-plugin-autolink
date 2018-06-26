@@ -1,4 +1,4 @@
-# Autolink Plugin
+# Autolink Plugin (Beta)
 
 This plugin creates regular expression (regexp) patterns that are reformatted into a Markdown link before the message is saved into the database.
 
