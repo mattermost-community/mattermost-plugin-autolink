@@ -12,25 +12,15 @@ import (
 
 // Plugin the main struct for everything
 type Plugin struct {
-	api   plugin.API
+	plugin.MattermostPlugin
+
 	links atomic.Value
-}
-
-// OnActivate is invoked when the plugin is activated.
-func (p *Plugin) OnActivate(api plugin.API) error {
-	p.api = api
-
-	if err := p.OnConfigurationChange(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
 func (p *Plugin) OnConfigurationChange() error {
 	var c Configuration
-	err := p.api.LoadPluginConfiguration(&c)
+	err := p.API.LoadPluginConfiguration(&c)
 	if err != nil {
 		return err
 	}
@@ -50,9 +40,9 @@ func (p *Plugin) OnConfigurationChange() error {
 	return nil
 }
 
-// MessageWillBePosted is invoked when a message is posted by a user before it is commited
+// MessageWillBePosted is invoked when a message is posted by a user before it is committed
 // to the database.
-func (p *Plugin) MessageWillBePosted(post *model.Post) (*model.Post, string) {
+func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
 	links := p.links.Load().([]*AutoLinker)
 
 	cbMessages := make([]string, 0)
