@@ -4,6 +4,7 @@
 package plugin
 
 import (
+	"github.com/hashicorp/go-plugin"
 	"github.com/mattermost/mattermost-server/model"
 )
 
@@ -104,17 +105,48 @@ type API interface {
 	// UpdatePost updates a post.
 	UpdatePost(post *model.Post) (*model.Post, *model.AppError)
 
-	// KeyValueStore returns an object for accessing the persistent key value storage.
-	KeyValueStore() KeyValueStore
-}
-
-type KeyValueStore interface {
 	// Set will store a key-value pair, unique per plugin.
-	Set(key string, value []byte) *model.AppError
+	KVSet(key string, value []byte) *model.AppError
 
 	// Get will retrieve a value based on the key. Returns nil for non-existent keys.
-	Get(key string) ([]byte, *model.AppError)
+	KVGet(key string) ([]byte, *model.AppError)
 
 	// Delete will remove a key-value pair. Returns nil for non-existent keys.
-	Delete(key string) *model.AppError
+	KVDelete(key string) *model.AppError
+
+	// PublishWebSocketEvent sends an event to WebSocket connections.
+	// event is the type and will be prepended with "custom_<pluginid>_"
+	// payload is the data sent with the event. Interface values must be primitive Go types or mattermost-server/model types
+	// broadcast determines to which users to send the event
+	PublishWebSocketEvent(event string, payload map[string]interface{}, broadcast *model.WebsocketBroadcast)
+
+	// LogDebug writes a log message to the Mattermost server log file.
+	// Appropriate context such as the plugin name will already be added as fields so plugins
+	// do not need to add that info.
+	// keyValuePairs should be primitive go types or other values that can be encoded by encoding/gob
+	LogDebug(msg string, keyValuePairs ...interface{})
+
+	// LogInfo writes a log message to the Mattermost server log file.
+	// Appropriate context such as the plugin name will already be added as fields so plugins
+	// do not need to add that info.
+	// keyValuePairs should be primitive go types or other values that can be encoded by encoding/gob
+	LogInfo(msg string, keyValuePairs ...interface{})
+
+	// LogError writes a log message to the Mattermost server log file.
+	// Appropriate context such as the plugin name will already be added as fields so plugins
+	// do not need to add that info.
+	// keyValuePairs should be primitive go types or other values that can be encoded by encoding/gob
+	LogError(msg string, keyValuePairs ...interface{})
+
+	// LogWarn writes a log message to the Mattermost server log file.
+	// Appropriate context such as the plugin name will already be added as fields so plugins
+	// do not need to add that info.
+	// keyValuePairs should be primitive go types or other values that can be encoded by encoding/gob
+	LogWarn(msg string, keyValuePairs ...interface{})
+}
+
+var Handshake = plugin.HandshakeConfig{
+	ProtocolVersion:  1,
+	MagicCookieKey:   "MATTERMOST_PLUGIN",
+	MagicCookieValue: "Securely message teams, anywhere.",
 }

@@ -156,10 +156,14 @@ const (
 
 	TIMEZONE_SETTINGS_DEFAULT_SUPPORTED_TIMEZONES_PATH = "timezones.json"
 
+	COMPLIANCE_EXPORT_TYPE_CSV         = "csv"
 	COMPLIANCE_EXPORT_TYPE_ACTIANCE    = "actiance"
 	COMPLIANCE_EXPORT_TYPE_GLOBALRELAY = "globalrelay"
 	GLOBALRELAY_CUSTOMER_TYPE_A9       = "A9"
 	GLOBALRELAY_CUSTOMER_TYPE_A10      = "A10"
+
+	CLIENT_SIDE_CERT_CHECK_PRIMARY_AUTH   = "primary"
+	CLIENT_SIDE_CERT_CHECK_SECONDARY_AUTH = "secondary"
 )
 
 type ServiceSettings struct {
@@ -206,6 +210,9 @@ type ServiceSettings struct {
 	WebserverMode                                     *string
 	EnableCustomEmoji                                 *bool
 	EnableEmojiPicker                                 *bool
+	EnableGifPicker                                   *bool
+	GfycatApiKey                                      *string
+	GfycatApiSecret                                   *string
 	RestrictCustomEmojiCreation                       *string
 	RestrictPostDelete                                *string
 	AllowEditPost                                     *string
@@ -227,6 +234,7 @@ type ServiceSettings struct {
 	ImageProxyOptions                                 *string
 	EnableAPITeamDeletion                             *bool
 	ExperimentalEnableHardenedMode                    *bool
+	ExperimentalLimitClientConfig                     *bool
 }
 
 func (s *ServiceSettings) SetDefaults() {
@@ -408,6 +416,18 @@ func (s *ServiceSettings) SetDefaults() {
 		s.EnableEmojiPicker = NewBool(true)
 	}
 
+	if s.EnableGifPicker == nil {
+		s.EnableGifPicker = NewBool(true)
+	}
+
+	if s.GfycatApiKey == nil {
+		s.GfycatApiKey = NewString("")
+	}
+
+	if s.GfycatApiSecret == nil {
+		s.GfycatApiSecret = NewString("")
+	}
+
 	if s.RestrictCustomEmojiCreation == nil {
 		s.RestrictCustomEmojiCreation = NewString(RESTRICT_EMOJI_CREATION_ALL)
 	}
@@ -462,6 +482,10 @@ func (s *ServiceSettings) SetDefaults() {
 
 	if s.ExperimentalEnableHardenedMode == nil {
 		s.ExperimentalEnableHardenedMode = NewBool(false)
+	}
+
+	if s.ExperimentalLimitClientConfig == nil {
+		s.ExperimentalLimitClientConfig = NewBool(false)
 	}
 }
 
@@ -545,6 +569,21 @@ func (s *MetricsSettings) SetDefaults() {
 	}
 }
 
+type ExperimentalSettings struct {
+	ClientSideCertEnable *bool
+	ClientSideCertCheck  *string
+}
+
+func (s *ExperimentalSettings) SetDefaults() {
+	if s.ClientSideCertEnable == nil {
+		s.ClientSideCertEnable = NewBool(false)
+	}
+
+	if s.ClientSideCertCheck == nil {
+		s.ClientSideCertCheck = NewString(CLIENT_SIDE_CERT_CHECK_SECONDARY_AUTH)
+	}
+}
+
 type AnalyticsSettings struct {
 	MaxUsersForStatistics *int
 }
@@ -566,15 +605,16 @@ type SSOSettings struct {
 }
 
 type SqlSettings struct {
-	DriverName               *string
-	DataSource               *string
-	DataSourceReplicas       []string
-	DataSourceSearchReplicas []string
-	MaxIdleConns             *int
-	MaxOpenConns             *int
-	Trace                    bool
-	AtRestEncryptKey         string
-	QueryTimeout             *int
+	DriverName                  *string
+	DataSource                  *string
+	DataSourceReplicas          []string
+	DataSourceSearchReplicas    []string
+	MaxIdleConns                *int
+	ConnMaxLifetimeMilliseconds *int
+	MaxOpenConns                *int
+	Trace                       bool
+	AtRestEncryptKey            string
+	QueryTimeout                *int
 }
 
 func (s *SqlSettings) SetDefaults() {
@@ -596,6 +636,10 @@ func (s *SqlSettings) SetDefaults() {
 
 	if s.MaxOpenConns == nil {
 		s.MaxOpenConns = NewInt(300)
+	}
+
+	if s.ConnMaxLifetimeMilliseconds == nil {
+		s.ConnMaxLifetimeMilliseconds = NewInt(3600000)
 	}
 
 	if s.QueryTimeout == nil {
@@ -1829,6 +1873,7 @@ type Config struct {
 	NativeAppSettings     NativeAppSettings
 	ClusterSettings       ClusterSettings
 	MetricsSettings       MetricsSettings
+	ExperimentalSettings  ExperimentalSettings
 	AnalyticsSettings     AnalyticsSettings
 	WebrtcSettings        WebrtcSettings
 	ElasticsearchSettings ElasticsearchSettings
@@ -1891,6 +1936,7 @@ func (o *Config) SetDefaults() {
 	o.PasswordSettings.SetDefaults()
 	o.TeamSettings.SetDefaults()
 	o.MetricsSettings.SetDefaults()
+	o.ExperimentalSettings.SetDefaults()
 	o.SupportSettings.SetDefaults()
 	o.AnnouncementSettings.SetDefaults()
 	o.ThemeSettings.SetDefaults()
@@ -1921,7 +1967,7 @@ func (o *Config) IsValid() *AppError {
 	}
 
 	if len(*o.ServiceSettings.SiteURL) == 0 && *o.ServiceSettings.AllowCookiesForSubdomains {
-		return NewAppError("Config.IsValid", "Allowing cookies for subdomains requires SiteURL to be set.", nil, "", http.StatusBadRequest)
+		return NewAppError("Config.IsValid", "model.config.is_valid.allow_cookies_for_subdomains.app_error", nil, "", http.StatusBadRequest)
 	}
 
 	if err := o.TeamSettings.isValid(); err != nil {
@@ -2026,6 +2072,10 @@ func (ss *SqlSettings) isValid() *AppError {
 
 	if *ss.MaxIdleConns <= 0 {
 		return NewAppError("Config.IsValid", "model.config.is_valid.sql_idle.app_error", nil, "", http.StatusBadRequest)
+	}
+
+	if *ss.ConnMaxLifetimeMilliseconds < 0 {
+		return NewAppError("Config.IsValid", "model.config.is_valid.sql_conn_max_lifetime_milliseconds.app_error", nil, "", http.StatusBadRequest)
 	}
 
 	if *ss.QueryTimeout <= 0 {
@@ -2341,7 +2391,7 @@ func (mes *MessageExportSettings) isValid(fs FileSettings) *AppError {
 			return NewAppError("Config.IsValid", "model.config.is_valid.message_export.daily_runtime.app_error", nil, err.Error(), http.StatusBadRequest)
 		} else if mes.BatchSize == nil || *mes.BatchSize < 0 {
 			return NewAppError("Config.IsValid", "model.config.is_valid.message_export.batch_size.app_error", nil, "", http.StatusBadRequest)
-		} else if mes.ExportFormat == nil || (*mes.ExportFormat != COMPLIANCE_EXPORT_TYPE_ACTIANCE && *mes.ExportFormat != COMPLIANCE_EXPORT_TYPE_GLOBALRELAY) {
+		} else if mes.ExportFormat == nil || (*mes.ExportFormat != COMPLIANCE_EXPORT_TYPE_ACTIANCE && *mes.ExportFormat != COMPLIANCE_EXPORT_TYPE_GLOBALRELAY && *mes.ExportFormat != COMPLIANCE_EXPORT_TYPE_CSV) {
 			return NewAppError("Config.IsValid", "model.config.is_valid.message_export.export_type.app_error", nil, "", http.StatusBadRequest)
 		}
 

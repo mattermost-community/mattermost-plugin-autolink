@@ -57,6 +57,7 @@ type Client4 struct {
 	HttpClient *http.Client // The http client
 	AuthToken  string
 	AuthType   string
+	HttpHeader map[string]string // Headers to be copied over for each request
 }
 
 func closeBody(r *http.Response) {
@@ -78,7 +79,7 @@ func (c *Client4) Must(result interface{}, resp *Response) interface{} {
 }
 
 func NewAPIv4Client(url string) *Client4 {
-	return &Client4{url, url + API_URL_SUFFIX, &http.Client{}, "", ""}
+	return &Client4{url, url + API_URL_SUFFIX, &http.Client{}, "", "", map[string]string{}}
 }
 
 func BuildErrorResponse(r *http.Response, err *AppError) *Response {
@@ -392,6 +393,10 @@ func (c *Client4) GetTeamSchemeRoute(teamId string) string {
 	return fmt.Sprintf(c.GetTeamsRoute()+"/%v/scheme", teamId)
 }
 
+func (c *Client4) GetTotalUsersStatsRoute() string {
+	return fmt.Sprintf(c.GetUsersRoute() + "/stats")
+}
+
 func (c *Client4) DoApiGet(url string, etag string) (*http.Response, *AppError) {
 	return c.DoApiRequest(http.MethodGet, c.ApiUrl+url, "", etag)
 }
@@ -410,7 +415,6 @@ func (c *Client4) DoApiDelete(url string) (*http.Response, *AppError) {
 
 func (c *Client4) DoApiRequest(method, url, data, etag string) (*http.Response, *AppError) {
 	rq, _ := http.NewRequest(method, url, strings.NewReader(data))
-	rq.Close = true
 
 	if len(etag) > 0 {
 		rq.Header.Set(HEADER_ETAG_CLIENT, etag)
@@ -418,6 +422,13 @@ func (c *Client4) DoApiRequest(method, url, data, etag string) (*http.Response, 
 
 	if len(c.AuthToken) > 0 {
 		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
+	}
+
+	if c.HttpHeader != nil && len(c.HttpHeader) > 0 {
+
+		for k, v := range c.HttpHeader {
+			rq.Header.Set(k, v)
+		}
 	}
 
 	if rp, err := c.HttpClient.Do(rq); err != nil || rp == nil {
@@ -435,7 +446,6 @@ func (c *Client4) DoApiRequest(method, url, data, etag string) (*http.Response, 
 func (c *Client4) DoUploadFile(url string, data []byte, contentType string) (*FileUploadResponse, *Response) {
 	rq, _ := http.NewRequest("POST", c.ApiUrl+url, bytes.NewReader(data))
 	rq.Header.Set("Content-Type", contentType)
-	rq.Close = true
 
 	if len(c.AuthToken) > 0 {
 		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
@@ -457,7 +467,6 @@ func (c *Client4) DoUploadFile(url string, data []byte, contentType string) (*Fi
 func (c *Client4) DoEmojiUploadFile(url string, data []byte, contentType string) (*Emoji, *Response) {
 	rq, _ := http.NewRequest("POST", c.ApiUrl+url, bytes.NewReader(data))
 	rq.Header.Set("Content-Type", contentType)
-	rq.Close = true
 
 	if len(c.AuthToken) > 0 {
 		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
@@ -479,7 +488,6 @@ func (c *Client4) DoEmojiUploadFile(url string, data []byte, contentType string)
 func (c *Client4) DoUploadImportTeam(url string, data []byte, contentType string) (map[string]string, *Response) {
 	rq, _ := http.NewRequest("POST", c.ApiUrl+url, bytes.NewReader(data))
 	rq.Header.Set("Content-Type", contentType)
-	rq.Close = true
 
 	if len(c.AuthToken) > 0 {
 		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
@@ -1102,7 +1110,6 @@ func (c *Client4) SetProfileImage(userId string, data []byte) (bool, *Response) 
 
 	rq, _ := http.NewRequest("POST", c.ApiUrl+c.GetUserRoute(userId)+"/image", bytes.NewReader(body.Bytes()))
 	rq.Header.Set("Content-Type", writer.FormDataContentType())
-	rq.Close = true
 
 	if len(c.AuthToken) > 0 {
 		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
@@ -1473,6 +1480,17 @@ func (c *Client4) GetTeamStats(teamId, etag string) (*TeamStats, *Response) {
 	}
 }
 
+// GetTotalUsersStats returns a total system user stats.
+// Must be authenticated.
+func (c *Client4) GetTotalUsersStats(etag string) (*UsersStats, *Response) {
+	if r, err := c.DoApiGet(c.GetTotalUsersStatsRoute(), etag); err != nil {
+		return nil, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+		return UsersStatsFromJson(r.Body), BuildResponse(r)
+	}
+}
+
 // GetTeamUnread will return a TeamUnread object that contains the amount of
 // unread messages and mentions the user has for the specified team.
 // Must be authenticated.
@@ -1553,7 +1571,6 @@ func (c *Client4) SetTeamIcon(teamId string, data []byte) (bool, *Response) {
 
 	rq, _ := http.NewRequest("POST", c.ApiUrl+c.GetTeamRoute(teamId)+"/image", bytes.NewReader(body.Bytes()))
 	rq.Header.Set("Content-Type", writer.FormDataContentType())
-	rq.Close = true
 
 	if len(c.AuthToken) > 0 {
 		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
@@ -2110,6 +2127,17 @@ func (c *Client4) SearchPosts(teamId string, terms string, isOrSearch bool) (*Po
 	}
 }
 
+// SearchPosts returns any posts with matching terms string, including .
+func (c *Client4) SearchPostsWithMatches(teamId string, terms string, isOrSearch bool) (*PostSearchResults, *Response) {
+	requestBody := map[string]interface{}{"terms": terms, "is_or_search": isOrSearch}
+	if r, err := c.DoApiPost(c.GetTeamRoute(teamId)+"/posts/search", StringInterfaceToJson(requestBody)); err != nil {
+		return nil, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+		return PostSearchResultsFromJson(r.Body), BuildResponse(r)
+	}
+}
+
 // DoPostAction performs a post action.
 func (c *Client4) DoPostAction(postId, actionId string) (bool, *Response) {
 	if r, err := c.DoApiPost(c.GetPostRoute(postId)+"/actions/"+actionId, ""); err != nil {
@@ -2410,7 +2438,6 @@ func (c *Client4) UploadLicenseFile(data []byte) (bool, *Response) {
 
 	rq, _ := http.NewRequest("POST", c.ApiUrl+c.GetLicenseRoute(), bytes.NewReader(body.Bytes()))
 	rq.Header.Set("Content-Type", writer.FormDataContentType())
-	rq.Close = true
 
 	if len(c.AuthToken) > 0 {
 		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
@@ -2798,7 +2825,6 @@ func (c *Client4) GetComplianceReport(reportId string) (*Compliance, *Response) 
 func (c *Client4) DownloadComplianceReport(reportId string) ([]byte, *Response) {
 	var rq *http.Request
 	rq, _ = http.NewRequest("GET", c.ApiUrl+c.GetComplianceReportRoute(reportId), nil)
-	rq.Close = true
 
 	if len(c.AuthToken) > 0 {
 		rq.Header.Set(HEADER_AUTH, "BEARER "+c.AuthToken)
@@ -2903,7 +2929,6 @@ func (c *Client4) UploadBrandImage(data []byte) (bool, *Response) {
 
 	rq, _ := http.NewRequest("POST", c.ApiUrl+c.GetBrandRoute()+"/image", bytes.NewReader(body.Bytes()))
 	rq.Header.Set("Content-Type", writer.FormDataContentType())
-	rq.Close = true
 
 	if len(c.AuthToken) > 0 {
 		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
@@ -3056,7 +3081,6 @@ func (c *Client4) DeauthorizeOAuthApp(appId string) (bool, *Response) {
 func (c *Client4) GetOAuthAccessToken(data url.Values) (*AccessResponse, *Response) {
 	rq, _ := http.NewRequest(http.MethodPost, c.Url+"/oauth/access_token", strings.NewReader(data.Encode()))
 	rq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	rq.Close = true
 
 	if len(c.AuthToken) > 0 {
 		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
@@ -3612,7 +3636,6 @@ func (c *Client4) UploadPlugin(file io.Reader) (*Manifest, *Response) {
 
 	rq, _ := http.NewRequest("POST", c.ApiUrl+c.GetPluginsRoute(), body)
 	rq.Header.Set("Content-Type", writer.FormDataContentType())
-	rq.Close = true
 
 	if len(c.AuthToken) > 0 {
 		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
@@ -3678,8 +3701,8 @@ func (c *Client4) GetWebappPlugins() ([]*Manifest, *Response) {
 
 // ActivatePlugin will activate an plugin installed.
 // WARNING: PLUGINS ARE STILL EXPERIMENTAL. THIS FUNCTION IS SUBJECT TO CHANGE.
-func (c *Client4) ActivatePlugin(id string) (bool, *Response) {
-	if r, err := c.DoApiPost(c.GetPluginRoute(id)+"/activate", ""); err != nil {
+func (c *Client4) EnablePlugin(id string) (bool, *Response) {
+	if r, err := c.DoApiPost(c.GetPluginRoute(id)+"/enable", ""); err != nil {
 		return false, BuildErrorResponse(r, err)
 	} else {
 		defer closeBody(r)
@@ -3689,8 +3712,8 @@ func (c *Client4) ActivatePlugin(id string) (bool, *Response) {
 
 // DeactivatePlugin will deactivate an active plugin.
 // WARNING: PLUGINS ARE STILL EXPERIMENTAL. THIS FUNCTION IS SUBJECT TO CHANGE.
-func (c *Client4) DeactivatePlugin(id string) (bool, *Response) {
-	if r, err := c.DoApiPost(c.GetPluginRoute(id)+"/deactivate", ""); err != nil {
+func (c *Client4) DisablePlugin(id string) (bool, *Response) {
+	if r, err := c.DoApiPost(c.GetPluginRoute(id)+"/disable", ""); err != nil {
 		return false, BuildErrorResponse(r, err)
 	} else {
 		defer closeBody(r)
