@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/plugin"
 	"github.com/mattermost/mattermost-server/plugin/plugintest"
 	"github.com/mattermost/mattermost-server/plugin/plugintest/mock"
 )
@@ -16,7 +17,7 @@ func TestPlugin(t *testing.T) {
 	})
 	validConfiguration := Configuration{links}
 
-	api := &plugintest.API{Store: &plugintest.KeyValueStore{}}
+	api := &plugintest.API{}
 
 	api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.Configuration")).Return(func(dest interface{}) error {
 		*dest.(*Configuration) = validConfiguration
@@ -24,10 +25,11 @@ func TestPlugin(t *testing.T) {
 	})
 
 	p := Plugin{}
-	p.OnActivate(api)
+	p.SetAPI(api)
+	p.OnConfigurationChange()
 
 	post := &model.Post{Message: "Welcome to Mattermost!"}
-	rpost, _ := p.MessageWillBePosted(post)
+	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
 
 	if rpost.Message != "Welcome to [Mattermost](https://mattermost.com)!" {
 		t.Fatal("Posted didn't get transformed")
@@ -43,7 +45,7 @@ func TestCodeBlock(t *testing.T) {
 	})
 	validConfiguration := Configuration{links}
 
-	api := &plugintest.API{Store: &plugintest.KeyValueStore{}}
+	api := &plugintest.API{}
 
 	api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.Configuration")).Return(func(dest interface{}) error {
 		*dest.(*Configuration) = validConfiguration
@@ -51,7 +53,8 @@ func TestCodeBlock(t *testing.T) {
 	})
 
 	p := Plugin{}
-	p.OnActivate(api)
+	p.SetAPI(api)
+	p.OnConfigurationChange()
 
 	var tests = []struct {
 		inputMessage    string
@@ -133,7 +136,7 @@ func TestCodeBlock(t *testing.T) {
 			Message: tt.inputMessage,
 		}
 
-		rpost, _ := p.MessageWillBePosted(post)
+		rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
 		if rpost.Message != tt.expectedMessage {
 			t.Fatalf("autolink:\n expected '%v'\n actual   '%v'", tt.expectedMessage, rpost.Message)
 		}

@@ -8,12 +8,43 @@
   version = "v1.1.0"
 
 [[projects]]
+  name = "github.com/golang/protobuf"
+  packages = [
+    "proto",
+    "ptypes",
+    "ptypes/any",
+    "ptypes/duration",
+    "ptypes/timestamp"
+  ]
+  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
+  version = "v1.1.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/gorilla/websocket"
   packages = ["."]
   revision = "5ed622c449da6d44c3c8329331ff47a9e5844f71"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/go-hclog"
+  packages = ["."]
+  revision = "69ff559dc25f3b435631604f573a5fa1efdb6433"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/go-plugin"
+  packages = ["."]
+  revision = "e8d22c780116115ae5624720c9af0c97afe4f551"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/yamux"
+  packages = ["."]
+  revision = "3520598351bb3500a49ae9563f5539666ae0a27c"
+
+[[projects]]
+  branch = "master"
   name = "github.com/mattermost/mattermost-server"
   packages = [
     "mlog",
@@ -21,12 +52,16 @@
     "plugin",
     "plugin/plugintest",
     "plugin/plugintest/mock",
-    "plugin/rpcplugin",
     "utils/jsonutils",
     "utils/markdown"
   ]
-  revision = "d4761a94cebfd667373e1635dd1c9ad334b3b80c"
-  version = "v5.0.0-rc4"
+  revision = "6c7dc2d29ccac5f9925402f6be1a4c2a3c46c005"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mitchellh/go-testing-interface"
+  packages = ["."]
+  revision = "a61a99592b77c9ba629d254a693acffaeb4b7e28"
 
 [[projects]]
   name = "github.com/nicksnyder/go-i18n"
@@ -38,6 +73,12 @@
   ]
   revision = "0dc1626d56435e9d605a29875701721c54bc9bbd"
   version = "v1.10.0"
+
+[[projects]]
+  name = "github.com/oklog/run"
+  packages = ["."]
+  revision = "4dadeb3030eda0273a12382bb2348ffc7c9d1a39"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/pborman/uuid"
@@ -111,7 +152,82 @@
     "bcrypt",
     "blowfish"
   ]
-  revision = "37a17fe027db43f76fd88b056ddf588563fc8722"
+  revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = [
+    "context",
+    "http/httpguts",
+    "http2",
+    "http2/hpack",
+    "idna",
+    "internal/timeseries",
+    "trace"
+  ]
+  revision = "32a936f46389aa10549d60bd7833e54b01685d09"
+
+[[projects]]
+  name = "golang.org/x/text"
+  packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
+    "internal/gen",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable"
+  ]
+  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  version = "v0.3.0"
+
+[[projects]]
+  branch = "master"
+  name = "google.golang.org/genproto"
+  packages = ["googleapis/rpc/status"]
+  revision = "ff3583edef7de132f219f0efc00e097cabcc0ec0"
+
+[[projects]]
+  name = "google.golang.org/grpc"
+  packages = [
+    ".",
+    "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
+    "codes",
+    "connectivity",
+    "credentials",
+    "encoding",
+    "encoding/proto",
+    "grpclog",
+    "health",
+    "health/grpc_health_v1",
+    "internal",
+    "internal/backoff",
+    "internal/channelz",
+    "internal/grpcrand",
+    "keepalive",
+    "metadata",
+    "naming",
+    "peer",
+    "resolver",
+    "resolver/dns",
+    "resolver/passthrough",
+    "stats",
+    "status",
+    "tap",
+    "transport"
+  ]
+  revision = "168a6198bcb0ef175f7dacec0b8691fc141dc9b8"
+  version = "v1.13.0"
 
 [[projects]]
   name = "gopkg.in/natefinch/lumberjack.v2"
@@ -128,6 +244,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "77eae7c50d9a6bde623e5a55e53c31a9027d67644ac376fbe995d22c9b806ef1"
+  inputs-digest = "02037b4851f4d827f622f1ab5306f8757d15be46221fde9157ce861a72187614"
   solver-name = "gps-cdcl"
   solver-version = 1

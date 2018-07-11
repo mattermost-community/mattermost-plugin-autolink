@@ -1,8 +1,7 @@
-
 [[constraint]]
   name = "github.com/mattermost/mattermost-server"
-  branch = "release-5.0" 
-  #version = "5.0.0" should be switched to version after 5.0 ships vs master
+  branch = "master"
+  #version = "5.2.0" should be switched to version after 5.2 ships
 [[override]]
   name = "go.uber.org/zap"
   source = "https://github.com/uber-go/zap"

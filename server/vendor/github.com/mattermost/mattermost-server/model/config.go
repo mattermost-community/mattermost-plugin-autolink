@@ -87,6 +87,8 @@ const (
 	SERVICE_SETTINGS_DEFAULT_MAX_LOGIN_ATTEMPTS = 10
 	SERVICE_SETTINGS_DEFAULT_ALLOW_CORS_FROM    = ""
 	SERVICE_SETTINGS_DEFAULT_LISTEN_AND_ADDRESS = ":8065"
+	SERVICE_SETTINGS_DEFAULT_GFYCAT_API_KEY     = "2_KtH_W5"
+	SERVICE_SETTINGS_DEFAULT_GFYCAT_API_SECRET  = "3wLVZPiswc3DnaiaFoLkDvB4X0IV6CpMkj4tf2inJRsBY6-FnkT08zGmppWFgeof"
 
 	TEAM_SETTINGS_DEFAULT_MAX_USERS_PER_TEAM       = 50
 	TEAM_SETTINGS_DEFAULT_CUSTOM_BRAND_TEXT        = ""
@@ -156,10 +158,14 @@ const (
 
 	TIMEZONE_SETTINGS_DEFAULT_SUPPORTED_TIMEZONES_PATH = "timezones.json"
 
+	COMPLIANCE_EXPORT_TYPE_CSV         = "csv"
 	COMPLIANCE_EXPORT_TYPE_ACTIANCE    = "actiance"
 	COMPLIANCE_EXPORT_TYPE_GLOBALRELAY = "globalrelay"
 	GLOBALRELAY_CUSTOMER_TYPE_A9       = "A9"
 	GLOBALRELAY_CUSTOMER_TYPE_A10      = "A10"
+
+	CLIENT_SIDE_CERT_CHECK_PRIMARY_AUTH   = "primary"
+	CLIENT_SIDE_CERT_CHECK_SECONDARY_AUTH = "secondary"
 )
 
 type ServiceSettings struct {
@@ -206,6 +212,9 @@ type ServiceSettings struct {
 	WebserverMode                                     *string
 	EnableCustomEmoji                                 *bool
 	EnableEmojiPicker                                 *bool
+	EnableGifPicker                                   *bool
+	GfycatApiKey                                      *string
+	GfycatApiSecret                                   *string
 	RestrictCustomEmojiCreation                       *string
 	RestrictPostDelete                                *string
 	AllowEditPost                                     *string
@@ -227,9 +236,20 @@ type ServiceSettings struct {
 	ImageProxyOptions                                 *string
 	EnableAPITeamDeletion                             *bool
 	ExperimentalEnableHardenedMode                    *bool
+	ExperimentalLimitClientConfig                     *bool
+	EnableEmailInvitations                            *bool
 }
 
 func (s *ServiceSettings) SetDefaults() {
+	if s.EnableEmailInvitations == nil {
+		// If the site URL is also not present then assume this is a clean install
+		if s.SiteURL == nil {
+			s.EnableEmailInvitations = NewBool(false)
+		} else {
+			s.EnableEmailInvitations = NewBool(true)
+		}
+	}
+
 	if s.SiteURL == nil {
 		s.SiteURL = NewString(SERVICE_SETTINGS_DEFAULT_SITE_URL)
 	}
@@ -408,6 +428,18 @@ func (s *ServiceSettings) SetDefaults() {
 		s.EnableEmojiPicker = NewBool(true)
 	}
 
+	if s.EnableGifPicker == nil {
+		s.EnableGifPicker = NewBool(false)
+	}
+
+	if s.GfycatApiKey == nil || *s.GfycatApiKey == "" {
+		s.GfycatApiKey = NewString(SERVICE_SETTINGS_DEFAULT_GFYCAT_API_KEY)
+	}
+
+	if s.GfycatApiSecret == nil || *s.GfycatApiSecret == "" {
+		s.GfycatApiSecret = NewString(SERVICE_SETTINGS_DEFAULT_GFYCAT_API_SECRET)
+	}
+
 	if s.RestrictCustomEmojiCreation == nil {
 		s.RestrictCustomEmojiCreation = NewString(RESTRICT_EMOJI_CREATION_ALL)
 	}
@@ -462,6 +494,10 @@ func (s *ServiceSettings) SetDefaults() {
 
 	if s.ExperimentalEnableHardenedMode == nil {
 		s.ExperimentalEnableHardenedMode = NewBool(false)
+	}
+
+	if s.ExperimentalLimitClientConfig == nil {
+		s.ExperimentalLimitClientConfig = NewBool(false)
 	}
 }
 
@@ -545,6 +581,21 @@ func (s *MetricsSettings) SetDefaults() {
 	}
 }
 
+type ExperimentalSettings struct {
+	ClientSideCertEnable *bool
+	ClientSideCertCheck  *string
+}
+
+func (s *ExperimentalSettings) SetDefaults() {
+	if s.ClientSideCertEnable == nil {
+		s.ClientSideCertEnable = NewBool(false)
+	}
+
+	if s.ClientSideCertCheck == nil {
+		s.ClientSideCertCheck = NewString(CLIENT_SIDE_CERT_CHECK_SECONDARY_AUTH)
+	}
+}
+
 type AnalyticsSettings struct {
 	MaxUsersForStatistics *int
 }
@@ -566,15 +617,16 @@ type SSOSettings struct {
 }
 
 type SqlSettings struct {
-	DriverName               *string
-	DataSource               *string
-	DataSourceReplicas       []string
-	DataSourceSearchReplicas []string
-	MaxIdleConns             *int
-	MaxOpenConns             *int
-	Trace                    bool
-	AtRestEncryptKey         string
-	QueryTimeout             *int
+	DriverName                  *string
+	DataSource                  *string
+	DataSourceReplicas          []string
+	DataSourceSearchReplicas    []string
+	MaxIdleConns                *int
+	ConnMaxLifetimeMilliseconds *int
+	MaxOpenConns                *int
+	Trace                       bool
+	AtRestEncryptKey            string
+	QueryTimeout                *int
 }
 
 func (s *SqlSettings) SetDefaults() {
@@ -596,6 +648,10 @@ func (s *SqlSettings) SetDefaults() {
 
 	if s.MaxOpenConns == nil {
 		s.MaxOpenConns = NewInt(300)
+	}
+
+	if s.ConnMaxLifetimeMilliseconds == nil {
+		s.ConnMaxLifetimeMilliseconds = NewInt(3600000)
 	}
 
 	if s.QueryTimeout == nil {
@@ -728,8 +784,8 @@ func (s *FileSettings) SetDefaults() {
 	}
 
 	if s.InitialFont == "" {
-		// Defaults to "luximbi.ttf"
-		s.InitialFont = "luximbi.ttf"
+		// Defaults to "nunito-bold.ttf"
+		s.InitialFont = "nunito-bold.ttf"
 	}
 
 	if s.Directory == "" {
@@ -1671,7 +1727,7 @@ type PluginSettings struct {
 	EnableUploads   *bool
 	Directory       *string
 	ClientDirectory *string
-	Plugins         map[string]interface{}
+	Plugins         map[string]map[string]interface{}
 	PluginStates    map[string]*PluginState
 }
 
@@ -1701,7 +1757,7 @@ func (s *PluginSettings) SetDefaults() {
 	}
 
 	if s.Plugins == nil {
-		s.Plugins = make(map[string]interface{})
+		s.Plugins = make(map[string]map[string]interface{})
 	}
 
 	if s.PluginStates == nil {
@@ -1829,6 +1885,7 @@ type Config struct {
 	NativeAppSettings     NativeAppSettings
 	ClusterSettings       ClusterSettings
 	MetricsSettings       MetricsSettings
+	ExperimentalSettings  ExperimentalSettings
 	AnalyticsSettings     AnalyticsSettings
 	WebrtcSettings        WebrtcSettings
 	ElasticsearchSettings ElasticsearchSettings
@@ -1891,6 +1948,7 @@ func (o *Config) SetDefaults() {
 	o.PasswordSettings.SetDefaults()
 	o.TeamSettings.SetDefaults()
 	o.MetricsSettings.SetDefaults()
+	o.ExperimentalSettings.SetDefaults()
 	o.SupportSettings.SetDefaults()
 	o.AnnouncementSettings.SetDefaults()
 	o.ThemeSettings.SetDefaults()
@@ -1921,7 +1979,7 @@ func (o *Config) IsValid() *AppError {
 	}
 
 	if len(*o.ServiceSettings.SiteURL) == 0 && *o.ServiceSettings.AllowCookiesForSubdomains {
-		return NewAppError("Config.IsValid", "Allowing cookies for subdomains requires SiteURL to be set.", nil, "", http.StatusBadRequest)
+		return NewAppError("Config.IsValid", "model.config.is_valid.allow_cookies_for_subdomains.app_error", nil, "", http.StatusBadRequest)
 	}
 
 	if err := o.TeamSettings.isValid(); err != nil {
@@ -2026,6 +2084,10 @@ func (ss *SqlSettings) isValid() *AppError {
 
 	if *ss.MaxIdleConns <= 0 {
 		return NewAppError("Config.IsValid", "model.config.is_valid.sql_idle.app_error", nil, "", http.StatusBadRequest)
+	}
+
+	if *ss.ConnMaxLifetimeMilliseconds < 0 {
+		return NewAppError("Config.IsValid", "model.config.is_valid.sql_conn_max_lifetime_milliseconds.app_error", nil, "", http.StatusBadRequest)
 	}
 
 	if *ss.QueryTimeout <= 0 {
@@ -2341,7 +2403,7 @@ func (mes *MessageExportSettings) isValid(fs FileSettings) *AppError {
 			return NewAppError("Config.IsValid", "model.config.is_valid.message_export.daily_runtime.app_error", nil, err.Error(), http.StatusBadRequest)
 		} else if mes.BatchSize == nil || *mes.BatchSize < 0 {
 			return NewAppError("Config.IsValid", "model.config.is_valid.message_export.batch_size.app_error", nil, "", http.StatusBadRequest)
-		} else if mes.ExportFormat == nil || (*mes.ExportFormat != COMPLIANCE_EXPORT_TYPE_ACTIANCE && *mes.ExportFormat != COMPLIANCE_EXPORT_TYPE_GLOBALRELAY) {
+		} else if mes.ExportFormat == nil || (*mes.ExportFormat != COMPLIANCE_EXPORT_TYPE_ACTIANCE && *mes.ExportFormat != COMPLIANCE_EXPORT_TYPE_GLOBALRELAY && *mes.ExportFormat != COMPLIANCE_EXPORT_TYPE_CSV) {
 			return NewAppError("Config.IsValid", "model.config.is_valid.message_export.export_type.app_error", nil, "", http.StatusBadRequest)
 		}
 
@@ -2366,7 +2428,7 @@ func (mes *MessageExportSettings) isValid(fs FileSettings) *AppError {
 
 func (ds *DisplaySettings) isValid() *AppError {
 	if len(*ds.CustomUrlSchemes) != 0 {
-		validProtocolPattern := regexp.MustCompile(`(?i)^\s*[a-z][a-z0-9+.-]*\s*$`)
+		validProtocolPattern := regexp.MustCompile(`(?i)^\s*[a-z][a-z0-9-]*\s*$`)
 
 		for _, scheme := range *ds.CustomUrlSchemes {
 			if !validProtocolPattern.MatchString(scheme) {
