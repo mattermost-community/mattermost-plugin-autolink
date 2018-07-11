@@ -87,6 +87,8 @@ const (
 	SERVICE_SETTINGS_DEFAULT_MAX_LOGIN_ATTEMPTS = 10
 	SERVICE_SETTINGS_DEFAULT_ALLOW_CORS_FROM    = ""
 	SERVICE_SETTINGS_DEFAULT_LISTEN_AND_ADDRESS = ":8065"
+	SERVICE_SETTINGS_DEFAULT_GFYCAT_API_KEY     = "2_KtH_W5"
+	SERVICE_SETTINGS_DEFAULT_GFYCAT_API_SECRET  = "3wLVZPiswc3DnaiaFoLkDvB4X0IV6CpMkj4tf2inJRsBY6-FnkT08zGmppWFgeof"
 
 	TEAM_SETTINGS_DEFAULT_MAX_USERS_PER_TEAM       = 50
 	TEAM_SETTINGS_DEFAULT_CUSTOM_BRAND_TEXT        = ""
@@ -235,9 +237,19 @@ type ServiceSettings struct {
 	EnableAPITeamDeletion                             *bool
 	ExperimentalEnableHardenedMode                    *bool
 	ExperimentalLimitClientConfig                     *bool
+	EnableEmailInvitations                            *bool
 }
 
 func (s *ServiceSettings) SetDefaults() {
+	if s.EnableEmailInvitations == nil {
+		// If the site URL is also not present then assume this is a clean install
+		if s.SiteURL == nil {
+			s.EnableEmailInvitations = NewBool(false)
+		} else {
+			s.EnableEmailInvitations = NewBool(true)
+		}
+	}
+
 	if s.SiteURL == nil {
 		s.SiteURL = NewString(SERVICE_SETTINGS_DEFAULT_SITE_URL)
 	}
@@ -417,15 +429,15 @@ func (s *ServiceSettings) SetDefaults() {
 	}
 
 	if s.EnableGifPicker == nil {
-		s.EnableGifPicker = NewBool(true)
+		s.EnableGifPicker = NewBool(false)
 	}
 
-	if s.GfycatApiKey == nil {
-		s.GfycatApiKey = NewString("")
+	if s.GfycatApiKey == nil || *s.GfycatApiKey == "" {
+		s.GfycatApiKey = NewString(SERVICE_SETTINGS_DEFAULT_GFYCAT_API_KEY)
 	}
 
-	if s.GfycatApiSecret == nil {
-		s.GfycatApiSecret = NewString("")
+	if s.GfycatApiSecret == nil || *s.GfycatApiSecret == "" {
+		s.GfycatApiSecret = NewString(SERVICE_SETTINGS_DEFAULT_GFYCAT_API_SECRET)
 	}
 
 	if s.RestrictCustomEmojiCreation == nil {
@@ -772,8 +784,8 @@ func (s *FileSettings) SetDefaults() {
 	}
 
 	if s.InitialFont == "" {
-		// Defaults to "luximbi.ttf"
-		s.InitialFont = "luximbi.ttf"
+		// Defaults to "nunito-bold.ttf"
+		s.InitialFont = "nunito-bold.ttf"
 	}
 
 	if s.Directory == "" {
@@ -1715,7 +1727,7 @@ type PluginSettings struct {
 	EnableUploads   *bool
 	Directory       *string
 	ClientDirectory *string
-	Plugins         map[string]interface{}
+	Plugins         map[string]map[string]interface{}
 	PluginStates    map[string]*PluginState
 }
 
@@ -1745,7 +1757,7 @@ func (s *PluginSettings) SetDefaults() {
 	}
 
 	if s.Plugins == nil {
-		s.Plugins = make(map[string]interface{})
+		s.Plugins = make(map[string]map[string]interface{})
 	}
 
 	if s.PluginStates == nil {
@@ -2416,7 +2428,7 @@ func (mes *MessageExportSettings) isValid(fs FileSettings) *AppError {
 
 func (ds *DisplaySettings) isValid() *AppError {
 	if len(*ds.CustomUrlSchemes) != 0 {
-		validProtocolPattern := regexp.MustCompile(`(?i)^\s*[a-z][a-z0-9+.-]*\s*$`)
+		validProtocolPattern := regexp.MustCompile(`(?i)^\s*[a-z][a-z0-9-]*\s*$`)
 
 		for _, scheme := range *ds.CustomUrlSchemes {
 			if !validProtocolPattern.MatchString(scheme) {

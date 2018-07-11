@@ -44,7 +44,7 @@
   revision = "3520598351bb3500a49ae9563f5539666ae0a27c"
 
 [[projects]]
-  branch = "plugins-2"
+  branch = "master"
   name = "github.com/mattermost/mattermost-server"
   packages = [
     "mlog",
@@ -55,7 +55,7 @@
     "utils/jsonutils",
     "utils/markdown"
   ]
-  revision = "4c1ddcff10b359baf5728b334acb60cc3e1b1123"
+  revision = "6c7dc2d29ccac5f9925402f6be1a4c2a3c46c005"
 
 [[projects]]
   branch = "master"
@@ -244,6 +244,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "652a69b0e8f24091109fc3e0119034377b2e3880fd0a3c9b3cc1941f9a0f6422"
+  inputs-digest = "02037b4851f4d827f622f1ab5306f8757d15be46221fde9157ce861a72187614"
   solver-name = "gps-cdcl"
   solver-version = 1
