@@ -4,7 +4,7 @@ This plugin creates regular expression (regexp) patterns that are reformatted in
 
 Use it to add custom auto-linking on your Mattermost system, such as adding links to your issue tracker based on the regexp patterns.
 
-**Supported Mattermost Server Versions: 5.0+**
+**Supported Mattermost Server Versions: 5.2+ for 0.3+. 5.0+ for all versions before 0.3**
 
 ## Installation
 
