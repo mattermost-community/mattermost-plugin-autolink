@@ -1,13 +1,14 @@
 package main
 
 import (
-	"strings"
+	"fmt"
 	"sync/atomic"
 
 	"github.com/mattermost/mattermost-server/mlog"
 
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/mattermost/mattermost-server/utils/markdown"
 )
 
 // Plugin the main struct for everything
@@ -44,44 +45,42 @@ func (p *Plugin) OnConfigurationChange() error {
 // to the database.
 func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
 	links := p.links.Load().([]*AutoLinker)
+	postText := post.Message
+	offset := 0
+	markdown.Inspect(post.Message, func(node interface{}) bool {
+		switch node.(type) {
+		// never descend into the text content of a link/image
+		case *markdown.InlineLink:
+			return false
+		case *markdown.InlineImage:
+			return false
+		case *markdown.ReferenceLink:
+			return false
+		case *markdown.ReferenceImage:
+			return false
+		}
 
-	cbMessages := make([]string, 0)
-	codeBlocks := strings.Split(post.Message, "```")
-	codeBlockSkip := false
-
-	// split and turn linker on/off if we think we're in a code block like ```hello```
-	for _, cb := range codeBlocks {
-		if codeBlockSkip {
-			cbMessages = append(cbMessages, cb)
-			codeBlockSkip = false
-		} else {
-			// split and turn linker on/off if we think we're in a inline code block like `hello`
-			icbMessages := make([]string, 0)
-			icodeBlocks := strings.Split(cb, "`")
-			icodeBlockSkip := false
-			for _, icb := range icodeBlocks {
-				if icodeBlockSkip {
-					icbMessages = append(icbMessages, icb)
-					icodeBlockSkip = false
-				} else {
-					for _, l := range links {
-						icb = l.Replace(icb)
-					}
-					icbMessages = append(icbMessages, icb)
-					icodeBlockSkip = true
-				}
+		if textNode, ok := node.(*markdown.Text); ok {
+			startPos, endPos := textNode.Range.Position+offset, textNode.Range.End+offset
+			origText := postText[startPos:endPos]
+			if textNode.Text != origText {
+				mlog.Error(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", textNode.Text, origText))
+				return true
 			}
 
-			cbMessages = append(cbMessages, strings.Join(icbMessages, "`"))
-			codeBlockSkip = true
+			newText := origText
+			for _, l := range links {
+				newText = l.Replace(newText)
+			}
+
+			if origText != newText {
+				postText = postText[:startPos] + newText + postText[endPos:]
+				offset += len(newText) - len(origText)
+			}
 		}
-	}
-
-	post.Message = strings.Join(cbMessages, "```")
-
-	// for _, l := range links {
-	// 	post.Message = l.Replace(post.Message)
-	// }
+		return true
+	})
+	post.Message = postText
 
 	return post, ""
 }

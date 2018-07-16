@@ -36,12 +36,17 @@ func TestPlugin(t *testing.T) {
 	}
 }
 
-func TestCodeBlock(t *testing.T) {
-
+func TestSpecialCases(t *testing.T) {
 	links := make([]*Link, 0)
 	links = append(links, &Link{
 		Pattern:  "(Mattermost)",
 		Template: "[Mattermost](https://mattermost.com)",
+	}, &Link{
+		Pattern:  "(Example)",
+		Template: "[Example](https://example.com)",
+	}, &Link{
+		Pattern:  "(foobar)",
+		Template: "fb",
 	})
 	validConfiguration := Configuration{links}
 
@@ -128,6 +133,58 @@ func TestCodeBlock(t *testing.T) {
 		{
 			"```\n` Mattermost `\n```\nMattermost",
 			"```\n` Mattermost `\n```\n[Mattermost](https://mattermost.com)",
+		},
+		{
+			"  Mattermost",
+			"  [Mattermost](https://mattermost.com)",
+		},
+		{
+			"    Mattermost",
+			"    Mattermost",
+		},
+		{
+			"    ```\nMattermost\n    ```",
+			"    ```\n[Mattermost](https://mattermost.com)\n    ```",
+		},
+		{
+			"` ``` `\nMattermost\n` ``` `",
+			"` ``` `\n[Mattermost](https://mattermost.com)\n` ``` `",
+		},
+		{
+			"Mattermost \n Mattermost",
+			"[Mattermost](https://mattermost.com) \n [Mattermost](https://mattermost.com)",
+		},
+		{
+			"[Mattermost](https://mattermost.com)",
+			"[Mattermost](https://mattermost.com)",
+		},
+		{
+			"[  Mattermost  ](https://mattermost.com)",
+			"[  Mattermost  ](https://mattermost.com)",
+		},
+		{
+			"[  Mattermost  ][1]\n\n[1]: https://mattermost.com",
+			"[  Mattermost  ][1]\n\n[1]: https://mattermost.com",
+		},
+		{
+			"![  Mattermost  ](https://mattermost.com/example.png)",
+			"![  Mattermost  ](https://mattermost.com/example.png)",
+		},
+		{
+			"![  Mattermost  ][1]\n\n[1]: https://mattermost.com/example.png",
+			"![  Mattermost  ][1]\n\n[1]: https://mattermost.com/example.png",
+		},
+		{
+			"foobar\nExample\nfoobar Mattermost",
+			"fb\n[Example](https://example.com)\nfb [Mattermost](https://mattermost.com)",
+		},
+		{
+			"foobar",
+			"fb",
+		},
+		{
+			"foobarfoobar",
+			"foobarfoobar",
 		},
 	}
 
