@@ -55,7 +55,7 @@
     "utils/jsonutils",
     "utils/markdown"
   ]
-  revision = "6c7dc2d29ccac5f9925402f6be1a4c2a3c46c005"
+  revision = "88eef609ab712097ff2b13a2ca45c31ea6fa7df2"
 
 [[projects]]
   branch = "master"
@@ -244,6 +244,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "02037b4851f4d827f622f1ab5306f8757d15be46221fde9157ce861a72187614"
+  inputs-digest = "f47e705a6750291adc5b52676ac736cea7c107c788e69f77a8d110e3c2786dc0"
   solver-name = "gps-cdcl"
   solver-version = 1
