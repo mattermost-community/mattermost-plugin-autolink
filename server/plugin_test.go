@@ -186,6 +186,14 @@ func TestSpecialCases(t *testing.T) {
 			"foobarfoobar",
 			"foobarfoobar",
 		},
+		{
+			"foobar & foobar",
+			"fb & fb",
+		},
+		{
+			"foobar & foobar\nfoobar & foobar\nfoobar & foobar",
+			"fb & fb\nfb & fb\nfb & fb",
+		},
 	}
 
 	for _, tt := range tests {
