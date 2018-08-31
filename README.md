@@ -78,5 +78,12 @@ Below is an example of regexp patterns used for autolinking, modified in the `co
         },
     },
     ...
-}
+    "PluginStates": {
+        ...
+        "mattermost-autolink": {
+            "Enable": true
+        },
+        ...
+    }
+},
 ```
