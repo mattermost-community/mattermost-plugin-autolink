@@ -23,7 +23,7 @@ func NewAutoLinker(link *Link) (*AutoLinker, error) {
 	}
 
 	if !link.DisableNonWordSuffix {
-		link.Pattern = link.Pattern + "(?P<DisableNonWordSuffix>$|\\s|\\.|\\!|\\?)"
+		link.Pattern = link.Pattern + "(?P<DisableNonWordSuffix>$|\\s|\\.|\\!|\\?|\\,)"
 		link.Template = link.Template + "${DisableNonWordSuffix}"
 	}
 
