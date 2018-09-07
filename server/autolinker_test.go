@@ -55,6 +55,22 @@ func TestAutolink(t *testing.T) {
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
+			"Link in brackets should link (see MM-12345)",
+			"Link in brackets should link (see [MM-12345](https://mattermost.atlassian.net/browse/MM-12345))",
+		},
+		{
+			&Link{
+				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
+				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+			},
+			"Link a ticket MM-12345, before a comma",
+			"Link a ticket [MM-12345](https://mattermost.atlassian.net/browse/MM-12345), before a comma",
+		},
+		{
+			&Link{
+				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
+				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+			},
 			"MM-12345 should link!",
 			"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 		},
