@@ -31,9 +31,9 @@ gofmt:
 test:
 	go test -v -coverprofile=coverage.txt ./...
 
-vendor: server/Gopkg.lock
-	@echo Run this to updated the go lang dependencies after a major release
-	cd server && dep ensure -update
+vendor: server/Gopkg.toml
+	cd server && go get -u github.com/golang/dep/cmd/dep
+	cd server && $(shell go env GOPATH)/bin/dep ensure
 
 dist: check-style
 	@echo Building plugin
