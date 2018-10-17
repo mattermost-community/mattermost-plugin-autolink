@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -16,14 +17,18 @@ import (
 )
 
 type supervisor struct {
-	pluginId    string
 	client      *plugin.Client
 	hooks       Hooks
 	implemented [TotalHooksId]bool
 }
 
-func newSupervisor(pluginInfo *model.BundleInfo, parentLogger *mlog.Logger, apiImpl API) (*supervisor, error) {
+func newSupervisor(pluginInfo *model.BundleInfo, parentLogger *mlog.Logger, apiImpl API) (retSupervisor *supervisor, retErr error) {
 	supervisor := supervisor{}
+	defer func() {
+		if retErr != nil {
+			supervisor.Shutdown()
+		}
+	}()
 
 	wrappedLogger := pluginInfo.WrapLogger(parentLogger)
 
@@ -39,7 +44,10 @@ func newSupervisor(pluginInfo *model.BundleInfo, parentLogger *mlog.Logger, apiI
 		},
 	}
 
-	executable := filepath.Clean(filepath.Join(".", pluginInfo.Manifest.Backend.Executable))
+	executable := filepath.Clean(filepath.Join(
+		".",
+		pluginInfo.Manifest.GetExecutableForRuntime(runtime.GOOS, runtime.GOARCH),
+	))
 	if strings.HasPrefix(executable, "..") {
 		return nil, fmt.Errorf("invalid backend executable")
 	}
@@ -86,7 +94,9 @@ func newSupervisor(pluginInfo *model.BundleInfo, parentLogger *mlog.Logger, apiI
 }
 
 func (sup *supervisor) Shutdown() {
-	sup.client.Kill()
+	if sup.client != nil {
+		sup.client.Kill()
+	}
 }
 
 func (sup *supervisor) Hooks() Hooks {

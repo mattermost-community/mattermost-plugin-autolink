@@ -17,6 +17,7 @@ const (
 	OAUTH_ACTION_EMAIL_TO_SSO = "email_to_sso"
 	OAUTH_ACTION_SSO_TO_EMAIL = "sso_to_email"
 	OAUTH_ACTION_MOBILE       = "mobile"
+	OAUTH_ACTION_CLIENT       = "client"
 )
 
 type OAuthApp struct {
@@ -108,7 +109,6 @@ func (a *OAuthApp) PreUpdate() {
 	a.UpdateAt = GetMillis()
 }
 
-// ToJson convert a User to a json string
 func (a *OAuthApp) ToJson() string {
 	b, _ := json.Marshal(a)
 	return string(b)
@@ -134,7 +134,6 @@ func (a *OAuthApp) IsValidRedirectURL(url string) bool {
 	return false
 }
 
-// OAuthAppFromJson will decode the input and return a User
 func OAuthAppFromJson(data io.Reader) *OAuthApp {
 	var app *OAuthApp
 	json.NewDecoder(data).Decode(&app)

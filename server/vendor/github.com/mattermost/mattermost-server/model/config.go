@@ -6,9 +6,12 @@ package model
 import (
 	"encoding/json"
 	"io"
+	"math"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -97,6 +100,8 @@ const (
 
 	SQL_SETTINGS_DEFAULT_DATA_SOURCE = "mmuser:mostest@tcp(dockerhost:3306)/mattermost_test?charset=utf8mb4,utf8&readTimeout=30s&writeTimeout=30s"
 
+	FILE_SETTINGS_DEFAULT_DIRECTORY = "./data/"
+
 	EMAIL_SETTINGS_DEFAULT_FEEDBACK_ORGANIZATION = ""
 
 	SUPPORT_SETTINGS_DEFAULT_TERMS_OF_SERVICE_LINK = "https://about.mattermost.com/default-terms/"
@@ -115,6 +120,7 @@ const (
 	LDAP_SETTINGS_DEFAULT_POSITION_ATTRIBUTE   = ""
 	LDAP_SETTINGS_DEFAULT_LOGIN_FIELD_NAME     = ""
 
+	SAML_SETTINGS_DEFAULT_ID_ATTRIBUTE         = ""
 	SAML_SETTINGS_DEFAULT_FIRST_NAME_ATTRIBUTE = ""
 	SAML_SETTINGS_DEFAULT_LAST_NAME_ATTRIBUTE  = ""
 	SAML_SETTINGS_DEFAULT_EMAIL_ATTRIBUTE      = ""
@@ -201,6 +207,9 @@ type ServiceSettings struct {
 	EnforceMultifactorAuthentication                  *bool
 	EnableUserAccessTokens                            *bool
 	AllowCorsFrom                                     *string
+	CorsExposedHeaders                                *string
+	CorsAllowCredentials                              *bool
+	CorsDebug                                         *bool
 	AllowCookiesForSubdomains                         *bool
 	SessionLengthWebInDays                            *int
 	SessionLengthMobileInDays                         *int
@@ -231,6 +240,7 @@ type ServiceSettings struct {
 	EnableTutorial                                    *bool
 	ExperimentalEnableDefaultChannelLeaveJoinMessages *bool
 	ExperimentalGroupUnreadChannels                   *string
+	ExperimentalChannelOrganization                   *bool
 	ImageProxyType                                    *string
 	ImageProxyURL                                     *string
 	ImageProxyOptions                                 *string
@@ -410,6 +420,18 @@ func (s *ServiceSettings) SetDefaults() {
 		s.AllowCorsFrom = NewString(SERVICE_SETTINGS_DEFAULT_ALLOW_CORS_FROM)
 	}
 
+	if s.CorsExposedHeaders == nil {
+		s.CorsExposedHeaders = NewString("")
+	}
+
+	if s.CorsAllowCredentials == nil {
+		s.CorsAllowCredentials = NewBool(false)
+	}
+
+	if s.CorsDebug == nil {
+		s.CorsDebug = NewBool(false)
+	}
+
 	if s.AllowCookiesForSubdomains == nil {
 		s.AllowCookiesForSubdomains = NewBool(false)
 	}
@@ -474,6 +496,11 @@ func (s *ServiceSettings) SetDefaults() {
 		s.ExperimentalGroupUnreadChannels = NewString(GROUP_UNREAD_CHANNELS_DISABLED)
 	} else if *s.ExperimentalGroupUnreadChannels == "1" {
 		s.ExperimentalGroupUnreadChannels = NewString(GROUP_UNREAD_CHANNELS_DEFAULT_ON)
+	}
+
+	if s.ExperimentalChannelOrganization == nil {
+		experimentalUnreadEnabled := *s.ExperimentalGroupUnreadChannels != GROUP_UNREAD_CHANNELS_DISABLED
+		s.ExperimentalChannelOrganization = NewBool(experimentalUnreadEnabled)
 	}
 
 	if s.ImageProxyType == nil {
@@ -617,16 +644,17 @@ type SSOSettings struct {
 }
 
 type SqlSettings struct {
-	DriverName                  *string
-	DataSource                  *string
-	DataSourceReplicas          []string
-	DataSourceSearchReplicas    []string
-	MaxIdleConns                *int
-	ConnMaxLifetimeMilliseconds *int
-	MaxOpenConns                *int
-	Trace                       bool
-	AtRestEncryptKey            string
-	QueryTimeout                *int
+	DriverName                          *string
+	DataSource                          *string
+	DataSourceReplicas                  []string
+	DataSourceSearchReplicas            []string
+	MaxIdleConns                        *int
+	ConnMaxLifetimeMilliseconds         *int
+	MaxOpenConns                        *int
+	Trace                               bool
+	AtRestEncryptKey                    string
+	QueryTimeout                        *int
+	EnablePublicChannelsMaterialization *bool
 }
 
 func (s *SqlSettings) SetDefaults() {
@@ -656,6 +684,10 @@ func (s *SqlSettings) SetDefaults() {
 
 	if s.QueryTimeout == nil {
 		s.QueryTimeout = NewInt(30)
+	}
+
+	if s.EnablePublicChannelsMaterialization == nil {
+		s.EnablePublicChannelsMaterialization = NewBool(true)
 	}
 }
 
@@ -789,7 +821,7 @@ func (s *FileSettings) SetDefaults() {
 	}
 
 	if s.Directory == "" {
-		s.Directory = "./data/"
+		s.Directory = FILE_SETTINGS_DEFAULT_DIRECTORY
 	}
 }
 
@@ -907,6 +939,21 @@ func (s *EmailSettings) SetDefaults() {
 	}
 }
 
+type ExtensionSettings struct {
+	EnableExperimentalExtensions *bool
+	AllowedExtensionsIDs         []string
+}
+
+func (s *ExtensionSettings) SetDefaults() {
+	if s.EnableExperimentalExtensions == nil {
+		s.EnableExperimentalExtensions = NewBool(false)
+	}
+
+	if s.AllowedExtensionsIDs == nil {
+		s.AllowedExtensionsIDs = []string{}
+	}
+}
+
 type RateLimitSettings struct {
 	Enable           *bool
 	PerSec           *int
@@ -949,12 +996,13 @@ type PrivacySettings struct {
 }
 
 type SupportSettings struct {
-	TermsOfServiceLink *string
-	PrivacyPolicyLink  *string
-	AboutLink          *string
-	HelpLink           *string
-	ReportAProblemLink *string
-	SupportEmail       *string
+	TermsOfServiceLink          *string
+	PrivacyPolicyLink           *string
+	AboutLink                   *string
+	HelpLink                    *string
+	ReportAProblemLink          *string
+	SupportEmail                *string
+	CustomTermsOfServiceEnabled *bool
 }
 
 func (s *SupportSettings) SetDefaults() {
@@ -1000,6 +1048,10 @@ func (s *SupportSettings) SetDefaults() {
 
 	if s.SupportEmail == nil {
 		s.SupportEmail = NewString(SUPPORT_SETTINGS_DEFAULT_SUPPORT_EMAIL)
+	}
+
+	if s.CustomTermsOfServiceEnabled == nil {
+		s.CustomTermsOfServiceEnabled = NewBool(false)
 	}
 }
 
@@ -1084,10 +1136,12 @@ type TeamSettings struct {
 	MaxNotificationsPerChannel          *int64
 	EnableConfirmNotificationsToChannel *bool
 	TeammateNameDisplay                 *string
+	ExperimentalViewArchivedChannels    *bool
 	ExperimentalEnableAutomaticReplies  *bool
 	ExperimentalHideTownSquareinLHS     *bool
 	ExperimentalTownSquareIsReadOnly    *bool
 	ExperimentalPrimaryTeam             *string
+	ExperimentalDefaultChannels         []string
 }
 
 func (s *TeamSettings) SetDefaults() {
@@ -1200,6 +1254,10 @@ func (s *TeamSettings) SetDefaults() {
 		s.ExperimentalPrimaryTeam = NewString("")
 	}
 
+	if s.ExperimentalDefaultChannels == nil {
+		s.ExperimentalDefaultChannels = []string{}
+	}
+
 	if s.EnableTeamCreation == nil {
 		s.EnableTeamCreation = NewBool(true)
 	}
@@ -1208,6 +1266,9 @@ func (s *TeamSettings) SetDefaults() {
 		s.EnableUserCreation = NewBool(true)
 	}
 
+	if s.ExperimentalViewArchivedChannels == nil {
+		s.ExperimentalViewArchivedChannels = NewBool(false)
+	}
 }
 
 type ClientRequirements struct {
@@ -1406,8 +1467,9 @@ func (s *LocalizationSettings) SetDefaults() {
 
 type SamlSettings struct {
 	// Basic
-	Enable             *bool
-	EnableSyncWithLdap *bool
+	Enable                        *bool
+	EnableSyncWithLdap            *bool
+	EnableSyncWithLdapIncludeAuth *bool
 
 	Verify  *bool
 	Encrypt *bool
@@ -1424,6 +1486,7 @@ type SamlSettings struct {
 	PrivateKeyFile        *string
 
 	// User Mapping
+	IdAttribute        *string
 	FirstNameAttribute *string
 	LastNameAttribute  *string
 	EmailAttribute     *string
@@ -1446,6 +1509,10 @@ func (s *SamlSettings) SetDefaults() {
 
 	if s.EnableSyncWithLdap == nil {
 		s.EnableSyncWithLdap = NewBool(false)
+	}
+
+	if s.EnableSyncWithLdapIncludeAuth == nil {
+		s.EnableSyncWithLdapIncludeAuth = NewBool(false)
 	}
 
 	if s.Verify == nil {
@@ -1490,6 +1557,10 @@ func (s *SamlSettings) SetDefaults() {
 
 	if s.LoginButtonText == nil || *s.LoginButtonText == "" {
 		s.LoginButtonText = NewString(USER_AUTH_SERVICE_SAML_TEXT)
+	}
+
+	if s.IdAttribute == nil {
+		s.IdAttribute = NewString(SAML_SETTINGS_DEFAULT_ID_ATTRIBUTE)
 	}
 
 	if s.FirstNameAttribute == nil {
@@ -1870,6 +1941,7 @@ type Config struct {
 	PasswordSettings      PasswordSettings
 	FileSettings          FileSettings
 	EmailSettings         EmailSettings
+	ExtensionSettings     ExtensionSettings
 	RateLimitSettings     RateLimitSettings
 	PrivacySettings       PrivacySettings
 	SupportSettings       SupportSettings
@@ -1967,6 +2039,7 @@ func (o *Config) SetDefaults() {
 	o.MessageExportSettings.SetDefaults()
 	o.TimezoneSettings.SetDefaults()
 	o.DisplaySettings.SetDefaults()
+	o.ExtensionSettings.SetDefaults()
 }
 
 func (o *Config) IsValid() *AppError {
@@ -2307,7 +2380,15 @@ func (ss *ServiceSettings) isValid() *AppError {
 		}
 	}
 
-	if len(*ss.ListenAddress) == 0 {
+	host, port, _ := net.SplitHostPort(*ss.ListenAddress)
+	var isValidHost bool
+	if host == "" {
+		isValidHost = true
+	} else {
+		isValidHost = (net.ParseIP(host) != nil) || IsDomainName(host)
+	}
+	portInt, err := strconv.Atoi(port)
+	if err != nil || !isValidHost || portInt < 0 || portInt > math.MaxUint16 {
 		return NewAppError("Config.IsValid", "model.config.is_valid.listen_address.app_error", nil, "", http.StatusBadRequest)
 	}
 

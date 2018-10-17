@@ -25,11 +25,17 @@ type API interface {
 	// UnregisterCommand unregisters a command previously registered via RegisterCommand.
 	UnregisterCommand(teamId, trigger string) error
 
+	// GetSession returns the session object for the Session ID
+	GetSession(sessionId string) (*model.Session, *model.AppError)
+
 	// GetConfig fetches the currently persisted config
 	GetConfig() *model.Config
 
 	// SaveConfig sets the given config and persists the changes
 	SaveConfig(config *model.Config) *model.AppError
+
+	// GetServerVersion return the current Mattermost server version
+	GetServerVersion() string
 
 	// CreateUser creates a user.
 	CreateUser(user *model.User) (*model.User, *model.AppError)
@@ -48,6 +54,22 @@ type API interface {
 
 	// UpdateUser updates a user.
 	UpdateUser(user *model.User) (*model.User, *model.AppError)
+
+	// GetUserStatus will get a user's status.
+	GetUserStatus(userId string) (*model.Status, *model.AppError)
+
+	// GetUserStatusesByIds will return a list of user statuses based on the provided slice of user IDs.
+	GetUserStatusesByIds(userIds []string) ([]*model.Status, *model.AppError)
+
+	// UpdateUserStatus will set a user's status until the user, or another integration/plugin, sets it back to online.
+	// The status parameter can be: "online", "away", "dnd", or "offline".
+	UpdateUserStatus(userId, status string) (*model.Status, *model.AppError)
+
+	// GetLDAPUserAttributes will return LDAP attributes for a user.
+	// The attributes parameter should be a list of attributes to pull.
+	// Returns a map with attribute names as keys and the user's attributes as values.
+	// Requires an enterprise license, LDAP to be configured and for the user to use LDAP as an authentication method.
+	GetLDAPUserAttributes(userId string, attributes []string) (map[string]string, *model.AppError)
 
 	// CreateTeam creates a team.
 	CreateTeam(team *model.Team) (*model.Team, *model.AppError)
@@ -91,14 +113,17 @@ type API interface {
 	// DeleteChannel deletes a channel.
 	DeleteChannel(channelId string) *model.AppError
 
-	// GetChannels gets a list of all channels.
+	// GetPublicChannelsForTeam gets a list of all channels.
 	GetPublicChannelsForTeam(teamId string, offset, limit int) (*model.ChannelList, *model.AppError)
 
 	// GetChannel gets a channel.
 	GetChannel(channelId string) (*model.Channel, *model.AppError)
 
-	// GetChannelByName gets a channel by its name.
-	GetChannelByName(name, teamId string) (*model.Channel, *model.AppError)
+	// GetChannelByName gets a channel by its name, given a team id.
+	GetChannelByName(teamId, name string, includeDeleted bool) (*model.Channel, *model.AppError)
+
+	// GetChannelByNameForTeamName gets a channel by its name, given a team name.
+	GetChannelByNameForTeamName(teamName, channelName string, includeDeleted bool) (*model.Channel, *model.AppError)
 
 	// GetDirectChannel gets a direct message channel.
 	GetDirectChannel(userId1, userId2 string) (*model.Channel, *model.AppError)
@@ -127,6 +152,15 @@ type API interface {
 	// CreatePost creates a post.
 	CreatePost(post *model.Post) (*model.Post, *model.AppError)
 
+	// AddReaction add a reaction to a post.
+	AddReaction(reaction *model.Reaction) (*model.Reaction, *model.AppError)
+
+	// RemoveReaction remove a reaction from a post.
+	RemoveReaction(reaction *model.Reaction) *model.AppError
+
+	// GetReaction get the reactions of a post.
+	GetReactions(postId string) ([]*model.Reaction, *model.AppError)
+
 	// SendEphemeralPost creates an ephemeral post.
 	SendEphemeralPost(userId string, post *model.Post) *model.Post
 
@@ -139,13 +173,27 @@ type API interface {
 	// UpdatePost updates a post.
 	UpdatePost(post *model.Post) (*model.Post, *model.AppError)
 
-	// Set will store a key-value pair, unique per plugin.
+	// CopyFileInfos duplicates the FileInfo objects referenced by the given file ids,
+	// recording the given user id as the new creator and returning the new set of file ids.
+	//
+	// The duplicate FileInfo objects are not initially linked to a post, but may now be passed
+	// to CreatePost. Use this API to duplicate a post and its file attachments without
+	// actually duplicating the uploaded files.
+	CopyFileInfos(userId string, fileIds []string) ([]string, *model.AppError)
+
+	// GetFileInfo gets a File Info for a specific fileId
+	GetFileInfo(fileId string) (*model.FileInfo, *model.AppError)
+
+	// ReadFileAtPath reads the file from the backend for a specific path
+	ReadFile(path string) ([]byte, *model.AppError)
+
+	// KVSet will store a key-value pair, unique per plugin.
 	KVSet(key string, value []byte) *model.AppError
 
-	// Get will retrieve a value based on the key. Returns nil for non-existent keys.
+	// KVGet will retrieve a value based on the key. Returns nil for non-existent keys.
 	KVGet(key string) ([]byte, *model.AppError)
 
-	// Delete will remove a key-value pair. Returns nil for non-existent keys.
+	// KVDelete will remove a key-value pair. Returns nil for non-existent keys.
 	KVDelete(key string) *model.AppError
 
 	// PublishWebSocketEvent sends an event to WebSocket connections.
@@ -153,6 +201,15 @@ type API interface {
 	// payload is the data sent with the event. Interface values must be primitive Go types or mattermost-server/model types
 	// broadcast determines to which users to send the event
 	PublishWebSocketEvent(event string, payload map[string]interface{}, broadcast *model.WebsocketBroadcast)
+
+	// HasPermissionTo check if the user has the permission at system scope.
+	HasPermissionTo(userId string, permission *model.Permission) bool
+
+	// HasPermissionToTeam check if the user has the permission at team scope.
+	HasPermissionToTeam(userId, teamId string, permission *model.Permission) bool
+
+	// HasPermissionToChannel check if the user has the permission at channel scope.
+	HasPermissionToChannel(userId, channelId string, permission *model.Permission) bool
 
 	// LogDebug writes a log message to the Mattermost server log file.
 	// Appropriate context such as the plugin name will already be added as fields so plugins
