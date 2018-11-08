@@ -1,4 +1,4 @@
-# Autolink Plugin (Beta)
+# Autolink Plugin (Beta) [![Build Status](https://travis-ci.org/mattermost/mattermost-plugin-autolink.svg?branch=master)](https://travis-ci.org/mattermost/mattermost-plugin-autolink)
 
 This plugin creates regular expression (regexp) patterns that are reformatted into a Markdown link before the message is saved into the database.
 
