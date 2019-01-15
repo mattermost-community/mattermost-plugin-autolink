@@ -38,8 +38,14 @@ func TestPlugin(t *testing.T) {
 func TestSpecialCases(t *testing.T) {
 	links := make([]*Link, 0)
 	links = append(links, &Link{
+		Pattern:  "https://mattermost.com",
+		Template: "[the mattermost portal](https://mattermost.com)",
+	}, &Link{
 		Pattern:  "(Mattermost)",
 		Template: "[Mattermost](https://mattermost.com)",
+	}, &Link{
+		Pattern:  "https://mattermost.atlassian.net/browse/MM-(?P<jira_id>\\d+)",
+		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 	}, &Link{
 		Pattern:  "(Example)",
 		Template: "[Example](https://example.com)",
@@ -145,6 +151,12 @@ func TestSpecialCases(t *testing.T) {
 		}, {
 			"![  Mattermost  ][1]\n\n[1]: https://mattermost.com/example.png",
 			"![  Mattermost  ][1]\n\n[1]: https://mattermost.com/example.png",
+		}, {
+			"Why not visit https://mattermost.com?",
+			"Why not visit [the mattermost portal](https://mattermost.com)?",
+		}, {
+			"Please check https://mattermost.atlassian.net/browse/MM-123 for details",
+			"Please check [MM-123](https://mattermost.atlassian.net/browse/MM-123) for details",
 		}, {
 			"foo!bar\nExample\nfoo!bar Mattermost",
 			"fb\n[Example](https://example.com)\nfb [Mattermost](https://mattermost.com)",

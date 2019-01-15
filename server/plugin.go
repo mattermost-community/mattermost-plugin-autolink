@@ -45,8 +45,29 @@ func (p *Plugin) processPost(c *plugin.Context, post *model.Post) (*model.Post, 
 	links := p.links.Load().([]*AutoLinker)
 	postText := post.Message
 	offset := 0
+
+	doReplacements := func(nodeText string, textRange markdown.Range) {
+		startPos, endPos := textRange.Position+offset, textRange.End+offset
+		origText := postText[startPos:endPos]
+		if nodeText != origText {
+			// TODO: ignore if the difference is because of http:// prefix
+			mlog.Error(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", nodeText, origText))
+			return
+		}
+
+		newText := origText
+		for _, l := range links {
+			newText = l.Replace(newText)
+		}
+
+		if origText != newText {
+			postText = postText[:startPos] + newText + postText[endPos:]
+			offset += len(newText) - len(origText)
+		}
+	}
+
 	markdown.Inspect(post.Message, func(node interface{}) bool {
-		switch node.(type) {
+		switch thisnode := node.(type) {
 		// never descend into the text content of a link/image
 		case *markdown.InlineLink:
 			return false
@@ -56,26 +77,12 @@ func (p *Plugin) processPost(c *plugin.Context, post *model.Post) (*model.Post, 
 			return false
 		case *markdown.ReferenceImage:
 			return false
+		case *markdown.Text:
+			doReplacements(thisnode.Text, thisnode.Range)
+		case *markdown.Autolink:
+			doReplacements(thisnode.Destination(), thisnode.RawDestination)
 		}
 
-		if textNode, ok := node.(*markdown.Text); ok {
-			startPos, endPos := textNode.Range.Position+offset, textNode.Range.End+offset
-			origText := postText[startPos:endPos]
-			if textNode.Text != origText {
-				mlog.Error(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", textNode.Text, origText))
-				return true
-			}
-
-			newText := origText
-			for _, l := range links {
-				newText = l.Replace(newText)
-			}
-
-			if origText != newText {
-				postText = postText[:startPos] + newText + postText[endPos:]
-				offset += len(newText) - len(origText)
-			}
-		}
 		return true
 	})
 	post.Message = postText
