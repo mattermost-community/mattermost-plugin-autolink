@@ -171,5 +171,9 @@ func TestSpecialCases(t *testing.T) {
 		rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
 
 		assert.Equal(t, tt.expectedMessage, rpost.Message)
+
+		upost, _ := p.MessageWillBeUpdated(&plugin.Context{}, post, post)
+
+		assert.Equal(t, tt.expectedMessage, upost.Message)
 	}
 }
