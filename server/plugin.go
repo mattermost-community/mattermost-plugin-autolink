@@ -43,48 +43,53 @@ func (p *Plugin) OnConfigurationChange() error {
 
 func (p *Plugin) processPost(c *plugin.Context, post *model.Post) (*model.Post, string) {
 	links := p.links.Load().([]*AutoLinker)
+
 	postText := post.Message
 	offset := 0
 
-	doReplacements := func(nodeText string, textRange markdown.Range) {
+	doReplacements := func(linker *AutoLinker, nodeText string, textRange markdown.Range) bool {
 		startPos, endPos := textRange.Position+offset, textRange.End+offset
 		origText := postText[startPos:endPos]
 		if nodeText != origText {
 			// TODO: ignore if the difference is because of http:// prefix
 			mlog.Error(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", nodeText, origText))
-			return
+			return false
 		}
 
 		newText := origText
-		for _, l := range links {
-			newText = l.Replace(newText)
-		}
+		newText = linker.Replace(newText)
 
 		if origText != newText {
 			postText = postText[:startPos] + newText + postText[endPos:]
 			offset += len(newText) - len(origText)
+			return true
 		}
+
+		return false
 	}
 
-	markdown.Inspect(post.Message, func(node interface{}) bool {
-		switch thisnode := node.(type) {
-		// never descend into the text content of a link/image
-		case *markdown.InlineLink:
-			return false
-		case *markdown.InlineImage:
-			return false
-		case *markdown.ReferenceLink:
-			return false
-		case *markdown.ReferenceImage:
-			return false
-		case *markdown.Text:
-			doReplacements(thisnode.Text, thisnode.Range)
-		case *markdown.Autolink:
-			doReplacements(thisnode.Destination(), thisnode.RawDestination)
-		}
+	for _, l := range links {
+		offset = 0
+		markdown.Inspect(postText, func(node interface{}) bool {
+			switch thisnode := node.(type) {
+			// never descend into the text content of a link/image
+			case *markdown.InlineLink:
+				return false
+			case *markdown.InlineImage:
+				return false
+			case *markdown.ReferenceLink:
+				return false
+			case *markdown.ReferenceImage:
+				return false
+			case *markdown.Text:
+				doReplacements(l, thisnode.Text, thisnode.Range)
+			case *markdown.Autolink:
+				doReplacements(l, thisnode.Destination(), thisnode.RawDestination)
+			}
 
-		return true
-	})
+			return true
+		})
+	}
 	post.Message = postText
 
 	return post, ""

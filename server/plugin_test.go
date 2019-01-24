@@ -47,6 +47,11 @@ func TestSpecialCases(t *testing.T) {
 		Pattern:  "https://mattermost.atlassian.net/browse/MM-(?P<jira_id>\\d+)",
 		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 	}, &Link{
+		Pattern:  "MM-(?P<jira_id>\\d+)",
+		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+		DisableNonWordPrefix: true,
+		DisableNonWordSuffix: true,
+	}, &Link{
 		Pattern:  "(Example)",
 		Template: "[Example](https://example.com)",
 	}, &Link{
@@ -157,6 +162,12 @@ func TestSpecialCases(t *testing.T) {
 		}, {
 			"Please check https://mattermost.atlassian.net/browse/MM-123 for details",
 			"Please check [MM-123](https://mattermost.atlassian.net/browse/MM-123) for details",
+		}, {
+			"Please check MM-123 for details",
+			"Please check [MM-123](https://mattermost.atlassian.net/browse/MM-123) for details",
+		}, {
+			"Please check the ticket (MM-123) for details",
+			"Please check the ticket ([MM-123](https://mattermost.atlassian.net/browse/MM-123)) for details",
 		}, {
 			"foo!bar\nExample\nfoo!bar Mattermost",
 			"fb\n[Example](https://example.com)\nfb [Mattermost](https://mattermost.com)",
