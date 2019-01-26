@@ -66,7 +66,6 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 
 		if autolinkNode, ok := node.(*markdown.Autolink); ok {
 			startPos, endPos = autolinkNode.RawDestination.Position+offset, autolinkNode.RawDestination.End+offset
-
 			origText = postText[startPos:endPos]
 			if autolinkNode.Destination() != origText {
 				mlog.Error(fmt.Sprintf("Markdown autolink did not match range text, '%s' != '%s'", autolinkNode.Destination(), origText))

@@ -44,6 +44,9 @@ func TestSpecialCases(t *testing.T) {
 		Pattern:  "(Example)",
 		Template: "[Example](https://example.com)",
 	}, &Link{
+		Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
+		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+	}, &Link{
 		Pattern:  "(foo!bar)",
 		Template: "fb",
 	})
@@ -160,16 +163,27 @@ func TestSpecialCases(t *testing.T) {
 		}, {
 			"foo!bar & foo!bar\nfoo!bar & foo!bar\nfoo!bar & foo!bar",
 			"fb & fb\nfb & fb\nfb & fb",
+		}, {
+			"https://mattermost.atlassian.net/browse/MM-12345",
+			"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345)",
+		}, {
+			"Welcome https://mattermost.atlassian.net/browse/MM-12345",
+			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345)",
+		}, {
+			"text https://mattermost.atlassian.net/browse/MM-12345 other text",
+			"text [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) other text",
 		},
 	}
 
 	for _, tt := range tests {
-		post := &model.Post{
-			Message: tt.inputMessage,
-		}
+		t.Run(tt.inputMessage, func(t *testing.T) {
+			post := &model.Post{
+				Message: tt.inputMessage,
+			}
 
-		rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
+			rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
 
-		assert.Equal(t, tt.expectedMessage, rpost.Message)
+			assert.Equal(t, tt.expectedMessage, rpost.Message)
+		})
 	}
 }
