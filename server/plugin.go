@@ -60,14 +60,28 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 			return false
 		}
 
-		if textNode, ok := node.(*markdown.Text); ok {
-			startPos, endPos := textNode.Range.Position+offset, textNode.Range.End+offset
-			origText := postText[startPos:endPos]
+		origText := ""
+		startPos := 0
+		endPos := 0
+
+		if autolinkNode, ok := node.(*markdown.Autolink); ok {
+			startPos, endPos = autolinkNode.RawDestination.Position+offset, autolinkNode.RawDestination.End+offset
+
+			origText = postText[startPos:endPos]
+			if autolinkNode.Destination() != origText {
+				mlog.Error(fmt.Sprintf("Markdown autolink did not match range text, '%s' != '%s'", autolinkNode.Destination(), origText))
+				return true
+			}
+		} else if textNode, ok := node.(*markdown.Text); ok {
+			startPos, endPos = textNode.Range.Position+offset, textNode.Range.End+offset
+			origText = postText[startPos:endPos]
 			if textNode.Text != origText {
 				mlog.Error(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", textNode.Text, origText))
 				return true
 			}
+		}
 
+		if origText != "" {
 			newText := origText
 			for _, l := range links {
 				newText = l.Replace(newText)
@@ -78,6 +92,7 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 				offset += len(newText) - len(origText)
 			}
 		}
+
 		return true
 	})
 	post.Message = postText
