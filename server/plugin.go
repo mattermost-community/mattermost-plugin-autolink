@@ -48,7 +48,9 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 	postText := post.Message
 	offset := 0
 	markdown.Inspect(post.Message, func(node interface{}) bool {
-		switch node.(type) {
+		var textNode *markdown.Text
+
+		switch typedNode := node.(type) {
 		// never descend into the text content of a link/image
 		case *markdown.InlineLink:
 			return false
@@ -58,9 +60,13 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 			return false
 		case *markdown.ReferenceImage:
 			return false
+		case *markdown.Autolink:
+			textNode = typedNode.Children[0].(*markdown.Text)
+		case *markdown.Text:
+			textNode = typedNode
 		}
 
-		if textNode, ok := node.(*markdown.Text); ok {
+		if textNode != nil {
 			startPos, endPos := textNode.Range.Position+offset, textNode.Range.End+offset
 			origText := postText[startPos:endPos]
 			if textNode.Text != origText {

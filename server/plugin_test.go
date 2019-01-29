@@ -46,6 +46,9 @@ func TestSpecialCases(t *testing.T) {
 	}, &Link{
 		Pattern:  "(foo!bar)",
 		Template: "fb",
+	}, &Link{
+		Pattern:  "https://mattermost.com",
+		Template: "[Mattermost](https://mattermost.com)",
 	})
 	validConfiguration := Configuration{links}
 
@@ -160,6 +163,15 @@ func TestSpecialCases(t *testing.T) {
 		}, {
 			"foo!bar & foo!bar\nfoo!bar & foo!bar\nfoo!bar & foo!bar",
 			"fb & fb\nfb & fb\nfb & fb",
+		}, {
+			"https://mattermost.com",
+			"[Mattermost](https://mattermost.com)",
+		}, {
+			"Check out https://mattermost.com",
+			"Check out [Mattermost](https://mattermost.com)",
+		}, {
+			"Check out Mattermost on https://mattermost.com",
+			"Check out [Mattermost](https://mattermost.com) on [Mattermost](https://mattermost.com)",
 		},
 	}
 
