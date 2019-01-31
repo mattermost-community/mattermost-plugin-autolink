@@ -41,9 +41,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	return nil
 }
 
-// MessageWillBePosted is invoked when a message is posted by a user before it is committed
-// to the database.
-func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
+func (p *Plugin) processPost(c *plugin.Context, post *model.Post) (*model.Post, string) {
 	links := p.links.Load().([]*AutoLinker)
 	postText := post.Message
 	offset := 0
@@ -97,4 +95,16 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 	post.Message = postText
 
 	return post, ""
+}
+
+// MessageWillBePosted is invoked when a message is posted by a user before it is committed
+// to the database.
+func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
+	return p.processPost(c, post)
+}
+
+// MessageWillBeUpdated is invoked when a message is updated by a user before it is committed
+// to the database.
+func (p *Plugin) MessageWillBeUpdated(c *plugin.Context, post *model.Post, _ *model.Post) (*model.Post, string) {
+	return p.processPost(c, post)
 }
