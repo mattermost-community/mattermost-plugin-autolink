@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"sync/atomic"
 
 	"github.com/mattermost/mattermost-server/mlog"
@@ -25,7 +26,6 @@ func (p *Plugin) OnConfigurationChange() error {
 	if err != nil {
 		return err
 	}
-
 	links := make([]*AutoLinker, 0)
 
 	for _, l := range c.Links {
@@ -82,10 +82,21 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 
 		if origText != "" {
 			newText := origText
-			for _, l := range links {
-				newText = l.Replace(newText)
-			}
 
+			channel, _ := p.API.GetChannel(post.ChannelId)
+			team, _ := p.API.GetTeam(channel.TeamId)
+
+			for _, l := range links {
+				if len(l.link.ChannelScope) == 0 && len(l.link.TeamScope) == 0 {
+					newText = l.Replace(newText)
+				} else if contains(channel.Name, l.link.ChannelScope) && contains(team.Name, l.link.TeamScope) {
+					newText = l.Replace(newText)
+				} else if contains(channel.Name, l.link.ChannelScope) && len(l.link.TeamScope) == 0 {
+					newText = l.Replace(newText)
+				} else if contains(team.Name, l.link.TeamScope) && len(l.link.ChannelScope) == 0 {
+					newText = l.Replace(newText)
+				}
+			}
 			if origText != newText {
 				postText = postText[:startPos] + newText + postText[endPos:]
 				offset += len(newText) - len(origText)
@@ -97,4 +108,13 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 	post.Message = postText
 
 	return post, ""
+}
+
+func contains(a string, list []string) bool {
+	for _, b := range list {
+		if strings.EqualFold(b, a) {
+			return true
+		}
+	}
+	return false
 }

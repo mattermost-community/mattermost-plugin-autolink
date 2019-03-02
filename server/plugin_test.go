@@ -18,12 +18,23 @@ func TestPlugin(t *testing.T) {
 	})
 	validConfiguration := Configuration{links}
 
+	testChannel := model.Channel{
+		Name: "TestChanel",
+	}
+
+	testTeam := model.Team{
+		Name: "TestTeam",
+	}
+
 	api := &plugintest.API{}
 
 	api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.Configuration")).Return(func(dest interface{}) error {
 		*dest.(*Configuration) = validConfiguration
 		return nil
 	})
+
+	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
 
 	p := Plugin{}
 	p.SetAPI(api)
@@ -49,8 +60,29 @@ func TestSpecialCases(t *testing.T) {
 	}, &Link{
 		Pattern:  "(foo!bar)",
 		Template: "fb",
+	}, &Link{
+		Pattern: "(snowman)",
+		Template: "test",
+		ChannelScope: []string{"TestChannel"},
+	}, &Link{
+		Pattern: "(snowman)",
+		Template: "test",
+		TeamScope: []string{"TestTeam"},
+	}, &Link{
+		Pattern: "(snowman)",
+		Template: "test",
+		ChannelScope: []string{"TestChannel"},
+		TeamScope: []string{"TestTeam"},
 	})
 	validConfiguration := Configuration{links}
+
+	testChannel := model.Channel{
+		Name: "TestChanel",
+	}
+
+	testTeam := model.Team{
+		Name: "TestTeam",
+	}
 
 	api := &plugintest.API{}
 
@@ -58,6 +90,9 @@ func TestSpecialCases(t *testing.T) {
 		*dest.(*Configuration) = validConfiguration
 		return nil
 	})
+
+	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
 
 	p := Plugin{}
 	p.SetAPI(api)
