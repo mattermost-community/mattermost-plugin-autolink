@@ -4,8 +4,7 @@ package main
 type Link struct {
 	Pattern              string
 	Template             string
-	ChannelScope         []string
-	TeamScope            []string
+	Scope                []string
 	DisableNonWordPrefix bool
 	DisableNonWordSuffix bool
 }

@@ -61,18 +61,13 @@ func TestSpecialCases(t *testing.T) {
 		Pattern:  "(foo!bar)",
 		Template: "fb",
 	}, &Link{
-		Pattern: "(snowman)",
+		Pattern: "(example)",
 		Template: "test",
-		ChannelScope: []string{"TestChannel"},
+		Scope: []string{"test/off-topic"},
 	}, &Link{
-		Pattern: "(snowman)",
+		Pattern: "(example)",
 		Template: "test",
-		TeamScope: []string{"TestTeam"},
-	}, &Link{
-		Pattern: "(snowman)",
-		Template: "test",
-		ChannelScope: []string{"TestChannel"},
-		TeamScope: []string{"TestTeam"},
+		Scope: []string{"other-test/town-square"},
 	})
 	validConfiguration := Configuration{links}
 
