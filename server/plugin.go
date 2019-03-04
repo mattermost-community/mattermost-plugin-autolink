@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"sync/atomic"
 
 	"github.com/mattermost/mattermost-server/mlog"
@@ -83,8 +82,14 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 		if origText != "" {
 			newText := origText
 
-			channel, _ := p.API.GetChannel(post.ChannelId)
-			team, _ := p.API.GetTeam(channel.TeamId)
+			channel, cErr := p.API.GetChannel(post.ChannelId)
+			if cErr != nil {
+				return false
+			}
+			team, tErr := p.API.GetTeam(channel.TeamId)
+			if tErr != nil {
+				return false
+			}
 
 			for _, l := range links {
 				if len(l.link.Scope) == 0 {
@@ -104,17 +109,4 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 	post.Message = postText
 
 	return post, ""
-}
-
-func contains(channel string, team string, list []string) bool {
-	for _, channelTeam := range list {
-		channelTeamSplit := strings.Split(channelTeam, "/")
-		if len(channelTeamSplit) == 2 {
-			if strings.EqualFold(channelTeamSplit[0], team) && strings.EqualFold(channelTeamSplit[1], channel) {
-				return true
-			}
-		}
-
-	}
-	return false
 }

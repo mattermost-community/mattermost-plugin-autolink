@@ -34,7 +34,7 @@ Below is an example of regexp patterns used for autolinking, modified in the `co
                 {
                     "Pattern": "(RHS)",
                     "Template": "[RHS](https://docs.mattermost.com/process/training.html#rhs)",
-                    "Scope": ["team2"]
+                    "Scope": ["team2", "team3", "team4/town-square"]
                 },
                 {
                     "Pattern": "(?i)(Mana)",
