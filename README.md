@@ -1,4 +1,4 @@
-# Autolink Plugin (Beta) [![CircleCI](https://circleci.com/gh/mattermost/mattermost-plugin-autolink.svg?style=svg)](https://circleci.com/gh/mattermost/mattermost-plugin-autolink)
+# Autolink Plugin (Beta) ![CircleCI branch](https://img.shields.io/circleci/project/github/mattermost/mattermost-plugin-autolink/master.svg)
 
 This plugin creates regular expression (regexp) patterns that are reformatted into a Markdown link before the message is saved into the database.
 
