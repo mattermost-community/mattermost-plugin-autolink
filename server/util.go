@@ -6,7 +6,7 @@ import (
 	"github.com/mattermost/mattermost-server/mlog"
 )
 
-func contains(channel string, team string, list []string) bool {
+func contains(team string, channel string, list []string) bool {
 	for _, channelTeam := range list {
 		channelTeamSplit := strings.Split(channelTeam, "/")
 		if len(channelTeamSplit) == 2 {

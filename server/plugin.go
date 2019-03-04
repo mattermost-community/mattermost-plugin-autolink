@@ -96,7 +96,7 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 			for _, l := range links {
 				if len(l.link.Scope) == 0 {
 					newText = l.Replace(newText)
-				} else if contains(channel.Name, team.Name, l.link.Scope) {
+				} else if contains(team.Name, channel.Name, l.link.Scope) {
 					newText = l.Replace(newText)
 				}
 			}
