@@ -84,10 +84,12 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 
 			channel, cErr := p.API.GetChannel(post.ChannelId)
 			if cErr != nil {
+				mlog.Error(cErr.Error())
 				return false
 			}
 			team, tErr := p.API.GetTeam(channel.TeamId)
 			if tErr != nil {
+				mlog.Error(cErr.Error())
 				return false
 			}
 
