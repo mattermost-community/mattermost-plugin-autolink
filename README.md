@@ -29,12 +29,12 @@ Below is an example of regexp patterns used for autolinking, modified in the `co
                 {
                     "Pattern": "(LHS)",
                     "Template": "[LHS](https://docs.mattermost.com/process/training.html#lhs)",
-                    "Scope": ["team1/off-topic"]
+                    "Scope": ["team/off-topic"]
                 },
                 {
                     "Pattern": "(RHS)",
                     "Template": "[RHS](https://docs.mattermost.com/process/training.html#rhs)",
-                    "Scope": ["team2", "team3", "team4/town-square"]
+                    "Scope": ["team/town-square"]
                 },
                 {
                     "Pattern": "(?i)(Mana)",

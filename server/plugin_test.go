@@ -63,11 +63,11 @@ func TestSpecialCases(t *testing.T) {
 	}, &Link{
 		Pattern: "(example)",
 		Template: "test",
-		Scope: []string{"test/off-topic"},
+		Scope: []string{"team/off-topic"},
 	}, &Link{
 		Pattern: "(example)",
 		Template: "test",
-		Scope: []string{"other-test/town-square"},
+		Scope: []string{"other-team/town-square"},
 	})
 	validConfiguration := Configuration{links}
 
