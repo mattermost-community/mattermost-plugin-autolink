@@ -4,6 +4,7 @@ package main
 type Link struct {
 	Pattern              string
 	Template             string
+	Scope                []string
 	DisableNonWordPrefix bool
 	DisableNonWordSuffix bool
 }

@@ -25,7 +25,6 @@ func (p *Plugin) OnConfigurationChange() error {
 	if err != nil {
 		return err
 	}
-
 	links := make([]*AutoLinker, 0)
 
 	for _, l := range c.Links {
@@ -82,10 +81,25 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 
 		if origText != "" {
 			newText := origText
-			for _, l := range links {
-				newText = l.Replace(newText)
+
+			channel, cErr := p.API.GetChannel(post.ChannelId)
+			if cErr != nil {
+				mlog.Error(cErr.Error())
+				return false
+			}
+			team, tErr := p.API.GetTeam(channel.TeamId)
+			if tErr != nil {
+				mlog.Error(cErr.Error())
+				return false
 			}
 
+			for _, l := range links {
+				if len(l.link.Scope) == 0 {
+					newText = l.Replace(newText)
+				} else if contains(team.Name, channel.Name, l.link.Scope) {
+					newText = l.Replace(newText)
+				}
+			}
 			if origText != newText {
 				postText = postText[:startPos] + newText + postText[endPos:]
 				offset += len(newText) - len(origText)

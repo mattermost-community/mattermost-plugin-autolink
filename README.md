@@ -14,7 +14,7 @@ Use it to add custom auto-linking on your Mattermost system, such as adding link
 
 ## Usage
 
-Autolinks have 2 parts: a **Pattern** which is a regular expression search pattern utilizing the https://golang.org/pkg/regexp/ library, and a **Template** that gets exanded. You can create variables in the pattern with the syntax `(?P<name>...)` which will then be expanded by the corresponding template.
+Autolinks have 2 parts: a **Pattern** which is a regular expression search pattern utilizing the https://golang.org/pkg/regexp/ library, and a **Template** that gets expanded. You can create variables in the pattern with the syntax `(?P<name>...)` which will then be expanded by the corresponding template.
 
 In the template, a variable is denoted by a substring of the form `$name` or `${name}`, where `name` is a non-empty sequence of letters, digits, and underscores. A purely numeric name like $1 refers to the submatch with the corresponding index. In the $name form, name is taken to be as long as possible: $1x is equivalent to ${1x}, not ${1}x, and, $10 is equivalent to ${10}, not ${1}0. To insert a literal $ in the output, use $$ in the template.
 
@@ -28,11 +28,13 @@ Below is an example of regexp patterns used for autolinking, modified in the `co
             "links": [
                 {
                     "Pattern": "(LHS)",
-                    "Template": "[LHS](https://docs.mattermost.com/process/training.html#lhs)"
+                    "Template": "[LHS](https://docs.mattermost.com/process/training.html#lhs)",
+                    "Scope": ["team/off-topic"]
                 },
                 {
                     "Pattern": "(RHS)",
-                    "Template": "[RHS](https://docs.mattermost.com/process/training.html#rhs)"
+                    "Template": "[RHS](https://docs.mattermost.com/process/training.html#rhs)",
+                    "Scope": ["team/town-square"]
                 },
                 {
                     "Pattern": "(?i)(Mana)",
