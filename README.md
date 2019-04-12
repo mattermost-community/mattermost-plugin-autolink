@@ -93,8 +93,8 @@ Below is an example of regexp patterns used for autolinking, modified in the `co
 ## Examples
 
 1. Autolinking `Ticket ####:text with alphanumberic characters and spaces` to a ticket link. Use:
-  - Pattern: `(?i)(ticket )(?P<ticket_id>)( : )(?P<ticket_info>.*)`
-  - Template: `(ticket ${ticket_id}:${ticket_info})`
+  - Pattern: `(?i)(ticket )(?P<ticket_id>.+)(:)(?P<ticket_info>.*)`, or if the ticket_id is a number, then `(?i)(ticket )(?P<ticket_id>\d+)(:)(?P<ticket_info>.*)`
+  - Template: `[Ticket ${ticket_id}: ${ticket_info}](https://github.com/mattermost/mattermost-server/issues/${ticket_id})`
 
 2. Autolinking a link to a GitHub PR to a link with format "pr-repo-id". Use:
   - Pattern: `https://github\\.com/mattermost/(?P<repo>.+)/pull/(?P<id>\\d+)`
