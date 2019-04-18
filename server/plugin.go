@@ -87,16 +87,20 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 				mlog.Error(cErr.Error())
 				return false
 			}
-			team, tErr := p.API.GetTeam(channel.TeamId)
-			if tErr != nil {
-				mlog.Error(tErr.Error())
-				return false
+			teamName := ""
+			if channel.TeamId != "" {
+				team, tErr := p.API.GetTeam(channel.TeamId)
+				if tErr != nil {
+					mlog.Error(tErr.Error())
+					return false
+				}
+				teamName = team.Name
 			}
 
 			for _, l := range links {
 				if len(l.link.Scope) == 0 {
 					newText = l.Replace(newText)
-				} else if contains(team.Name, channel.Name, l.link.Scope) {
+				} else if teamName != "" && contains(teamName, channel.Name, l.link.Scope) {
 					newText = l.Replace(newText)
 				}
 			}
