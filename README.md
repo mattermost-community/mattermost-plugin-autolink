@@ -15,6 +15,8 @@ Use it to add custom auto-linking on your Mattermost system, such as adding link
 ## Configuration
 
 1. Go to **System Console > Plugins > Management** and click **Enable** to enable the Autolink plugin.
+    - If you are running Mattermost v5.11 or earlier, you must first go to the [releases page of this GitHub repository](https://github.com/mattermost/mattermost-plugin-autolink), download the latest release, and upload it to your Mattermost instance [following this documentation](https://docs.mattermost.com/administration/plugins.html#plugin-uploads).
+
 2. Modify your `config.json` file to include the types of regexp patterns you wish to match, under the `PluginSettings`. See below for an example of what this should look like.
 
 ## Usage
