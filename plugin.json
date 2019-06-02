@@ -1,7 +1,7 @@
 {
   "id": "mattermost-autolink",
   "name": "Autolink",
-  "description": "Automatically rewrite text matching a regular expression into a markdown link.",
+  "description": "Automatically rewrite text matching a regular expression into a Markdown link.",
   "version": "0.5.1",
   "server": {
     "executables": {
