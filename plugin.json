@@ -1,8 +1,8 @@
 {
   "id": "mattermost-autolink",
   "name": "Autolink",
-  "version": "1.0.0",
   "description": "Automatically rewrite text matching a regular expression into a Markdown link.",
+  "version": "1.0.0",
   "server": {
     "executables": {
       "linux-amd64": "server/dist/plugin-linux-amd64",
