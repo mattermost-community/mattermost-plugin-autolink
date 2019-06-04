@@ -111,7 +111,7 @@ Below is an example of regexp patterns used for autolinking at https://community
   - Pattern: `@customgroup*`
   - Template: `[@customgroup]( \\* @user1 @user2 @user3 \\* )`
   
-4. For servers with multiple domains (like community and community-daily on the offical Mattermost Server) a substition of absolute conversation links to relative links is recommended to prevent issues in the mobile app. Add one pattern for each domain Used:
+4. For servers with multiple domains (like community and community-daily on the [public Mattermost Server](https://community.mattermost)), a substitution of absolute conversation links to relative links is recommended to prevent issues in the mobile app. Add one pattern for each domain used:
   - Pattern: `https://community\\.mattermost\\.com/(?P\u003cteamname\u003e(?a-zA-Z0-9]+)/(?P\u003cid\u003e[a-zA-Z0-9]+)`
   - Template: `[<jump to convo>](/${teamname}/pl/${id})/${id})`
   
