@@ -1,24 +1,31 @@
-# Autolink Plugin (Beta) ![CircleCI branch](https://img.shields.io/circleci/project/github/mattermost/mattermost-plugin-autolink/master.svg)
+# Autolink Plugin ![CircleCI branch](https://img.shields.io/circleci/project/github/mattermost/mattermost-plugin-autolink/master.svg)
 
 This plugin creates regular expression (regexp) patterns that are reformatted into a Markdown link before the message is saved into the database.
 
 Use it to add custom auto-linking on your Mattermost system, such as adding links to your issue tracker based on the regexp patterns.
 
-**Supported Mattermost Server Versions: 5.2+ for 0.3+. 5.0 and 5.1 for all versions before 0.3**
+![image](https://user-images.githubusercontent.com/13119842/58675221-479ad680-8321-11e9-9ad1-b9c42238734f.png)
 
-## Installation
+*Posting a message containing a Jira issue key..*
 
-1. Go to the [releases page of this GitHub repository](https://github.com/mattermost/mattermost-plugin-autolink) and download the latest release for your Mattermost server.
-2. Upload this file in the Mattermost **System Console > Plugins > Management** page to install the plugin. To learn more about how to upload a plugin, [see the documentation](https://docs.mattermost.com/administration/plugins.html#plugin-uploads).
-3. Modify your `config.json` file to include the types of regexp patterns you wish to match, under the `PluginSettings`. See below for an example of what this should look like.
+![image](https://user-images.githubusercontent.com/13119842/58675165-11f5ed80-8321-11e9-9d41-91088a79a11b.png)
+
+*..automatically links to the corresponding issue in the Jira project*
+
+## Configuration
+
+1. Go to **System Console > Plugins > Management** and click **Enable** to enable the Autolink plugin.
+    - If you are running Mattermost v5.11 or earlier, you must first go to the [releases page of this GitHub repository](https://github.com/mattermost/mattermost-plugin-autolink), download the latest release, and upload it to your Mattermost instance [following this documentation](https://docs.mattermost.com/administration/plugins.html#plugin-uploads).
+
+2. Modify your `config.json` file to include the types of regexp patterns you wish to match, under the `PluginSettings`. See below for an example of what this should look like.
 
 ## Usage
 
-Autolinks have 2 parts: a **Pattern** which is a regular expression search pattern utilizing the https://golang.org/pkg/regexp/ library, and a **Template** that gets expanded. You can create variables in the pattern with the syntax `(?P<name>...)` which will then be expanded by the corresponding template.
+Autolinks have 2 parts: a **Pattern** which is a regular expression search pattern utilizing the [Golang regexp library](https://golang.org/pkg/regexp/), and a **Template** that gets expanded. You can create variables in the pattern with the syntax `(?P<name>...)` which will then be expanded by the corresponding template.
 
 In the template, a variable is denoted by a substring of the form `$name` or `${name}`, where `name` is a non-empty sequence of letters, digits, and underscores. A purely numeric name like $1 refers to the submatch with the corresponding index. In the $name form, name is taken to be as long as possible: $1x is equivalent to ${1x}, not ${1}x, and, $10 is equivalent to ${10}, not ${1}0. To insert a literal $ in the output, use $$ in the template.
 
-Below is an example of regexp patterns used for autolinking, modified in the `config.json` file:
+Below is an example of regexp patterns used for autolinking at https://community.mattermost.com, modified in the `config.json` file:
 
 ```
 "PluginSettings": {
@@ -96,11 +103,11 @@ Below is an example of regexp patterns used for autolinking, modified in the `co
   - Pattern: `(?i)(ticket )(?P<ticket_id>.+)(:)(?P<ticket_info>.*)`, or if the ticket_id is a number, then `(?i)(ticket )(?P<ticket_id>\d+)(:)(?P<ticket_info>.*)`
   - Template: `[Ticket ${ticket_id}: ${ticket_info}](https://github.com/mattermost/mattermost-server/issues/${ticket_id})`
 
-2. Autolinking a link to a GitHub PR to a link with format "pr-repo-id". Use:
+2. Autolinking a link to a GitHub PR to a format "pr-repo-id". Use:
   - Pattern: `https://github\\.com/mattermost/(?P<repo>.+)/pull/(?P<id>\\d+)`
   - Template: `[pr-${repo}-${id}](https://github.com/mattermost/${repo}/pull/${id})`
 
-3. Using autolinking to create group mentions. Use:
+3. Using autolinking to create group mentions. Use (note that clicking the resulting at-mention redirects to a broken page):
   - Pattern: `@customgroup*`
   - Template: `[@customgroup]( \\* @user1 @user2 @user3 \\* )`
   
@@ -108,3 +115,14 @@ Below is an example of regexp patterns used for autolinking, modified in the `co
   - Pattern: `https://community\\.mattermost\\.com/(?P\u003cteamname\u003e(?a-zA-Z0-9]+)/(?P\u003cid\u003e[a-zA-Z0-9]+)`
   - Template: `[<jump to convo>](/${teamname}/pl/${id})/${id})`
   
+
+
+## Development
+
+This plugin contains a server portion.
+
+Use `make dist` to build distributions of the plugin that you can upload to a Mattermost server.
+Use `make check-style` to check the style.
+Use `make deploy` to deploy the plugin to your local server.
+
+For additional information on developing plugins, refer to [our plugin developer documentation](https://developers.mattermost.com/extend/plugins/).
