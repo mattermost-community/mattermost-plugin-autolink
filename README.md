@@ -27,7 +27,7 @@ In the template, a variable is denoted by a substring of the form `$name` or `${
 
 Below is an example of regexp patterns used for autolinking at https://community.mattermost.com, modified in the `config.json` file:
 
-```
+```json5
 "PluginSettings": {
     ...
     "Plugins": {
@@ -114,7 +114,12 @@ Below is an example of regexp patterns used for autolinking at https://community
 4. For servers with multiple domains (like community and community-daily on the [public Mattermost Server](https://community.mattermost)), a substitution of absolute conversation links to relative links is recommended to prevent issues in the mobile app. Add one pattern for each domain used:
   - Pattern: `https://community\\.mattermost\\.com/(?P\u003cteamname\u003e(?a-zA-Z0-9]+)/(?P\u003cid\u003e[a-zA-Z0-9]+)`
   - Template: `[<jump to convo>](/${teamname}/pl/${id})/${id})`
-  
+
+
+**You can check your pattern with those Regex Testers:**
+- https://regex-golang.appspot.com/,
+- https://regex101.com/,
+- https://www.regextester.com/.
 
 
 ## Development
