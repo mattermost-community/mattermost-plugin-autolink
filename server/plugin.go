@@ -28,7 +28,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	links := make([]*AutoLinker, 0)
 
 	for _, l := range c.Links {
-		al, lerr := NewAutoLinker(l)
+		al, lerr := NewAutoLinker(*l)
 		if lerr != nil {
 			mlog.Error("Error creating autolinker: ")
 		}

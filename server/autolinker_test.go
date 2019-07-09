@@ -1,17 +1,41 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/mattermost/mattermost-server/model"
+	"github.com/mattermost/mattermost-server/plugin/plugintest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
+func setupTestPlugin(t *testing.T, link Link) *Plugin {
+	p := &Plugin{}
+	api := &plugintest.API{}
+
+	api.On("GetChannel", mock.AnythingOfType("string")).Run(func(args mock.Arguments) {
+		api.On("GetTeam", mock.AnythingOfType("string")).Return(&model.Team{}, (*model.AppError)(nil))
+	}).Return(&model.Channel{
+		Id:     "thechannel_id0123456789012",
+		TeamId: "theteam_id0123456789012345",
+		Name:   "thechannel_name",
+	}, (*model.AppError)(nil))
+	p.SetAPI(api)
+
+	al, err := NewAutoLinker(link)
+	require.Nil(t, err)
+	p.links.Store([]*AutoLinker{al})
+	return p
+}
+
 func TestAutolink(t *testing.T) {
-	var tests = []struct {
+	for _, tc := range []struct {
 		Name            string
 		Link            *Link
-		inputMessage    string
-		expectedMessage string
+		Message         string
+		ExpectedMessage string
 	}{
 		{
 			"Simple pattern",
@@ -156,14 +180,111 @@ func TestAutolink(t *testing.T) {
 			"Welcome https://mattermost.atlassian.net/browse/MM-12345",
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345)",
 		},
+	} {
+
+		t.Run(tc.Name, func(t *testing.T) {
+			p := setupTestPlugin(t, *tc.Link)
+			post, _ := p.MessageWillBePosted(nil, &model.Post{
+				Message: tc.Message,
+			})
+
+			assert.Equal(t, tc.ExpectedMessage, post.Message)
+		})
+
+	}
+}
+
+func TestAutolinkWordBoundaries(t *testing.T) {
+	const pattern = "(KEY)(-)(?P<ID>\\d+)"
+	const template = "[KEY-$ID](someurl/KEY-$ID)"
+	const ref = "KEY-12345"
+	const ID = "12345"
+	const markdown = "[KEY-12345](someurl/KEY-12345)"
+
+	var defaultLink = Link{
+		Pattern:  pattern,
+		Template: template,
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.Name, func(t *testing.T) {
-			al, _ := NewAutoLinker(tt.Link)
-			actual := al.Replace(tt.inputMessage)
+	linkNoPrefix := defaultLink
+	linkNoPrefix.DisableNonWordPrefix = true
 
-			assert.Equal(t, tt.expectedMessage, actual)
+	linkNoSuffix := defaultLink
+	linkNoSuffix.DisableNonWordSuffix = true
+
+	linkNoPrefixNoSuffix := defaultLink
+	linkNoPrefixNoSuffix.DisableNonWordSuffix = true
+	linkNoPrefixNoSuffix.DisableNonWordPrefix = true
+
+	for _, tc := range []struct {
+		Name       string
+		Sep        string
+		Link       *Link
+		Prefix     string
+		Suffix     string
+		ExpectFail bool
+	}{
+		{Name: "space both sides both breaks required", Prefix: " ", Suffix: " "},
+		{Name: "space both sides left break not required", Prefix: " ", Suffix: " ", Link: &linkNoPrefix},
+		{Name: "space both sides right break not required", Prefix: " ", Suffix: " ", Link: &linkNoSuffix},
+		{Name: "space both sides neither break required", Prefix: " ", Suffix: " ", Link: &linkNoPrefixNoSuffix},
+
+		{Name: "space left side both breaks required", Prefix: " ", ExpectFail: true},
+		{Name: "space left side left break not required", Prefix: " ", Link: &linkNoPrefix, ExpectFail: true},
+		{Name: "space left side right break not required", Prefix: " ", Link: &linkNoSuffix},
+		{Name: "space left side neither break required", Prefix: " ", Link: &linkNoPrefixNoSuffix},
+
+		{Name: "space right side both breaks required", Suffix: " ", ExpectFail: true},
+		{Name: "space right side left break not required", Suffix: " ", Link: &linkNoPrefix},
+		{Name: "space right side right break not required", Suffix: " ", Link: &linkNoSuffix, ExpectFail: true},
+		{Name: "space right side neither break required", Prefix: " ", Link: &linkNoPrefixNoSuffix},
+
+		{Name: "none both breaks required", ExpectFail: true},
+		{Name: "none left break not required", Link: &linkNoPrefix, ExpectFail: true},
+		{Name: "none right break not required", Link: &linkNoSuffix, ExpectFail: true},
+		{Name: "none neither break required", Link: &linkNoPrefixNoSuffix},
+
+		{Sep: "paren", Name: "2 parens", Prefix: "(", Suffix: ")"},
+		{Sep: "paren", Name: "left paren", Prefix: "(", Link: &linkNoSuffix},
+		{Sep: "paren", Name: "right paren", Suffix: ")", Link: &linkNoPrefix},
+		{Sep: "sbracket", Name: "2 brackets", Prefix: "[", Suffix: "]"},
+		{Sep: "lsbracket", Name: "both breaks", Prefix: "[", ExpectFail: true},
+		{Sep: "lsbracket", Name: "bracket no prefix", Prefix: "[", Link: &linkNoPrefix, ExpectFail: true},
+		{Sep: "lsbracket", Name: "bracket no suffix", Prefix: "[", Link: &linkNoSuffix},
+		{Sep: "lsbracket", Name: "bracket neither prefix suffix", Prefix: "[", Link: &linkNoPrefixNoSuffix},
+		{Sep: "rsbracket", Name: "bracket", Suffix: "]", Link: &linkNoPrefix},
+		{Sep: "rand", Name: "random separators", Prefix: "% (", Suffix: "-- $%^&"},
+	} {
+
+		orig := fmt.Sprintf("word1%s%s%sword2", tc.Prefix, ref, tc.Suffix)
+		expected := fmt.Sprintf("word1%s%s%sword2", tc.Prefix, markdown, tc.Suffix)
+
+		pref := tc.Prefix
+		suff := tc.Suffix
+		if tc.Sep != "" {
+			pref = "_" + tc.Sep + "_"
+			suff = "_" + tc.Sep + "_"
+		}
+		name := fmt.Sprintf("word1%s%s%sword2", pref, ref, suff)
+		if tc.Name != "" {
+			name = tc.Name + " " + name
+		}
+
+		t.Run(name, func(t *testing.T) {
+			l := tc.Link
+			if l == nil {
+				l = &defaultLink
+			}
+			p := setupTestPlugin(t, *l)
+
+			post, _ := p.MessageWillBePosted(nil, &model.Post{
+				Message: orig,
+			})
+			if tc.ExpectFail {
+				assert.Equal(t, orig, post.Message)
+				return
+			}
+			assert.Equal(t, expected, post.Message)
 		})
 	}
 }
@@ -171,23 +292,20 @@ func TestAutolink(t *testing.T) {
 func TestAutolinkErrors(t *testing.T) {
 	var tests = []struct {
 		Name string
-		Link *Link
+		Link Link
 	}{
 		{
-			"No Link at all",
-			nil,
-		}, {
 			"Empty Link",
-			&Link{},
+			Link{},
 		}, {
 			"No pattern",
-			&Link{
+			Link{
 				Pattern:  "",
 				Template: "blah",
 			},
 		}, {
 			"No template",
-			&Link{
+			Link{
 				Pattern:  "blah",
 				Template: "",
 			},
