@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/mattermost/mattermost-server/mlog"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/plugin"
@@ -19,22 +18,6 @@ type Plugin struct {
 	// configuration and a muttex to control concurrent access
 	conf     Config
 	confLock sync.RWMutex
-}
-
-func (p *Plugin) OnActivate() error {
-	err := p.API.RegisterCommand(&model.Command{
-		Trigger:          "autolink",
-		DisplayName:      "Autolink",
-		Description:      "Autolink administration.",
-		AutoComplete:     true,
-		AutoCompleteDesc: "Available commands: config",
-		AutoCompleteHint: "[command]",
-	})
-	if err != nil {
-		return errors.WithMessage(err, "OnActivate: failed to register command")
-	}
-
-	return nil
 }
 
 // MessageWillBePosted is invoked when a message is posted by a user before it is committed

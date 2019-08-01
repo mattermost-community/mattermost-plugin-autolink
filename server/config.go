@@ -6,11 +6,14 @@ import (
 	"strings"
 
 	"github.com/mattermost/mattermost-server/mlog"
+	"github.com/mattermost/mattermost-server/model"
+	"github.com/pkg/errors"
 )
 
 // Config from config.json
 type Config struct {
-	Links []Link
+	EnableAdminCommand bool
+	Links              []Link
 }
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
@@ -31,6 +34,22 @@ func (p *Plugin) OnConfigurationChange() error {
 	p.updateConfig(func(conf *Config) {
 		*conf = c
 	})
+
+	if c.EnableAdminCommand {
+		err := p.API.RegisterCommand(&model.Command{
+			Trigger:          "autolink",
+			DisplayName:      "Autolink",
+			Description:      "Autolink administration.",
+			AutoComplete:     true,
+			AutoCompleteHint: "[command]",
+		})
+		if err != nil {
+			return errors.WithMessage(err, "failed to register /autolink command")
+		}
+	} else {
+		_ = p.API.UnregisterCommand("", "autolink")
+	}
+
 	return nil
 }
 

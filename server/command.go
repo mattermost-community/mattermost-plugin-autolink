@@ -11,20 +11,21 @@ import (
 )
 
 const helpText = "###### Mattermost Autolink Plugin Administration\n" +
-	"<linkref> is either the Name of a link, or its number in the `/autolink list` output.\n" +
+	"<linkref> is either the Name of a link, or its number in the `/autolink list` output. A partial Name can be specified, but some commands require it to be uniquely resolved.\n" +
 	"* `/autolink list` - list all configured links.\n" +
 	"* `/autolink list <linkref>` - list a specific link.\n" +
 	"* `/autolink enable <linkref>` - enable a link.\n" +
 	"* `/autolink disable <linkref>` - disable a link.\n" +
 	"* `/autolink add <name>` - add a new link, named <name>.\n" +
-	"* `/autolink set <linkref> <field> value...` - sets a field to a value.\n" +
+	"* `/autolink delete <linkref>` - delete a link.\n" +
+	"* `/autolink set <linkref> <field> value...` - sets a link's field to a value. The entire command line after <field> is used for the value, unescaped, leading/trailing whitespace trimmed.\n" +
 	"\n" +
 	"Example:\n" +
 	"```\n" +
 	"/autolink add Visa\n" +
 	"/autolink disable Visa\n" +
-	`/autolink set Visa Template (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))` + "\n" +
-	"/autolink set Visa Pattern VISA XXXX-XXXX-XXXX-$LastFour\n" +
+	`/autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))` + "\n" +
+	"/autolink set Visa Template VISA XXXX-XXXX-XXXX-$LastFour\n" +
 	"/autolink set Visa WordMatch true\n" +
 	"/autolink enable Visa\n" +
 	"```\n" +
@@ -336,7 +337,7 @@ func parseBoolArg(arg string) (bool, error) {
 	case "true", "on":
 		return true, nil
 	case "false", "off":
-		return true, nil
+		return false, nil
 	}
 	return false, errors.Errorf("Not a bool, %q", arg)
 }
