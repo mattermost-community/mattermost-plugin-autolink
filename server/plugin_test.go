@@ -11,12 +11,14 @@ import (
 )
 
 func TestPlugin(t *testing.T) {
-	links := make([]*Link, 0)
-	links = append(links, &Link{
-		Pattern:  "(Mattermost)",
-		Template: "[Mattermost](https://mattermost.com)",
-	})
-	validConfiguration := Configuration{links}
+	conf := Config{
+		Links: []Link{
+			Link{
+				Pattern:  "(Mattermost)",
+				Template: "[Mattermost](https://mattermost.com)",
+			},
+		},
+	}
 
 	testChannel := model.Channel{
 		Name: "TestChanel",
@@ -28,8 +30,8 @@ func TestPlugin(t *testing.T) {
 
 	api := &plugintest.API{}
 
-	api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.Configuration")).Return(func(dest interface{}) error {
-		*dest.(*Configuration) = validConfiguration
+	api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.Config")).Return(func(dest interface{}) error {
+		*dest.(*Config) = conf
 		return nil
 	})
 
@@ -47,29 +49,29 @@ func TestPlugin(t *testing.T) {
 }
 
 func TestSpecialCases(t *testing.T) {
-	links := make([]*Link, 0)
-	links = append(links, &Link{
+	links := make([]Link, 0)
+	links = append(links, Link{
 		Pattern:  "(Mattermost)",
 		Template: "[Mattermost](https://mattermost.com)",
-	}, &Link{
+	}, Link{
 		Pattern:  "(Example)",
 		Template: "[Example](https://example.com)",
-	}, &Link{
+	}, Link{
 		Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
 		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
-	}, &Link{
+	}, Link{
 		Pattern:  "(foo!bar)",
 		Template: "fb",
-	}, &Link{
-		Pattern: "(example)",
+	}, Link{
+		Pattern:  "(example)",
 		Template: "test",
-		Scope: []string{"team/off-topic"},
-	}, &Link{
-		Pattern: "(example)",
+		Scope:    []string{"team/off-topic"},
+	}, Link{
+		Pattern:  "(example)",
 		Template: "test",
-		Scope: []string{"other-team/town-square"},
+		Scope:    []string{"other-team/town-square"},
 	})
-	validConfiguration := Configuration{links}
+	validConfig := Config{links}
 
 	testChannel := model.Channel{
 		Name: "TestChanel",
@@ -81,8 +83,8 @@ func TestSpecialCases(t *testing.T) {
 
 	api := &plugintest.API{}
 
-	api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.Configuration")).Return(func(dest interface{}) error {
-		*dest.(*Configuration) = validConfiguration
+	api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.Config")).Return(func(dest interface{}) error {
+		*dest.(*Config) = validConfig
 		return nil
 	})
 
