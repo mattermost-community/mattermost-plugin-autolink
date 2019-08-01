@@ -15,7 +15,10 @@ type Link struct {
 	WordMatch            bool
 	DisableNonWordPrefix bool
 	DisableNonWordSuffix bool
-	re                   *regexp.Regexp
+
+	template  string
+	re        *regexp.Regexp
+	multipass bool
 }
 
 // DisplayName returns a display name for the link.
@@ -33,11 +36,25 @@ func (l *Link) Compile() error {
 	}
 
 	pattern := l.Pattern
+	template := l.Template
+	multipass := false
 	if !l.DisableNonWordPrefix {
-		pattern = `\b` + pattern
+		if l.WordMatch {
+			pattern = `\b` + pattern
+		} else {
+			pattern = `(?P<MattermostNonWordPrefix>(^|\s))` + pattern
+			template = `${MattermostNonWordPrefix}` + template
+			multipass = true
+		}
 	}
 	if !l.DisableNonWordSuffix {
-		pattern = pattern + `\b`
+		if l.WordMatch {
+			pattern = pattern + `\b`
+		} else {
+			pattern = pattern + `(?P<MattermostNonWordSuffix>$|[\s\.\!\?\,\)])`
+			template = template + `${MattermostNonWordSuffix}`
+			multipass = true
+		}
 	}
 
 	re, err := regexp.Compile(pattern)
@@ -45,6 +62,9 @@ func (l *Link) Compile() error {
 		return err
 	}
 	l.re = re
+	l.template = template
+	l.multipass = multipass
+
 	return nil
 }
 
@@ -53,7 +73,26 @@ func (l Link) Replace(message string) string {
 	if l.re == nil {
 		return message
 	}
-	return l.re.ReplaceAllString(message, l.Template)
+
+	// Since they don't consume, `\b`s require no special handling, can just ReplaceAll
+	if !l.multipass {
+		return l.re.ReplaceAllString(message, l.template)
+	}
+
+	// Replace one at a time
+	in := []byte(message)
+	out := []byte{}
+	for {
+		submatch := l.re.FindSubmatchIndex(in)
+		if submatch == nil {
+			break
+		}
+		out = append(out, in[:submatch[0]]...)
+		out = l.re.Expand(out, []byte(l.template), in, submatch)
+		in = in[submatch[1]:]
+	}
+	out = append(out, in...)
+	return string(out)
 }
 
 // ToMarkdown prints a Link as a markdown list element

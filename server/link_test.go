@@ -180,8 +180,8 @@ func TestCreditCard(t *testing.T) {
 				Pattern:  reVISA,
 				Template: replaceVISA,
 			},
-			"Credit cards 4111-1111-2222-3333 and 4222-3333-4444-5678 mentioned",
-			"Credit cards VISA XXXX-XXXX-XXXX-3333 and VISA XXXX-XXXX-XXXX-5678 mentioned",
+			"Credit cards 4111-1111-2222-3333 4222-3333-4444-5678 mentioned",
+			"Credit cards VISA XXXX-XXXX-XXXX-3333 VISA XXXX-XXXX-XXXX-5678 mentioned",
 		},
 	}
 
@@ -194,7 +194,7 @@ func TestCreditCard(t *testing.T) {
 	}
 }
 
-func TestAutolink(t *testing.T) {
+func TestLink(t *testing.T) {
 	for _, tc := range []struct {
 		Name            string
 		Link            Link
@@ -357,7 +357,7 @@ func TestAutolink(t *testing.T) {
 	}
 }
 
-func TestAutolinkWordBoundaries(t *testing.T) {
+func TestLegacyWordBoundaries(t *testing.T) {
 	const pattern = "(KEY)(-)(?P<ID>\\d+)"
 	const template = "[KEY-$ID](someurl/KEY-$ID)"
 	const ref = "KEY-12345"
@@ -367,6 +367,108 @@ func TestAutolinkWordBoundaries(t *testing.T) {
 	var defaultLink = Link{
 		Pattern:  pattern,
 		Template: template,
+	}
+
+	linkNoPrefix := defaultLink
+	linkNoPrefix.DisableNonWordPrefix = true
+
+	linkNoSuffix := defaultLink
+	linkNoSuffix.DisableNonWordSuffix = true
+
+	linkNoPrefixNoSuffix := defaultLink
+	linkNoPrefixNoSuffix.DisableNonWordSuffix = true
+	linkNoPrefixNoSuffix.DisableNonWordPrefix = true
+
+	for _, tc := range []struct {
+		Name       string
+		Sep        string
+		Link       Link
+		Prefix     string
+		Suffix     string
+		ExpectFail bool
+	}{
+		{Name: "space both sides both breaks required", Prefix: " ", Suffix: " "},
+		{Name: "space both sides left break not required", Prefix: " ", Suffix: " ", Link: linkNoPrefix},
+		{Name: "space both sides right break not required", Prefix: " ", Suffix: " ", Link: linkNoSuffix},
+		{Name: "space both sides neither break required", Prefix: " ", Suffix: " ", Link: linkNoPrefixNoSuffix},
+
+		{Name: "space left side both breaks required", Prefix: " ", ExpectFail: true},
+		{Name: "space left side left break not required", Prefix: " ", Link: linkNoPrefix, ExpectFail: true},
+		{Name: "space left side right break not required", Prefix: " ", Link: linkNoSuffix},
+		{Name: "space left side neither break required", Prefix: " ", Link: linkNoPrefixNoSuffix},
+
+		{Name: "space right side both breaks required", Suffix: " ", ExpectFail: true},
+		{Name: "space right side left break not required", Suffix: " ", Link: linkNoPrefix},
+		{Name: "space right side right break not required", Suffix: " ", Link: linkNoSuffix, ExpectFail: true},
+		{Name: "space right side neither break required", Prefix: " ", Link: linkNoPrefixNoSuffix},
+
+		{Name: "none both breaks required", ExpectFail: true},
+		{Name: "none left break not required", Link: linkNoPrefix, ExpectFail: true},
+		{Name: "none right break not required", Link: linkNoSuffix, ExpectFail: true},
+		{Name: "none neither break required", Link: linkNoPrefixNoSuffix},
+
+		// '(', '[' are not start separators
+		{Sep: "paren", Name: "2 parens", Prefix: "(", Suffix: ")", ExpectFail: true},
+		{Sep: "paren", Name: "2 parens no suffix", Prefix: "(", Suffix: ")", Link: linkNoSuffix, ExpectFail: true},
+		{Sep: "paren", Name: "left paren", Prefix: "(", Link: linkNoSuffix, ExpectFail: true},
+		{Sep: "sbracket", Name: "2 brackets", Prefix: "[", Suffix: "]", ExpectFail: true},
+		{Sep: "lsbracket", Name: "bracket no prefix", Prefix: "[", Link: linkNoPrefix, ExpectFail: true},
+		{Sep: "lsbracket", Name: "both breaks", Prefix: "[", ExpectFail: true},
+		{Sep: "lsbracket", Name: "bracket no suffix", Prefix: "[", Link: linkNoSuffix, ExpectFail: true},
+
+		// ']' is not a finish separator
+		{Sep: "rsbracket", Name: "bracket", Suffix: "]", Link: linkNoPrefix, ExpectFail: true},
+
+		{Sep: "paren", Name: "2 parens no prefix", Prefix: "(", Suffix: ")", Link: linkNoPrefix},
+		{Sep: "paren", Name: "right paren", Suffix: ")", Link: linkNoPrefix},
+		{Sep: "lsbracket", Name: "bracket neither prefix suffix", Prefix: "[", Link: linkNoPrefixNoSuffix},
+		{Sep: "rand", Name: "random separators", Prefix: "%() ", Suffix: "?! $%^&"},
+	} {
+
+		orig := fmt.Sprintf("word1%s%s%sword2", tc.Prefix, ref, tc.Suffix)
+		expected := fmt.Sprintf("word1%s%s%sword2", tc.Prefix, markdown, tc.Suffix)
+
+		pref := tc.Prefix
+		suff := tc.Suffix
+		if tc.Sep != "" {
+			pref = "_" + tc.Sep + "_"
+			suff = "_" + tc.Sep + "_"
+		}
+		name := fmt.Sprintf("word1%s%s%sword2", pref, ref, suff)
+		if tc.Name != "" {
+			name = tc.Name + " " + name
+		}
+
+		t.Run(name, func(t *testing.T) {
+			l := tc.Link
+			if l.Pattern == "" {
+				l = defaultLink
+			}
+			p := setupTestPlugin(t, l)
+
+			post, _ := p.MessageWillBePosted(nil, &model.Post{
+				Message: orig,
+			})
+			if tc.ExpectFail {
+				assert.Equal(t, orig, post.Message)
+				return
+			}
+			assert.Equal(t, expected, post.Message)
+		})
+	}
+}
+
+func TestWordMatch(t *testing.T) {
+	const pattern = "(KEY)(-)(?P<ID>\\d+)"
+	const template = "[KEY-$ID](someurl/KEY-$ID)"
+	const ref = "KEY-12345"
+	const ID = "12345"
+	const markdown = "[KEY-12345](someurl/KEY-12345)"
+
+	var defaultLink = Link{
+		Pattern:   pattern,
+		Template:  template,
+		WordMatch: true,
 	}
 
 	linkNoPrefix := defaultLink
@@ -448,37 +550,6 @@ func TestAutolinkWordBoundaries(t *testing.T) {
 				return
 			}
 			assert.Equal(t, expected, post.Message)
-		})
-	}
-}
-
-func TestAutolinkErrors(t *testing.T) {
-	var tests = []struct {
-		Name string
-		Link Link
-	}{
-		{
-			"Empty Link",
-			Link{},
-		}, {
-			"No pattern",
-			Link{
-				Pattern:  "",
-				Template: "blah",
-			},
-		}, {
-			"No template",
-			Link{
-				Pattern:  "blah",
-				Template: "",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.Name, func(t *testing.T) {
-			err := tt.Link.Compile()
-			assert.NotNil(t, err)
 		})
 	}
 }
