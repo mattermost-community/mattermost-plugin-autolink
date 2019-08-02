@@ -14,6 +14,7 @@ const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"<linkref> is either the Name of a link, or its number in the `/autolink list` output. A partial Name can be specified, but some commands require it to be uniquely resolved.\n" +
 	"* `/autolink list` - list all configured links.\n" +
 	"* `/autolink list <linkref>` - list a specific link.\n" +
+	"* `/autolink test <linkref> test-text...` - test a link on a sample.\n" +
 	"* `/autolink enable <linkref>` - enable a link.\n" +
 	"* `/autolink disable <linkref>` - disable a link.\n" +
 	"* `/autolink add <name>` - add a new link, named <name>.\n" +
@@ -27,6 +28,7 @@ const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	`/autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))` + "\n" +
 	"/autolink set Visa Template VISA XXXX-XXXX-XXXX-$LastFour\n" +
 	"/autolink set Visa WordMatch true\n" +
+	"/autolink test Visa 4356-7891-2345-1111 -- (4111222233334444)\n" +
 	"/autolink enable Visa\n" +
 	"```\n" +
 	""
@@ -47,6 +49,7 @@ var autolinkCommandHandler = CommandHandler{
 		"enable":  executeEnable,
 		"add":     executeAdd,
 		"set":     executeSet,
+		"test":    executeTest,
 	},
 	defaultHandler: commandHelp,
 }
@@ -66,6 +69,13 @@ func commandHelp(p *Plugin, c *plugin.Context, header *model.CommandArgs, args .
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+	user, appErr := p.API.GetUser(commandArgs.UserId)
+	if appErr != nil {
+		return responsef("%v", appErr.Error()), nil
+	}
+	if !strings.Contains(user.Roles, "system_admin") {
+		return responsef("`/autolink` can only be executed by a system administrator."), nil
+	}
 	args := strings.Fields(commandArgs.Command)
 	if len(args) == 0 || args[0] != "/autolink" {
 		return responsef(helpText), nil
@@ -74,14 +84,6 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, commandArgs *model.CommandArg
 }
 
 func executeList(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
-	authorized, err := authorizedSysAdmin(p, header.UserId)
-	if err != nil {
-		return responsef("%v", err)
-	}
-	if !authorized {
-		return responsef("`/autolink link list` can only be run by a system administrator.")
-	}
-
 	links, refs, err := parseLinkRef(p, false, args...)
 	if err != nil {
 		return responsef("%v", err)
@@ -101,13 +103,6 @@ func executeList(p *Plugin, c *plugin.Context, header *model.CommandArgs, args .
 }
 
 func executeDelete(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
-	authorized, err := authorizedSysAdmin(p, header.UserId)
-	if err != nil {
-		return responsef("%v", err)
-	}
-	if !authorized {
-		return responsef("`/autolink link delete` can only be run by a system administrator.")
-	}
 	if len(args) != 1 {
 		return responsef(helpText)
 	}
@@ -132,13 +127,6 @@ func executeDelete(p *Plugin, c *plugin.Context, header *model.CommandArgs, args
 }
 
 func executeSet(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
-	authorized, err := authorizedSysAdmin(p, header.UserId)
-	if err != nil {
-		return responsef("%v", err)
-	}
-	if !authorized {
-		return responsef("`/autolink link delete` can only be run by a system administrator.")
-	}
 	if len(args) < 3 {
 		return responsef(helpText)
 	}
@@ -205,6 +193,36 @@ func executeSet(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 	return executeList(p, c, header, ref)
 }
 
+func executeTest(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+	if len(args) < 2 {
+		return responsef(helpText)
+	}
+
+	links, refs, err := parseLinkRef(p, false, args...)
+	if err != nil {
+		return responsef("%v", err)
+	}
+
+	restOfCommand := header.Command[10:] // "/autolink "
+	restOfCommand = restOfCommand[strings.Index(restOfCommand, args[0])+len(args[0]):]
+	orig := strings.TrimSpace(restOfCommand)
+	out := ""
+
+	for _, ref := range refs {
+		l := links[ref]
+		l.Disabled = false
+		replaced := l.Replace(orig)
+		if replaced == orig {
+			out += fmt.Sprintf("- %s: _no change_\n", l.DisplayName())
+		} else {
+			out += fmt.Sprintf("- %s: `%s`\n", l.DisplayName(), replaced)
+			orig = replaced
+		}
+	}
+
+	return responsef(out)
+}
+
 func executeEnable(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
 	if len(args) != 1 {
 		return responsef(helpText)
@@ -220,14 +238,6 @@ func executeDisable(p *Plugin, c *plugin.Context, header *model.CommandArgs, arg
 }
 
 func executeEnableImpl(p *Plugin, c *plugin.Context, header *model.CommandArgs, ref string, enabled bool) *model.CommandResponse {
-	authorized, err := authorizedSysAdmin(p, header.UserId)
-	if err != nil {
-		return responsef("%v", err)
-	}
-	if !authorized {
-		return responsef("`/autolink link delete` can only be run by a system administrator.")
-	}
-
 	links, refs, err := parseLinkRef(p, true, ref)
 	if err != nil {
 		return responsef("%v", err)
@@ -247,13 +257,6 @@ func executeEnableImpl(p *Plugin, c *plugin.Context, header *model.CommandArgs, 
 }
 
 func executeAdd(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
-	authorized, err := authorizedSysAdmin(p, header.UserId)
-	if err != nil {
-		return responsef("%v", err)
-	}
-	if !authorized {
-		return responsef("`/autolink link add` can only be run by a system administrator.")
-	}
 	if len(args) > 1 {
 		return responsef(helpText)
 	}
@@ -262,7 +265,7 @@ func executeAdd(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 		name = args[0]
 	}
 
-	err = saveConfigLinks(p, append(p.getConfig().Links, Link{
+	err := saveConfigLinks(p, append(p.getConfig().Links, Link{
 		Name: name,
 	}))
 	if err != nil {
@@ -273,17 +276,6 @@ func executeAdd(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 		return executeList(p, c, header)
 	}
 	return executeList(p, c, header, name)
-}
-
-func authorizedSysAdmin(p *Plugin, userId string) (bool, error) {
-	user, err := p.API.GetUser(userId)
-	if err != nil {
-		return false, err
-	}
-	if !strings.Contains(user.Roles, "system_admin") {
-		return false, nil
-	}
-	return true, nil
 }
 
 func responsef(format string, args ...interface{}) *model.CommandResponse {

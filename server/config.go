@@ -7,7 +7,6 @@ import (
 
 	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
-	"github.com/pkg/errors"
 )
 
 // Config from config.json
@@ -35,20 +34,19 @@ func (p *Plugin) OnConfigurationChange() error {
 		*conf = c
 	})
 
-	if c.EnableAdminCommand {
-		err := p.API.RegisterCommand(&model.Command{
-			Trigger:          "autolink",
-			DisplayName:      "Autolink",
-			Description:      "Autolink administration.",
-			AutoComplete:     true,
-			AutoCompleteHint: "[command]",
-		})
-		if err != nil {
-			return errors.WithMessage(err, "failed to register /autolink command")
+	go func() {
+		if c.EnableAdminCommand {
+			_ = p.API.RegisterCommand(&model.Command{
+				Trigger:          "autolink",
+				DisplayName:      "Autolink",
+				Description:      "Autolink administration.",
+				AutoComplete:     true,
+				AutoCompleteHint: "[command]",
+			})
+		} else {
+			_ = p.API.UnregisterCommand("", "autolink")
 		}
-	} else {
-		_ = p.API.UnregisterCommand("", "autolink")
-	}
+	}()
 
 	return nil
 }
@@ -75,7 +73,8 @@ func (conf Config) ToConfig() map[string]interface{} {
 		links = append(links, l.ToConfig())
 	}
 	return map[string]interface{}{
-		"Links": links,
+		"EnableAdminCommand": conf.EnableAdminCommand,
+		"Links":              links,
 	}
 }
 
