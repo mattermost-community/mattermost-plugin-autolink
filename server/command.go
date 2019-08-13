@@ -12,14 +12,14 @@ import (
 
 const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"<linkref> is either the Name of a link, or its number in the `/autolink list` output. A partial Name can be specified, but some commands require it to be uniquely resolved.\n" +
-	"* `/autolink list` - list all configured links.\n" +
-	"* `/autolink list <linkref>` - list a specific link.\n" +
-	"* `/autolink test <linkref> test-text...` - test a link on a sample.\n" +
-	"* `/autolink enable <linkref>` - enable a link.\n" +
-	"* `/autolink disable <linkref>` - disable a link.\n" +
 	"* `/autolink add <name>` - add a new link, named <name>.\n" +
 	"* `/autolink delete <linkref>` - delete a link.\n" +
+	"* `/autolink disable <linkref>` - disable a link.\n" +
+	"* `/autolink enable <linkref>` - enable a link.\n" +
+	"* `/autolink list <linkref>` - list a specific link.\n" +
+	"* `/autolink list` - list all configured links.\n" +
 	"* `/autolink set <linkref> <field> value...` - sets a link's field to a value. The entire command line after <field> is used for the value, unescaped, leading/trailing whitespace trimmed.\n" +
+	"* `/autolink test <linkref> test-text...` - test a link on a sample.\n" +
 	"\n" +
 	"Example:\n" +
 	"```\n" +
@@ -28,7 +28,7 @@ const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	`/autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))` + "\n" +
 	"/autolink set Visa Template VISA XXXX-XXXX-XXXX-$LastFour\n" +
 	"/autolink set Visa WordMatch true\n" +
-	"/autolink test Visa 4356-7891-2345-1111 -- (4111222233334444)\n" +
+	"/autolink test Vi 4356-7891-2345-1111 -- (4111222233334444)\n" +
 	"/autolink enable Visa\n" +
 	"```\n" +
 	""
@@ -42,7 +42,7 @@ type CommandHandler struct {
 
 var autolinkCommandHandler = CommandHandler{
 	handlers: map[string]CommandHandlerFunc{
-		"help":    commandHelp,
+		"help":    executeHelp,
 		"list":    executeList,
 		"delete":  executeDelete,
 		"disable": executeDisable,
@@ -51,7 +51,7 @@ var autolinkCommandHandler = CommandHandler{
 		"set":     executeSet,
 		"test":    executeTest,
 	},
-	defaultHandler: commandHelp,
+	defaultHandler: executeHelp,
 }
 
 func (ch CommandHandler) Handle(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
@@ -62,10 +62,6 @@ func (ch CommandHandler) Handle(p *Plugin, c *plugin.Context, header *model.Comm
 		}
 	}
 	return ch.defaultHandler(p, c, header, args...)
-}
-
-func commandHelp(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
-	return responsef(helpText)
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
@@ -276,6 +272,10 @@ func executeAdd(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 		return executeList(p, c, header)
 	}
 	return executeList(p, c, header, name)
+}
+
+func executeHelp(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+	return responsef(helpText)
 }
 
 func responsef(format string, args ...interface{}) *model.CommandResponse {
