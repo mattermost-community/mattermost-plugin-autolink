@@ -16,9 +16,9 @@ type Link struct {
 	DisableNonWordPrefix bool
 	DisableNonWordSuffix bool
 
-	template  string
-	re        *regexp.Regexp
-	multipass bool
+	template      string
+	re            *regexp.Regexp
+	canReplaceAll bool
 }
 
 // DisplayName returns a display name for the link.
@@ -35,25 +35,27 @@ func (l *Link) Compile() error {
 		return nil
 	}
 
+	// `\b` can be used with ReplaceAll since it does not consume characters,
+	// custom patterns can not and need to be processed one at a time.
+	canReplaceAll := false
 	pattern := l.Pattern
 	template := l.Template
-	multipass := false
 	if !l.DisableNonWordPrefix {
 		if l.WordMatch {
 			pattern = `\b` + pattern
+			canReplaceAll = true
 		} else {
 			pattern = `(?P<MattermostNonWordPrefix>(^|\s))` + pattern
 			template = `${MattermostNonWordPrefix}` + template
-			multipass = true
 		}
 	}
 	if !l.DisableNonWordSuffix {
 		if l.WordMatch {
 			pattern = pattern + `\b`
+			canReplaceAll = true
 		} else {
 			pattern = pattern + `(?P<MattermostNonWordSuffix>$|[\s\.\!\?\,\)])`
 			template = template + `${MattermostNonWordSuffix}`
-			multipass = true
 		}
 	}
 
@@ -63,7 +65,7 @@ func (l *Link) Compile() error {
 	}
 	l.re = re
 	l.template = template
-	l.multipass = multipass
+	l.canReplaceAll = canReplaceAll
 
 	return nil
 }
@@ -75,7 +77,7 @@ func (l Link) Replace(message string) string {
 	}
 
 	// Since they don't consume, `\b`s require no special handling, can just ReplaceAll
-	if !l.multipass {
+	if l.canReplaceAll {
 		return l.re.ReplaceAllString(message, l.template)
 	}
 
