@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"sync/atomic"
+	"sync"
 
 	"github.com/mattermost/mattermost-server/mlog"
 
@@ -15,35 +15,15 @@ import (
 type Plugin struct {
 	plugin.MattermostPlugin
 
-	links atomic.Value
-}
-
-// OnConfigurationChange is invoked when configuration changes may have been made.
-func (p *Plugin) OnConfigurationChange() error {
-	var c Configuration
-	err := p.API.LoadPluginConfiguration(&c)
-	if err != nil {
-		return err
-	}
-	links := make([]*AutoLinker, 0)
-
-	for _, l := range c.Links {
-		al, lerr := NewAutoLinker(*l)
-		if lerr != nil {
-			mlog.Error("Error creating autolinker: ")
-		}
-
-		links = append(links, al)
-	}
-
-	p.links.Store(links)
-	return nil
+	// configuration and a muttex to control concurrent access
+	conf     Config
+	confLock sync.RWMutex
 }
 
 // MessageWillBePosted is invoked when a message is posted by a user before it is committed
 // to the database.
 func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
-	links := p.links.Load().([]*AutoLinker)
+	conf := p.getConfig()
 	postText := post.Message
 	offset := 0
 	markdown.Inspect(post.Message, func(node interface{}) bool {
@@ -97,10 +77,10 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 				teamName = team.Name
 			}
 
-			for _, l := range links {
-				if len(l.link.Scope) == 0 {
+			for _, l := range conf.Links {
+				if len(l.Scope) == 0 {
 					newText = l.Replace(newText)
-				} else if teamName != "" && contains(teamName, channel.Name, l.link.Scope) {
+				} else if teamName != "" && contains(teamName, channel.Name, l.Scope) {
 					newText = l.Replace(newText)
 				}
 			}

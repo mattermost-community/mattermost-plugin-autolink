@@ -25,28 +25,24 @@ func setupTestPlugin(t *testing.T, link Link) *Plugin {
 	}, (*model.AppError)(nil))
 	p.SetAPI(api)
 
-	al, err := NewAutoLinker(link)
+	err := link.Compile()
 	require.Nil(t, err)
-	p.links.Store([]*AutoLinker{al})
+	p.conf.Links = []Link{link}
 	return p
 }
 
 const (
-	reLastFour   = `(?P<LastFour>[0-9]{4})`
-	reVISA       = `(?P<VISA>` + `(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?` + reLastFour + `)`
-	reMasterCard = `(?P<MasterCard>` + `(?P<part1>5[1-5]\d{2})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?` + reLastFour + `)`
-	reSwitchSolo = `(?P<SwitchSolo>` + `(?P<part1>67\d{2})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?` + reLastFour + `)`
-	reDiscover   = `(?P<Discover>` + `(?P<part1>6011)[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?` + reLastFour + `)`
-	reAMEX       = `(?P<AMEX>` + `(?P<part1>3[47]\d{2})[ -]?(?P<part2>\d{6})[ -]?(?P<part3>\d)` + reLastFour + `)`
+	reVISA       = `(?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))`
+	reMasterCard = `(?P<MasterCard>(?P<part1>5[1-5]\d{2})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))`
+	reSwitchSolo = `(?P<SwitchSolo>(?P<part1>67\d{2})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))`
+	reDiscover   = `(?P<Discover>(?P<part1>6011)[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))`
+	reAMEX       = `(?P<AMEX>(?P<part1>3[47]\d{2})[ -]?(?P<part2>\d{6})[ -]?(?P<part3>\d)(?P<LastFour>[0-9]{4}))`
 
-	replace4444 = `XXXX-XXXX-XXXX-$LastFour`
-	replace465  = `XXXX-XXXXXX-X$LastFour`
-
-	replaceVISA       = "VISA " + replace4444
-	replaceMasterCard = "MasterCard " + replace4444
-	replaceSwitchSolo = "Switch/Solo " + replace4444
-	replaceDiscover   = "Discover " + replace4444
-	replaceAMEX       = "American Express " + replace465
+	replaceVISA       = "VISA XXXX-XXXX-XXXX-$LastFour"
+	replaceMasterCard = "MasterCard XXXX-XXXX-XXXX-$LastFour"
+	replaceSwitchSolo = "Switch/Solo XXXX-XXXX-XXXX-$LastFour"
+	replaceDiscover   = "Discover XXXX-XXXX-XXXX-$LastFour"
+	replaceAMEX       = "American Express XXXX-XXXXXX-X$LastFour"
 )
 
 func TestCCRegex(t *testing.T) {
@@ -121,7 +117,7 @@ func TestCCRegex(t *testing.T) {
 }
 
 const (
-	reSSN      = `(?P<SSN>(?P<part1>\d{3})[ -]?(?P<part2>\d{2})[ -]?` + reLastFour + `)`
+	reSSN      = `(?P<SSN>(?P<part1>\d{3})[ -]?(?P<part2>\d{2})[ -]?(?P<LastFour>[0-9]{4}))`
 	replaceSSN = `XXX-XX-$LastFour`
 )
 
@@ -156,13 +152,13 @@ func TestSSNRegex(t *testing.T) {
 func TestCreditCard(t *testing.T) {
 	var tests = []struct {
 		Name            string
-		Link            *Link
+		Link            Link
 		inputMessage    string
 		expectedMessage string
 	}{
 		{
 			"VISA happy",
-			&Link{
+			Link{
 				Pattern:  reVISA,
 				Template: replaceVISA,
 			},
@@ -170,7 +166,7 @@ func TestCreditCard(t *testing.T) {
 			"A credit card VISA XXXX-XXXX-XXXX-1234 mentioned",
 		}, {
 			"VISA",
-			&Link{
+			Link{
 				Pattern:              reVISA,
 				Template:             replaceVISA,
 				DisableNonWordPrefix: true,
@@ -180,35 +176,34 @@ func TestCreditCard(t *testing.T) {
 			"A credit cardVISA XXXX-XXXX-XXXX-3333mentioned",
 		}, {
 			"Multiple VISA replacements",
-			&Link{
+			Link{
 				Pattern:  reVISA,
 				Template: replaceVISA,
 			},
-			"Credit cards 4111-1111-2222-3333 and 4222-3333-4444-5678 mentioned",
-			"Credit cards VISA XXXX-XXXX-XXXX-3333 and VISA XXXX-XXXX-XXXX-5678 mentioned",
+			"Credit cards 4111-1111-2222-3333 4222-3333-4444-5678 mentioned",
+			"Credit cards VISA XXXX-XXXX-XXXX-3333 VISA XXXX-XXXX-XXXX-5678 mentioned",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			al, _ := NewAutoLinker(*tt.Link)
-			actual := al.Replace(tt.inputMessage)
-
+			_ = tt.Link.Compile()
+			actual := tt.Link.Replace(tt.inputMessage)
 			assert.Equal(t, tt.expectedMessage, actual)
 		})
 	}
 }
 
-func TestAutolink(t *testing.T) {
+func TestLink(t *testing.T) {
 	for _, tc := range []struct {
 		Name            string
-		Link            *Link
+		Link            Link
 		Message         string
 		ExpectedMessage string
 	}{
 		{
 			"Simple pattern",
-			&Link{
+			Link{
 				Pattern:  "(Mattermost)",
 				Template: "[Mattermost](https://mattermost.com)",
 			},
@@ -216,7 +211,7 @@ func TestAutolink(t *testing.T) {
 			"Welcome to [Mattermost](https://mattermost.com)!",
 		}, {
 			"Pattern with variable name accessed using $variable",
-			&Link{
+			Link{
 				Pattern:  "(?P<key>Mattermost)",
 				Template: "[$key](https://mattermost.com)",
 			},
@@ -224,7 +219,7 @@ func TestAutolink(t *testing.T) {
 			"Welcome to [Mattermost](https://mattermost.com)!",
 		}, {
 			"Multiple replacments",
-			&Link{
+			Link{
 				Pattern:  "(?P<key>Mattermost)",
 				Template: "[$key](https://mattermost.com)",
 			},
@@ -232,7 +227,7 @@ func TestAutolink(t *testing.T) {
 			"Welcome to [Mattermost](https://mattermost.com) and have fun with [Mattermost](https://mattermost.com)!",
 		}, {
 			"Pattern with variable name accessed using ${variable}",
-			&Link{
+			Link{
 				Pattern:  "(?P<key>Mattermost)",
 				Template: "[${key}](https://mattermost.com)",
 			},
@@ -240,7 +235,7 @@ func TestAutolink(t *testing.T) {
 			"Welcome to [Mattermost](https://mattermost.com)!",
 		}, {
 			"Jira example",
-			&Link{
+			Link{
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -248,7 +243,7 @@ func TestAutolink(t *testing.T) {
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 		}, {
 			"Jira example 2 (within a ())",
-			&Link{
+			Link{
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -256,7 +251,7 @@ func TestAutolink(t *testing.T) {
 			"Link in brackets should link (see [MM-12345](https://mattermost.atlassian.net/browse/MM-12345))",
 		}, {
 			"Jira example 3 (before ,)",
-			&Link{
+			Link{
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -264,7 +259,7 @@ func TestAutolink(t *testing.T) {
 			"Link a ticket [MM-12345](https://mattermost.atlassian.net/browse/MM-12345), before a comma",
 		}, {
 			"Jira example 3 (at begin of the message)",
-			&Link{
+			Link{
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -272,7 +267,7 @@ func TestAutolink(t *testing.T) {
 			"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 		}, {
 			"Pattern word prefix and suffix disabled",
-			&Link{
+			Link{
 				Pattern:              "(?P<previous>^|\\s)(MM)(-)(?P<jira_id>\\d+)",
 				Template:             "${previous}[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 				DisableNonWordPrefix: true,
@@ -282,7 +277,7 @@ func TestAutolink(t *testing.T) {
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 		}, {
 			"Pattern word prefix and suffix disabled (at begin of the message)",
-			&Link{
+			Link{
 				Pattern:              "(?P<previous>^|\\s)(MM)(-)(?P<jira_id>\\d+)",
 				Template:             "${previous}[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 				DisableNonWordPrefix: true,
@@ -292,7 +287,7 @@ func TestAutolink(t *testing.T) {
 			"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 		}, {
 			"Pattern word prefix and suffix enable (in the middle of other text)",
-			&Link{
+			Link{
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -300,7 +295,7 @@ func TestAutolink(t *testing.T) {
 			"WelcomeMM-12345should not link!",
 		}, {
 			"Pattern word prefix and suffix disabled (in the middle of other text)",
-			&Link{
+			Link{
 				Pattern:              "(MM)(-)(?P<jira_id>\\d+)",
 				Template:             "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 				DisableNonWordPrefix: true,
@@ -310,7 +305,7 @@ func TestAutolink(t *testing.T) {
 			"Welcome[MM-12345](https://mattermost.atlassian.net/browse/MM-12345)should link!",
 		}, {
 			"Not relinking",
-			&Link{
+			Link{
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -318,7 +313,7 @@ func TestAutolink(t *testing.T) {
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should not re-link!",
 		}, {
 			"Url replacement",
-			&Link{
+			Link{
 				Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -326,7 +321,7 @@ func TestAutolink(t *testing.T) {
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 		}, {
 			"Url replacement multiple times",
-			&Link{
+			Link{
 				Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -334,7 +329,7 @@ func TestAutolink(t *testing.T) {
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345). should link [MM-12346](https://mattermost.atlassian.net/browse/MM-12346) !",
 		}, {
 			"Url replacement multiple times and at beginning",
-			&Link{
+			Link{
 				Pattern:  "(https:\\/\\/mattermost.atlassian.net\\/browse\\/)(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -342,7 +337,7 @@ func TestAutolink(t *testing.T) {
 			"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345) [MM-12345](https://mattermost.atlassian.net/browse/MM-12345)",
 		}, {
 			"Url replacement at end",
-			&Link{
+			Link{
 				Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -352,18 +347,17 @@ func TestAutolink(t *testing.T) {
 	} {
 
 		t.Run(tc.Name, func(t *testing.T) {
-			p := setupTestPlugin(t, *tc.Link)
+			p := setupTestPlugin(t, tc.Link)
 			post, _ := p.MessageWillBePosted(nil, &model.Post{
 				Message: tc.Message,
 			})
 
 			assert.Equal(t, tc.ExpectedMessage, post.Message)
 		})
-
 	}
 }
 
-func TestAutolinkWordBoundaries(t *testing.T) {
+func TestLegacyWordBoundaries(t *testing.T) {
 	const pattern = "(KEY)(-)(?P<ID>\\d+)"
 	const template = "[KEY-$ID](someurl/KEY-$ID)"
 	const ref = "KEY-12345"
@@ -388,40 +382,142 @@ func TestAutolinkWordBoundaries(t *testing.T) {
 	for _, tc := range []struct {
 		Name       string
 		Sep        string
-		Link       *Link
+		Link       Link
 		Prefix     string
 		Suffix     string
 		ExpectFail bool
 	}{
 		{Name: "space both sides both breaks required", Prefix: " ", Suffix: " "},
-		{Name: "space both sides left break not required", Prefix: " ", Suffix: " ", Link: &linkNoPrefix},
-		{Name: "space both sides right break not required", Prefix: " ", Suffix: " ", Link: &linkNoSuffix},
-		{Name: "space both sides neither break required", Prefix: " ", Suffix: " ", Link: &linkNoPrefixNoSuffix},
+		{Name: "space both sides left break not required", Prefix: " ", Suffix: " ", Link: linkNoPrefix},
+		{Name: "space both sides right break not required", Prefix: " ", Suffix: " ", Link: linkNoSuffix},
+		{Name: "space both sides neither break required", Prefix: " ", Suffix: " ", Link: linkNoPrefixNoSuffix},
 
 		{Name: "space left side both breaks required", Prefix: " ", ExpectFail: true},
-		{Name: "space left side left break not required", Prefix: " ", Link: &linkNoPrefix, ExpectFail: true},
-		{Name: "space left side right break not required", Prefix: " ", Link: &linkNoSuffix},
-		{Name: "space left side neither break required", Prefix: " ", Link: &linkNoPrefixNoSuffix},
+		{Name: "space left side left break not required", Prefix: " ", Link: linkNoPrefix, ExpectFail: true},
+		{Name: "space left side right break not required", Prefix: " ", Link: linkNoSuffix},
+		{Name: "space left side neither break required", Prefix: " ", Link: linkNoPrefixNoSuffix},
 
 		{Name: "space right side both breaks required", Suffix: " ", ExpectFail: true},
-		{Name: "space right side left break not required", Suffix: " ", Link: &linkNoPrefix},
-		{Name: "space right side right break not required", Suffix: " ", Link: &linkNoSuffix, ExpectFail: true},
-		{Name: "space right side neither break required", Prefix: " ", Link: &linkNoPrefixNoSuffix},
+		{Name: "space right side left break not required", Suffix: " ", Link: linkNoPrefix},
+		{Name: "space right side right break not required", Suffix: " ", Link: linkNoSuffix, ExpectFail: true},
+		{Name: "space right side neither break required", Prefix: " ", Link: linkNoPrefixNoSuffix},
 
 		{Name: "none both breaks required", ExpectFail: true},
-		{Name: "none left break not required", Link: &linkNoPrefix, ExpectFail: true},
-		{Name: "none right break not required", Link: &linkNoSuffix, ExpectFail: true},
-		{Name: "none neither break required", Link: &linkNoPrefixNoSuffix},
+		{Name: "none left break not required", Link: linkNoPrefix, ExpectFail: true},
+		{Name: "none right break not required", Link: linkNoSuffix, ExpectFail: true},
+		{Name: "none neither break required", Link: linkNoPrefixNoSuffix},
+
+		// '(', '[' are not start separators
+		{Sep: "paren", Name: "2 parens", Prefix: "(", Suffix: ")", ExpectFail: true},
+		{Sep: "paren", Name: "2 parens no suffix", Prefix: "(", Suffix: ")", Link: linkNoSuffix, ExpectFail: true},
+		{Sep: "paren", Name: "left paren", Prefix: "(", Link: linkNoSuffix, ExpectFail: true},
+		{Sep: "sbracket", Name: "2 brackets", Prefix: "[", Suffix: "]", ExpectFail: true},
+		{Sep: "lsbracket", Name: "bracket no prefix", Prefix: "[", Link: linkNoPrefix, ExpectFail: true},
+		{Sep: "lsbracket", Name: "both breaks", Prefix: "[", ExpectFail: true},
+		{Sep: "lsbracket", Name: "bracket no suffix", Prefix: "[", Link: linkNoSuffix, ExpectFail: true},
+
+		// ']' is not a finish separator
+		{Sep: "rsbracket", Name: "bracket", Suffix: "]", Link: linkNoPrefix, ExpectFail: true},
+
+		{Sep: "paren", Name: "2 parens no prefix", Prefix: "(", Suffix: ")", Link: linkNoPrefix},
+		{Sep: "paren", Name: "right paren", Suffix: ")", Link: linkNoPrefix},
+		{Sep: "lsbracket", Name: "bracket neither prefix suffix", Prefix: "[", Link: linkNoPrefixNoSuffix},
+		{Sep: "rand", Name: "random separators", Prefix: "%() ", Suffix: "?! $%^&"},
+	} {
+
+		orig := fmt.Sprintf("word1%s%s%sword2", tc.Prefix, ref, tc.Suffix)
+		expected := fmt.Sprintf("word1%s%s%sword2", tc.Prefix, markdown, tc.Suffix)
+
+		pref := tc.Prefix
+		suff := tc.Suffix
+		if tc.Sep != "" {
+			pref = "_" + tc.Sep + "_"
+			suff = "_" + tc.Sep + "_"
+		}
+		name := fmt.Sprintf("word1%s%s%sword2", pref, ref, suff)
+		if tc.Name != "" {
+			name = tc.Name + " " + name
+		}
+
+		t.Run(name, func(t *testing.T) {
+			l := tc.Link
+			if l.Pattern == "" {
+				l = defaultLink
+			}
+			p := setupTestPlugin(t, l)
+
+			post, _ := p.MessageWillBePosted(nil, &model.Post{
+				Message: orig,
+			})
+			if tc.ExpectFail {
+				assert.Equal(t, orig, post.Message)
+				return
+			}
+			assert.Equal(t, expected, post.Message)
+		})
+	}
+}
+
+func TestWordMatch(t *testing.T) {
+	const pattern = "(KEY)(-)(?P<ID>\\d+)"
+	const template = "[KEY-$ID](someurl/KEY-$ID)"
+	const ref = "KEY-12345"
+	const ID = "12345"
+	const markdown = "[KEY-12345](someurl/KEY-12345)"
+
+	var defaultLink = Link{
+		Pattern:   pattern,
+		Template:  template,
+		WordMatch: true,
+	}
+
+	linkNoPrefix := defaultLink
+	linkNoPrefix.DisableNonWordPrefix = true
+
+	linkNoSuffix := defaultLink
+	linkNoSuffix.DisableNonWordSuffix = true
+
+	linkNoPrefixNoSuffix := defaultLink
+	linkNoPrefixNoSuffix.DisableNonWordSuffix = true
+	linkNoPrefixNoSuffix.DisableNonWordPrefix = true
+
+	for _, tc := range []struct {
+		Name       string
+		Sep        string
+		Link       Link
+		Prefix     string
+		Suffix     string
+		ExpectFail bool
+	}{
+		{Name: "space both sides both breaks required", Prefix: " ", Suffix: " "},
+		{Name: "space both sides left break not required", Prefix: " ", Suffix: " ", Link: linkNoPrefix},
+		{Name: "space both sides right break not required", Prefix: " ", Suffix: " ", Link: linkNoSuffix},
+		{Name: "space both sides neither break required", Prefix: " ", Suffix: " ", Link: linkNoPrefixNoSuffix},
+
+		{Name: "space left side both breaks required", Prefix: " ", ExpectFail: true},
+		{Name: "space left side left break not required", Prefix: " ", Link: linkNoPrefix, ExpectFail: true},
+		{Name: "space left side right break not required", Prefix: " ", Link: linkNoSuffix},
+		{Name: "space left side neither break required", Prefix: " ", Link: linkNoPrefixNoSuffix},
+
+		{Name: "space right side both breaks required", Suffix: " ", ExpectFail: true},
+		{Name: "space right side left break not required", Suffix: " ", Link: linkNoPrefix},
+		{Name: "space right side right break not required", Suffix: " ", Link: linkNoSuffix, ExpectFail: true},
+		{Name: "space right side neither break required", Prefix: " ", Link: linkNoPrefixNoSuffix},
+
+		{Name: "none both breaks required", ExpectFail: true},
+		{Name: "none left break not required", Link: linkNoPrefix, ExpectFail: true},
+		{Name: "none right break not required", Link: linkNoSuffix, ExpectFail: true},
+		{Name: "none neither break required", Link: linkNoPrefixNoSuffix},
 
 		{Sep: "paren", Name: "2 parens", Prefix: "(", Suffix: ")"},
-		{Sep: "paren", Name: "left paren", Prefix: "(", Link: &linkNoSuffix},
-		{Sep: "paren", Name: "right paren", Suffix: ")", Link: &linkNoPrefix},
+		{Sep: "paren", Name: "left paren", Prefix: "(", Link: linkNoSuffix},
+		{Sep: "paren", Name: "right paren", Suffix: ")", Link: linkNoPrefix},
 		{Sep: "sbracket", Name: "2 brackets", Prefix: "[", Suffix: "]"},
 		{Sep: "lsbracket", Name: "both breaks", Prefix: "[", ExpectFail: true},
-		{Sep: "lsbracket", Name: "bracket no prefix", Prefix: "[", Link: &linkNoPrefix, ExpectFail: true},
-		{Sep: "lsbracket", Name: "bracket no suffix", Prefix: "[", Link: &linkNoSuffix},
-		{Sep: "lsbracket", Name: "bracket neither prefix suffix", Prefix: "[", Link: &linkNoPrefixNoSuffix},
-		{Sep: "rsbracket", Name: "bracket", Suffix: "]", Link: &linkNoPrefix},
+		{Sep: "lsbracket", Name: "bracket no prefix", Prefix: "[", Link: linkNoPrefix, ExpectFail: true},
+		{Sep: "lsbracket", Name: "bracket no suffix", Prefix: "[", Link: linkNoSuffix},
+		{Sep: "lsbracket", Name: "bracket neither prefix suffix", Prefix: "[", Link: linkNoPrefixNoSuffix},
+		{Sep: "rsbracket", Name: "bracket", Suffix: "]", Link: linkNoPrefix},
 		{Sep: "rand", Name: "random separators", Prefix: "% (", Suffix: "-- $%^&"},
 	} {
 
@@ -441,10 +537,10 @@ func TestAutolinkWordBoundaries(t *testing.T) {
 
 		t.Run(name, func(t *testing.T) {
 			l := tc.Link
-			if l == nil {
-				l = &defaultLink
+			if l.Pattern == "" {
+				l = defaultLink
 			}
-			p := setupTestPlugin(t, *l)
+			p := setupTestPlugin(t, l)
 
 			post, _ := p.MessageWillBePosted(nil, &model.Post{
 				Message: orig,
@@ -454,37 +550,6 @@ func TestAutolinkWordBoundaries(t *testing.T) {
 				return
 			}
 			assert.Equal(t, expected, post.Message)
-		})
-	}
-}
-
-func TestAutolinkErrors(t *testing.T) {
-	var tests = []struct {
-		Name string
-		Link Link
-	}{
-		{
-			"Empty Link",
-			Link{},
-		}, {
-			"No pattern",
-			Link{
-				Pattern:  "",
-				Template: "blah",
-			},
-		}, {
-			"No template",
-			Link{
-				Pattern:  "blah",
-				Template: "",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.Name, func(t *testing.T) {
-			_, err := NewAutoLinker(tt.Link)
-			assert.NotNil(t, err)
 		})
 	}
 }
