@@ -17,7 +17,6 @@ Use it to add custom auto-linking on your Mattermost system, such as adding link
 *..automatically links to the corresponding issue in the Jira project*
 
 ## Configuration
-
 1. Go to **System Console > Plugins > Management** and click **Enable** to enable the Autolink plugin.
     - If you are running Mattermost v5.11 or earlier, you must first go to the [releases page of this GitHub repository](https://github.com/mattermost/mattermost-plugin-autolink), download the latest release, and upload it to your Mattermost instance [following this documentation](https://docs.mattermost.com/administration/plugins.html#plugin-uploads).
 
@@ -25,7 +24,7 @@ Use it to add custom auto-linking on your Mattermost system, such as adding link
 
 ## Usage
 
-Autolinks have 2 parts: a **Pattern** which is a regular expression search pattern utilizing the [Golang regexp library](https://golang.org/pkg/regexp/), and a **Template** that gets expanded. You can create variables in the pattern with the syntax `(?P<name>...)` which will then be expanded by the corresponding template.
+Autolinks have 3 parts: a **Pattern** which is a regular expression search pattern utilizing the [Golang regexp library](https://golang.org/pkg/regexp/), a **Template** that gets expanded and an optional **Scope** parameter  to define which team/channel the autolink applies to. You can create variables in the pattern with the syntax `(?P<name>...)` which will then be expanded by the corresponding template.
 
 In the template, a variable is denoted by a substring of the form `$name` or `${name}`, where `name` is a non-empty sequence of letters, digits, and underscores. A purely numeric name like $1 refers to the submatch with the corresponding index. In the $name form, name is taken to be as long as possible: $1x is equivalent to ${1x}, not ${1}x, and, $10 is equivalent to ${10}, not ${1}0. To insert a literal $ in the output, use $$ in the template.
 
@@ -106,6 +105,7 @@ Below is an example of regexp patterns used for autolinking at https://community
 1. Autolinking `Ticket ####:text with alphanumberic characters and spaces` to a ticket link. Use:
   - Pattern: `(?i)(ticket )(?P<ticket_id>.+)(:)(?P<ticket_info>.*)`, or if the ticket_id is a number, then `(?i)(ticket )(?P<ticket_id>\d+)(:)(?P<ticket_info>.*)`
   - Template: `[Ticket ${ticket_id}: ${ticket_info}](https://github.com/mattermost/mattermost-server/issues/${ticket_id})`
+  - Scope: `["teams/committers"]` (optional)
 
 2. Autolinking a link to a GitHub PR to a format "pr-repo-id". Use:
   - Pattern: `https://github\\.com/mattermost/(?P<repo>.+)/pull/(?P<id>\\d+)`
@@ -124,6 +124,20 @@ Below is an example of regexp patterns used for autolinking at https://community
 - https://regex-golang.appspot.com/,
 - https://regex101.com/,
 - https://www.regextester.com/.
+
+## Configuration Management
+The /autolink commands allow the users to easily edit the configurations.
+
+ Commands | Description | Usage
+ ---|---|---|
+ list | Lists all configured links |
+ list \<*linkref*> | List a specific link which matched the link reference |
+ test \<*linkref*> test-text | Test a link on the text provided | /autolink test Visa 4356-7891-2345-1111 -- (4111222233334444)
+ enable \<*linkref*> | Enables the link | /autolink enable Visa
+ disable \<*linkref*> | Disable the link |/autolink disable Visa
+ add \<*name*> | Creates a new link with the name specified in the command  | /autolink add Visa
+ delete \<*linkref*> |  Delete the link | /autolink delete Visa
+ set \<*linkref*> \<*field*> *value* | Sets a link's field to a value <br> *Fields* - <br> <ul><li>Template - Sets the Template field</li><li>Pattern - Sets the Pattern field </li> <li> WordMatch - If true uses the [\b word boundaries](https://www.regular-expressions.info/wordboundaries.html) </li> | <br> /autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4})) <br><br> /autolink set Visa Template VISA XXXX-XXXX-XXXX-$LastFour <br><br> /autolink set Visa WordMatch true <br><br>
 
 
 ## Development
