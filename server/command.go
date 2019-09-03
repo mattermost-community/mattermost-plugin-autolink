@@ -281,7 +281,7 @@ func executeHelp(p *Plugin, c *plugin.Context, header *model.CommandArgs, args .
 }
 
 func executeExport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
-	config, err := json.MarshalIndent(p.API.GetConfig().PluginSettings.Plugins["mattermost-autolink"], "", "    ")
+	config, err := json.MarshalIndent(p.getConfig(), "", "    ")
 
 	if err != nil {
 		return responsef(err.Error())
