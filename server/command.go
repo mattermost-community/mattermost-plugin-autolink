@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -50,6 +51,7 @@ var autolinkCommandHandler = CommandHandler{
 		"add":     executeAdd,
 		"set":     executeSet,
 		"test":    executeTest,
+		"export":  executeExport,
 	},
 	defaultHandler: executeHelp,
 }
@@ -276,6 +278,16 @@ func executeAdd(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 
 func executeHelp(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
 	return responsef(helpText)
+}
+
+func executeExport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+	config, err := json.MarshalIndent(p.API.GetConfig().PluginSettings.Plugins["mattermost-autolink"], "", "    ")
+
+	if err != nil {
+		return responsef(err.Error())
+	}
+
+	return responsef("```\n" + string(config) + "```")
 }
 
 func responsef(format string, args ...interface{}) *model.CommandResponse {
