@@ -307,7 +307,9 @@ func executeImport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args
 		return responsef(configErr.Error())
 	}
 
-	p.conf = config
+	p.updateConfig(func(conf *Config) {
+		*conf = config
+	})
 
 	return responsef("Imported `" + info.Name + "`")
 }
