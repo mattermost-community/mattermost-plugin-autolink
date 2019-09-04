@@ -281,13 +281,26 @@ func executeHelp(p *Plugin, c *plugin.Context, header *model.CommandArgs, args .
 }
 
 func executeExport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
-	config, err := json.MarshalIndent(p.getConfig(), "", "    ")
-
-	if err != nil {
-		return responsef(err.Error())
+	config, configErr := json.MarshalIndent(p.getConfig(), "", "    ")
+	if configErr != nil {
+		return responsef(configErr.Error())
 	}
 
-	return responsef("```\n" + string(config) + "```")
+	file, fileErr := p.API.UploadFile(config, header.ChannelId, "autolink-config.json")
+	if fileErr != nil {
+		return responsef(fileErr.Error())
+	}
+
+	_, postErr := p.API.CreatePost(&model.Post{
+		UserId:    header.UserId,
+		ChannelId: header.ChannelId,
+		FileIds:   []string{file.Id},
+	})
+	if postErr != nil {
+		return responsef(postErr.Error())
+	}
+
+	return responsef("Exported `autolink-config.json`")
 }
 
 func responsef(format string, args ...interface{}) *model.CommandResponse {
