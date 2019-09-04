@@ -330,7 +330,7 @@ func executeExport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args
 		return responsef(postErr.Error())
 	}
 
-	return responsef("Exported `autolink-config.json`")
+	return responsef("Exported `" + file.Name + "`")
 }
 
 func responsef(format string, args ...interface{}) *model.CommandResponse {
