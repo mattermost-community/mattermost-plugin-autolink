@@ -51,6 +51,7 @@ var autolinkCommandHandler = CommandHandler{
 		"add":     executeAdd,
 		"set":     executeSet,
 		"test":    executeTest,
+		"import":  executeImport,
 		"export":  executeExport,
 	},
 	defaultHandler: executeHelp,
@@ -278,6 +279,35 @@ func executeAdd(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 
 func executeHelp(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
 	return responsef(helpText)
+}
+
+func executeImport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+	posts, postsErr := p.API.GetPostsForChannel(header.ChannelId, 0, 1)
+	if postsErr != nil {
+		return responsef(postsErr.Error())
+	}
+
+	fileID := posts.ToSlice()[0].FileIds[0]
+
+	file, fileErr := p.API.GetFile(fileID)
+	if fileErr != nil {
+		return responsef(fileErr.Error())
+	}
+
+	info, infoErr := p.API.GetFileInfo(fileID)
+	if infoErr != nil {
+		return responsef(infoErr.Error())
+	}
+
+	var config Config
+	configErr := json.Unmarshal(file, &config)
+	if configErr != nil {
+		return responsef(configErr.Error())
+	}
+
+	p.conf = config
+
+	return responsef("Imported `" + info.Name + "`")
 }
 
 func executeExport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
