@@ -284,21 +284,23 @@ func executeHelp(p *Plugin, c *plugin.Context, header *model.CommandArgs, args .
 }
 
 func executeImport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
-	posts, postsErr := p.API.GetPostsForChannel(header.ChannelId, 0, 1)
-	if postsErr != nil {
-		return responsef(postsErr.Error())
+	posts, err := p.API.GetPostsForChannel(header.ChannelId, 0, 1)
+	if err != nil {
+		return responsef(err.Error())
 	}
 
 	fileID := posts.ToSlice()[0].FileIds[0]
 
-	file, fileErr := p.API.GetFile(fileID)
-	if fileErr != nil {
-		return responsef(fileErr.Error())
+	var file []byte
+	file, err = p.API.GetFile(fileID)
+	if err != nil {
+		return responsef(err.Error())
 	}
 
-	info, infoErr := p.API.GetFileInfo(fileID)
-	if infoErr != nil {
-		return responsef(infoErr.Error())
+	var info *model.FileInfo
+	info, err = p.API.GetFileInfo(fileID)
+	if err != nil {
+		return responsef(err.Error())
 	}
 
 	var config Config
