@@ -22,7 +22,7 @@ const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"* `/autolink set <linkref> <field> value...` - sets a link's field to a value. The entire command line after <field> is used for the value, unescaped, leading/trailing whitespace trimmed.\n" +
 	"* `/autolink test <linkref> test-text...` - test a link on a sample.\n" +
 	"* `/autolink import` - imports the Autolink configuration file uploaded in the previous post\n" +
-	"* `/autolink export` - exports the Autolink configuration as `autolink-config.json` file to the current channel\n" +
+	"* `/autolink export` - exports the Autolink configuration as `autolink-config.json` to the current channel\n" +
 	"\n" +
 	"Example:\n" +
 	"```\n" +
