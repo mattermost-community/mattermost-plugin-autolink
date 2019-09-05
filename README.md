@@ -22,6 +22,8 @@ Use it to add custom auto-linking on your Mattermost system, such as adding link
 
 2. Modify your `config.json` file to include the types of regexp patterns you wish to match, under the `PluginSettings`. See below for an example of what this should look like.
 
+**Tip**: There are useful Regular Expression tools online to help test and validate that your formulas are working as expected.  One such tool is [Regex101](https://regex101.com/) . Here is an example Regular Expression to capture a post that includes a [VISA card number](https://regex101.com/r/JGKCTN/1) - which you could then obfuscate with the `Pattern` so people don't accidentally share sensitive info in your channels.
+
 ## Usage
 
 Autolinks have 3 parts: a **Pattern** which is a regular expression search pattern utilizing the [Golang regexp library](https://golang.org/pkg/regexp/), a **Template** that gets expanded and an optional **Scope** parameter  to define which team/channel the autolink applies to. You can create variables in the pattern with the syntax `(?P<name>...)` which will then be expanded by the corresponding template.
