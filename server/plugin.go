@@ -94,5 +94,7 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 	})
 	post.Message = postText
 
+	post.Hashtags, _ = model.ParseHashtags(post.Message)
+
 	return post, ""
 }
