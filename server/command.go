@@ -291,14 +291,12 @@ func executeImport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args
 
 	fileID := posts.ToSlice()[0].FileIds[0]
 
-	var file []byte
-	file, err = p.API.GetFile(fileID)
+	file, err := p.API.GetFile(fileID)
 	if err != nil {
 		return responsef(err.Error())
 	}
 
-	var info *model.FileInfo
-	info, err = p.API.GetFileInfo(fileID)
+	info, err := p.API.GetFileInfo(fileID)
 	if err != nil {
 		return responsef(err.Error())
 	}
