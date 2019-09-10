@@ -319,11 +319,13 @@ func executeImport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args
 func executeExport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
 	config, _ := json.MarshalIndent(p.getConfig(), "", "    ")
 	info, _ := p.API.UploadFile(config, header.ChannelId, "autolink-config.json")
+	channel, _ := p.API.GetChannel(header.ChannelId)
 
 	_, err := p.API.CreatePost(&model.Post{
 		UserId:    header.UserId,
 		ChannelId: header.ChannelId,
 		FileIds:   []string{info.Id},
+		Message:   "Autolink config file `" + info.Name + "` exported to channel \"" + channel.DisplayName + "\".",
 	})
 	if err != nil {
 		return responsef(err.Error())
