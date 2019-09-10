@@ -289,14 +289,17 @@ func executeImport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args
 		return responsef(err.Error())
 	}
 
-	fileID := posts.ToSlice()[0].FileIds[0]
+	previous := posts.ToSlice()[0]
+	if len(previous.FileIds) == 0 {
+		return responsef("Error: config file not uploaded as attachment in previous post")
+	}
 
-	file, err := p.API.GetFile(fileID)
+	file, err := p.API.GetFile(previous.FileIds[0])
 	if err != nil {
 		return responsef(err.Error())
 	}
 
-	info, err := p.API.GetFileInfo(fileID)
+	info, err := p.API.GetFileInfo(previous.FileIds[0])
 	if err != nil {
 		return responsef(err.Error())
 	}
