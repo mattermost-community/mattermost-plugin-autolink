@@ -307,14 +307,14 @@ func executeImport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args
 	var config Config
 	configErr := json.Unmarshal(file, &config)
 	if configErr != nil {
-		return responsef("Error: `" + info.Name + "` is not a valid Autolink config file")
+		return responsef("Error: `%s` is not a valid Autolink config file", info.Name)
 	}
 
 	p.updateConfig(func(conf *Config) {
 		*conf = config
 	})
 
-	return responsef("Imported `" + info.Name + "`")
+	return responsef("Imported `%s`", info.Name)
 }
 
 func executeExport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
