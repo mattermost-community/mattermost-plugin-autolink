@@ -318,18 +318,29 @@ func executeImport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args
 }
 
 func executeExport(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
-	config, _ := json.MarshalIndent(p.getConfig(), "", "    ")
-	info, _ := p.API.UploadFile(config, header.ChannelId, "autolink-config.json")
-	channel, _ := p.API.GetChannel(header.ChannelId)
+	config, configErr := json.MarshalIndent(p.getConfig(), "", "    ")
+	if configErr != nil {
+		return responsef("Error: failed to convert Autolink config to JSON")
+	}
 
-	_, err := p.API.CreatePost(&model.Post{
+	info, err := p.API.UploadFile(config, header.ChannelId, "autolink-config.json")
+	if err != nil {
+		return responsef("Error: failed to upload config file as attachment")
+	}
+
+	channel, err := p.API.GetChannel(header.ChannelId)
+	if err != nil {
+		return responsef("Error: failed to find channel")
+	}
+
+	_, err = p.API.CreatePost(&model.Post{
 		UserId:    header.UserId,
 		ChannelId: header.ChannelId,
 		FileIds:   []string{info.Id},
 		Message:   "Autolink config file `" + info.Name + "` exported to channel \"" + channel.DisplayName + "\".",
 	})
 	if err != nil {
-		return responsef(err.Error())
+		return responsef("Error: failed to create post")
 	}
 
 	return responsef("Exported `" + info.Name + "`")
