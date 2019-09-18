@@ -224,3 +224,51 @@ func TestSpecialCases(t *testing.T) {
 		})
 	}
 }
+
+func TestHashtags(t *testing.T) {
+	conf := Config{
+		Links: []Link{
+			Link{
+				Pattern:  "foo",
+				Template: "#bar",
+			},
+			Link{
+				Pattern:  "hash tags",
+				Template: "#hash #tags",
+			},
+		},
+	}
+
+	testChannel := model.Channel{
+		Name: "TestChanel",
+	}
+
+	testTeam := model.Team{
+		Name: "TestTeam",
+	}
+
+	api := &plugintest.API{}
+
+	api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.Config")).Return(func(dest interface{}) error {
+		*dest.(*Config) = conf
+		return nil
+	})
+	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil))
+
+	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
+
+	p := Plugin{}
+	p.SetAPI(api)
+	p.OnConfigurationChange()
+
+	post := &model.Post{Message: "foo"}
+	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
+
+	assert.Equal(t, "#bar", rpost.Hashtags)
+
+	post.Message = "hash tags"
+	rpost, _ = p.MessageWillBePosted(&plugin.Context{}, post)
+
+	assert.Equal(t, "#hash #tags", rpost.Hashtags)
+}
