@@ -2,7 +2,8 @@
   "id": "mattermost-autolink",
   "name": "Autolink",
   "description": "Automatically rewrite text matching a regular expression into a Markdown link.",
-  "version": "1.1.0",
+  "version": "1.1.1",
+  "min_server_version": "5.15.0",
   "server": {
     "executables": {
       "linux-amd64": "server/dist/plugin-linux-amd64",
@@ -11,7 +12,7 @@
     }
   },
   "settings_schema": {
-    "header": "Configure this plugin directly in the config.json file. Learn more [in our documentation](https://github.com/mattermost/mattermost-plugin-autolink/blob/master/README.md).\n\nTo report an issue, make a suggestion or a contribution, [check the plugin repository](https://github.com/mattermost/mattermost-plugin-autolink).",
+    "header": "Configure this plugin directly in the config.json file, or using the /autolink command. Learn more [in our documentation](https://github.com/mattermost/mattermost-plugin-autolink/blob/master/README.md).\n\nTo report an issue, make a suggestion or a contribution, [check the plugin repository](https://github.com/mattermost/mattermost-plugin-autolink).",
     "settings": [
       {
         "key": "EnableAdminCommand",
