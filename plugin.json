@@ -3,7 +3,7 @@
   "name": "Autolink",
   "description": "Automatically rewrite text matching a regular expression into a Markdown link.",
   "version": "1.1.1",
-  "min_server_version": "5.15.0",
+  "min_server_version": "5.16.0",
   "server": {
     "executables": {
       "linux-amd64": "server/dist/plugin-linux-amd64",
