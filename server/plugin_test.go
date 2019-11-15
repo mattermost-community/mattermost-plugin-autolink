@@ -58,7 +58,10 @@ func TestSpecialCases(t *testing.T) {
 		Pattern:  "(Example)",
 		Template: "[Example](https://example.com)",
 	}, Link{
-		Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
+		Pattern:  "MM-(?P<jira_id>\\d+)",
+		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+	}, Link{
+		Pattern:  "https://mattermost.atlassian.net/browse/MM-(?P<jira_id>\\d+)",
 		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 	}, Link{
 		Pattern:  "(foo!bar)",
@@ -209,6 +212,9 @@ func TestSpecialCases(t *testing.T) {
 		}, {
 			"text https://mattermost.atlassian.net/browse/MM-12345 other text",
 			"text [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) other text",
+		}, {
+			"check out MM-12345 too",
+			"check out [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) too",
 		},
 	}
 
