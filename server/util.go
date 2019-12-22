@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"github.com/mattermost/mattermost-server/mlog"
+	"github.com/mattermost/mattermost-server/v5/mlog"
 )
 
 func contains(team string, channel string, list []string) bool {
