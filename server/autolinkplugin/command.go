@@ -1,10 +1,11 @@
-package main
+package autolinkplugin
 
 import (
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/mattermost/mattermost-plugin-autolink/server/link"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/pkg/errors"
@@ -261,7 +262,7 @@ func executeAdd(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 		name = args[0]
 	}
 
-	err := saveConfigLinks(p, append(p.getConfig().Links, Link{
+	err := saveConfigLinks(p, append(p.getConfig().Links, link.Link{
 		Name: name,
 	}))
 	if err != nil {
@@ -286,7 +287,7 @@ func responsef(format string, args ...interface{}) *model.CommandResponse {
 	}
 }
 
-func parseLinkRef(p *Plugin, requireUnique bool, args ...string) ([]Link, []int, error) {
+func parseLinkRef(p *Plugin, requireUnique bool, args ...string) ([]link.Link, []int, error) {
 	links := p.getConfig().Sorted().Links
 	if len(args) == 0 {
 		if requireUnique {
@@ -334,7 +335,7 @@ func parseBoolArg(arg string) (bool, error) {
 	return false, errors.Errorf("Not a bool, %q", arg)
 }
 
-func saveConfigLinks(p *Plugin, links []Link) error {
+func saveConfigLinks(p *Plugin, links []link.Link) error {
 	conf := p.getConfig()
 	conf.Links = links
 	appErr := p.API.SavePluginConfig(conf.ToConfig())

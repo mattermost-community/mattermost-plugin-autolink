@@ -1,10 +1,12 @@
-package main
+package link_test
 
 import (
 	"fmt"
 	"regexp"
 	"testing"
 
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolinkplugin"
+	"github.com/mattermost/mattermost-plugin-autolink/server/link"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 	"github.com/stretchr/testify/assert"
@@ -12,8 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupTestPlugin(t *testing.T, link Link) *Plugin {
-	p := &Plugin{}
+func setupTestPlugin(t *testing.T, l link.Link) *autolinkplugin.Plugin {
+	p := &autolinkplugin.Plugin{}
 	api := &plugintest.API{}
 
 	api.On("GetChannel", mock.AnythingOfType("string")).Run(func(args mock.Arguments) {
@@ -25,9 +27,11 @@ func setupTestPlugin(t *testing.T, link Link) *Plugin {
 	}, (*model.AppError)(nil))
 	p.SetAPI(api)
 
-	err := link.Compile()
+	err := l.Compile()
 	require.Nil(t, err)
-	p.conf.Links = []Link{link}
+	p.UpdateConfig(func(conf *autolinkplugin.Config) {
+		conf.Links = []link.Link{l}
+	})
 	return p
 }
 
@@ -152,13 +156,13 @@ func TestSSNRegex(t *testing.T) {
 func TestCreditCard(t *testing.T) {
 	var tests = []struct {
 		Name            string
-		Link            Link
+		Link            link.Link
 		inputMessage    string
 		expectedMessage string
 	}{
 		{
 			"VISA happy",
-			Link{
+			link.Link{
 				Pattern:  reVISA,
 				Template: replaceVISA,
 			},
@@ -166,7 +170,7 @@ func TestCreditCard(t *testing.T) {
 			"A credit card VISA XXXX-XXXX-XXXX-1234 mentioned",
 		}, {
 			"VISA",
-			Link{
+			link.Link{
 				Pattern:              reVISA,
 				Template:             replaceVISA,
 				DisableNonWordPrefix: true,
@@ -176,7 +180,7 @@ func TestCreditCard(t *testing.T) {
 			"A credit cardVISA XXXX-XXXX-XXXX-3333mentioned",
 		}, {
 			"Multiple VISA replacements",
-			Link{
+			link.Link{
 				Pattern:  reVISA,
 				Template: replaceVISA,
 			},
@@ -197,13 +201,13 @@ func TestCreditCard(t *testing.T) {
 func TestLink(t *testing.T) {
 	for _, tc := range []struct {
 		Name            string
-		Link            Link
+		Link            link.Link
 		Message         string
 		ExpectedMessage string
 	}{
 		{
 			"Simple pattern",
-			Link{
+			link.Link{
 				Pattern:  "(Mattermost)",
 				Template: "[Mattermost](https://mattermost.com)",
 			},
@@ -211,7 +215,7 @@ func TestLink(t *testing.T) {
 			"Welcome to [Mattermost](https://mattermost.com)!",
 		}, {
 			"Pattern with variable name accessed using $variable",
-			Link{
+			link.Link{
 				Pattern:  "(?P<key>Mattermost)",
 				Template: "[$key](https://mattermost.com)",
 			},
@@ -219,7 +223,7 @@ func TestLink(t *testing.T) {
 			"Welcome to [Mattermost](https://mattermost.com)!",
 		}, {
 			"Multiple replacments",
-			Link{
+			link.Link{
 				Pattern:  "(?P<key>Mattermost)",
 				Template: "[$key](https://mattermost.com)",
 			},
@@ -227,7 +231,7 @@ func TestLink(t *testing.T) {
 			"Welcome to [Mattermost](https://mattermost.com) and have fun with [Mattermost](https://mattermost.com)!",
 		}, {
 			"Pattern with variable name accessed using ${variable}",
-			Link{
+			link.Link{
 				Pattern:  "(?P<key>Mattermost)",
 				Template: "[${key}](https://mattermost.com)",
 			},
@@ -235,7 +239,7 @@ func TestLink(t *testing.T) {
 			"Welcome to [Mattermost](https://mattermost.com)!",
 		}, {
 			"Jira example",
-			Link{
+			link.Link{
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -243,7 +247,7 @@ func TestLink(t *testing.T) {
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 		}, {
 			"Jira example 2 (within a ())",
-			Link{
+			link.Link{
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -251,7 +255,7 @@ func TestLink(t *testing.T) {
 			"Link in brackets should link (see [MM-12345](https://mattermost.atlassian.net/browse/MM-12345))",
 		}, {
 			"Jira example 3 (before ,)",
-			Link{
+			link.Link{
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -259,7 +263,7 @@ func TestLink(t *testing.T) {
 			"Link a ticket [MM-12345](https://mattermost.atlassian.net/browse/MM-12345), before a comma",
 		}, {
 			"Jira example 3 (at begin of the message)",
-			Link{
+			link.Link{
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -267,7 +271,7 @@ func TestLink(t *testing.T) {
 			"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 		}, {
 			"Pattern word prefix and suffix disabled",
-			Link{
+			link.Link{
 				Pattern:              "(?P<previous>^|\\s)(MM)(-)(?P<jira_id>\\d+)",
 				Template:             "${previous}[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 				DisableNonWordPrefix: true,
@@ -277,7 +281,7 @@ func TestLink(t *testing.T) {
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 		}, {
 			"Pattern word prefix and suffix disabled (at begin of the message)",
-			Link{
+			link.Link{
 				Pattern:              "(?P<previous>^|\\s)(MM)(-)(?P<jira_id>\\d+)",
 				Template:             "${previous}[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 				DisableNonWordPrefix: true,
@@ -287,7 +291,7 @@ func TestLink(t *testing.T) {
 			"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 		}, {
 			"Pattern word prefix and suffix enable (in the middle of other text)",
-			Link{
+			link.Link{
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -295,7 +299,7 @@ func TestLink(t *testing.T) {
 			"WelcomeMM-12345should not link!",
 		}, {
 			"Pattern word prefix and suffix disabled (in the middle of other text)",
-			Link{
+			link.Link{
 				Pattern:              "(MM)(-)(?P<jira_id>\\d+)",
 				Template:             "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 				DisableNonWordPrefix: true,
@@ -305,7 +309,7 @@ func TestLink(t *testing.T) {
 			"Welcome[MM-12345](https://mattermost.atlassian.net/browse/MM-12345)should link!",
 		}, {
 			"Not relinking",
-			Link{
+			link.Link{
 				Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -313,7 +317,7 @@ func TestLink(t *testing.T) {
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should not re-link!",
 		}, {
 			"Url replacement",
-			Link{
+			link.Link{
 				Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -321,7 +325,7 @@ func TestLink(t *testing.T) {
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 		}, {
 			"Url replacement multiple times",
-			Link{
+			link.Link{
 				Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -329,7 +333,7 @@ func TestLink(t *testing.T) {
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345). should link [MM-12346](https://mattermost.atlassian.net/browse/MM-12346) !",
 		}, {
 			"Url replacement multiple times and at beginning",
-			Link{
+			link.Link{
 				Pattern:  "(https:\\/\\/mattermost.atlassian.net\\/browse\\/)(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -337,7 +341,7 @@ func TestLink(t *testing.T) {
 			"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345) [MM-12345](https://mattermost.atlassian.net/browse/MM-12345)",
 		}, {
 			"Url replacement at end",
-			Link{
+			link.Link{
 				Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
 				Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			},
@@ -364,7 +368,7 @@ func TestLegacyWordBoundaries(t *testing.T) {
 	const ID = "12345"
 	const markdown = "[KEY-12345](someurl/KEY-12345)"
 
-	var defaultLink = Link{
+	var defaultLink = link.Link{
 		Pattern:  pattern,
 		Template: template,
 	}
@@ -382,7 +386,7 @@ func TestLegacyWordBoundaries(t *testing.T) {
 	for _, tc := range []struct {
 		Name       string
 		Sep        string
-		Link       Link
+		Link       link.Link
 		Prefix     string
 		Suffix     string
 		ExpectFail bool
@@ -465,7 +469,7 @@ func TestWordMatch(t *testing.T) {
 	const ID = "12345"
 	const markdown = "[KEY-12345](someurl/KEY-12345)"
 
-	var defaultLink = Link{
+	var defaultLink = link.Link{
 		Pattern:   pattern,
 		Template:  template,
 		WordMatch: true,
@@ -484,7 +488,7 @@ func TestWordMatch(t *testing.T) {
 	for _, tc := range []struct {
 		Name       string
 		Sep        string
-		Link       Link
+		Link       link.Link
 		Prefix     string
 		Suffix     string
 		ExpectFail bool

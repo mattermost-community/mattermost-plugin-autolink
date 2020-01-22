@@ -1,11 +1,14 @@
-package main
+package autolinkplugin
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 	"sync"
 
-	"github.com/mattermost/mattermost-server/v5/mlog"
+	"github.com/mattermost/mattermost-plugin-autolink/server/api"
 
+	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/mattermost/mattermost-server/v5/utils/markdown"
@@ -15,9 +18,47 @@ import (
 type Plugin struct {
 	plugin.MattermostPlugin
 
+	handler *api.Handler
+
 	// configuration and a muttex to control concurrent access
 	conf     Config
 	confLock sync.RWMutex
+}
+
+func (p *Plugin) OnActivate() error {
+	p.handler = api.NewHandler(p, p)
+
+	return nil
+}
+
+func (p *Plugin) IsAuthorizedAdmin(mattermostID string) (bool, error) {
+	user, err := p.API.GetUser(mattermostID)
+	if err != nil {
+		return false, err
+	}
+	if strings.Contains(user.Roles, "system_admin") {
+		return true, nil
+	}
+	return false, nil
+}
+
+func contains(team string, channel string, list []string) bool {
+	for _, channelTeam := range list {
+		channelTeamSplit := strings.Split(channelTeam, "/")
+		if len(channelTeamSplit) == 2 {
+			if strings.EqualFold(channelTeamSplit[0], team) && strings.EqualFold(channelTeamSplit[1], channel) {
+				return true
+			}
+		} else if len(channelTeamSplit) == 1 {
+			if strings.EqualFold(channelTeamSplit[0], team) {
+				return true
+			}
+		} else {
+			mlog.Error("error splitting channel & team combination.")
+		}
+
+	}
+	return false
 }
 
 // MessageWillBePosted is invoked when a message is posted by a user before it is committed
@@ -97,4 +138,8 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 	post.Hashtags, _ = model.ParseHashtags(post.Message)
 
 	return post, ""
+}
+
+func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
+	p.handler.ServeHTTP(w, r, c.SourcePluginId)
 }

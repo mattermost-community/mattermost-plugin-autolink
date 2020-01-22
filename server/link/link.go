@@ -1,4 +1,4 @@
-package main
+package link
 
 import (
 	"fmt"
@@ -7,14 +7,14 @@ import (
 
 // Link represents a pattern to autolink.
 type Link struct {
-	Name                 string
-	Disabled             bool
-	Pattern              string
-	Template             string
-	Scope                []string
-	WordMatch            bool
-	DisableNonWordPrefix bool
-	DisableNonWordSuffix bool
+	Name                 string   `json:"name"`
+	Disabled             bool     `json:"disabled"`
+	Pattern              string   `json:"pattern"`
+	Template             string   `json:"template"`
+	Scope                []string `json:"scope"`
+	WordMatch            bool     `json:"wordmatch"`
+	DisableNonWordPrefix bool     `json:"disable_non_word_prefix"`
+	DisableNonWordSuffix bool     `json:"disable_non_word_suffix"`
 
 	template      string
 	re            *regexp.Regexp

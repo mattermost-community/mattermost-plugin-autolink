@@ -1,10 +1,11 @@
-package main
+package autolinkplugin
 
 import (
 	"fmt"
 	"sort"
 	"strings"
 
+	"github.com/mattermost/mattermost-plugin-autolink/server/link"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -12,7 +13,7 @@ import (
 // Config from config.json
 type Config struct {
 	EnableAdminCommand bool
-	Links              []Link
+	Links              []link.Link
 }
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
@@ -30,7 +31,7 @@ func (p *Plugin) OnConfigurationChange() error {
 		}
 	}
 
-	p.updateConfig(func(conf *Config) {
+	p.UpdateConfig(func(conf *Config) {
 		*conf = c
 	})
 
@@ -57,7 +58,25 @@ func (p *Plugin) getConfig() Config {
 	return p.conf
 }
 
-func (p *Plugin) updateConfig(f func(conf *Config)) Config {
+func (p *Plugin) GetLinks() []link.Link {
+	p.confLock.RLock()
+	defer p.confLock.RUnlock()
+	return p.conf.Links
+}
+
+func (p *Plugin) SaveLinks(links []link.Link) error {
+	p.UpdateConfig(func(conf *Config) {
+		conf.Links = links
+	})
+	appErr := p.API.SavePluginConfig(p.getConfig().ToConfig())
+	if appErr != nil {
+		return fmt.Errorf("Unable to save links: %w", appErr)
+	}
+
+	return nil
+}
+
+func (p *Plugin) UpdateConfig(f func(conf *Config)) Config {
 	p.confLock.Lock()
 	defer p.confLock.Unlock()
 
@@ -81,7 +100,7 @@ func (conf Config) ToConfig() map[string]interface{} {
 // Sorted returns a clone of the Config, with links sorted alphabetically
 func (conf Config) Sorted() Config {
 	sorted := conf
-	sorted.Links = append([]Link{}, conf.Links...)
+	sorted.Links = append([]link.Link{}, conf.Links...)
 	sort.Slice(conf.Links, func(i, j int) bool {
 		return strings.Compare(conf.Links[i].DisplayName(), conf.Links[j].DisplayName()) < 0
 	})
