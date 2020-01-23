@@ -12,6 +12,7 @@ import (
 // Config from config.json
 type Config struct {
 	EnableAdminCommand bool
+	EnableOnUpdate     bool
 	Links              []Link
 }
 
@@ -74,6 +75,7 @@ func (conf Config) ToConfig() map[string]interface{} {
 	}
 	return map[string]interface{}{
 		"EnableAdminCommand": conf.EnableAdminCommand,
+		"EnableOnUpdate":     conf.EnableOnUpdate,
 		"Links":              links,
 	}
 }

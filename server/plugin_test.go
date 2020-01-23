@@ -77,6 +77,7 @@ func TestSpecialCases(t *testing.T) {
 	})
 	validConfig := Config{
 		EnableAdminCommand: false,
+		EnableOnUpdate:     true,
 		Links:              links,
 	}
 
@@ -220,13 +221,54 @@ func TestSpecialCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.inputMessage, func(t *testing.T) {
-			post := &model.Post{
-				Message: tt.inputMessage,
+			{
+				// user creates a new post
+
+				post := &model.Post{
+					Message: tt.inputMessage,
+				}
+
+				rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
+
+				assert.Equal(t, tt.expectedMessage, rpost.Message)
 			}
+			{
+				// user updates the modified post but with no changes
 
-			rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
+				post := &model.Post{
+					Message: tt.expectedMessage,
+				}
 
-			assert.Equal(t, tt.expectedMessage, rpost.Message)
+				rpost, _ := p.MessageWillBeUpdated(&plugin.Context{}, post, post)
+
+				assert.Equal(t, tt.expectedMessage, rpost.Message)
+			}
+			{
+				// user updates the modified post and sets it back to the original text
+
+				originalPost := &model.Post{
+					Message: tt.expectedMessage,
+				}
+				post := &model.Post{
+					Message: tt.inputMessage,
+				}
+
+				rpost, _ := p.MessageWillBeUpdated(&plugin.Context{}, originalPost, post)
+
+				assert.Equal(t, tt.expectedMessage, rpost.Message)
+			}
+			{
+				// user updates an empty post to the original text
+
+				emptyPost := &model.Post{}
+				post := &model.Post{
+					Message: tt.inputMessage,
+				}
+
+				rpost, _ := p.MessageWillBeUpdated(&plugin.Context{}, post, emptyPost)
+
+				assert.Equal(t, tt.expectedMessage, rpost.Message)
+			}
 		})
 	}
 }

@@ -19,6 +19,12 @@
         "display_name": "Enable administration with /autolink command",
         "type": "bool",
         "default": false
+      },
+      {
+        "key": "EnableOnUpdate",
+        "display_name": "Apply plugin to updated posts as well as new posts",
+        "type": "bool",
+        "default": false
       }
     ]
   }
