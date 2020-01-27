@@ -61,9 +61,7 @@ func contains(team string, channel string, list []string) bool {
 	return false
 }
 
-// MessageWillBePosted is invoked when a message is posted by a user before it is committed
-// to the database.
-func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
+func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, string) {
 	conf := p.getConfig()
 	postText := post.Message
 	offset := 0
@@ -142,4 +140,21 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
 	p.handler.ServeHTTP(w, r, c.SourcePluginId)
+}
+
+// MessageWillBePosted is invoked when a message is posted by a user before it is committed
+// to the database.
+func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
+	return p.ProcessPost(c, post)
+}
+
+// MessageWillBeUpdated is invoked when a message is updated by a user before it is committed
+// to the database.
+func (p *Plugin) MessageWillBeUpdated(c *plugin.Context, post *model.Post, _ *model.Post) (*model.Post, string) {
+	conf := p.getConfig()
+	if conf.EnableOnUpdate {
+		return p.ProcessPost(c, post)
+	} else {
+		return post, ""
+	}
 }
