@@ -7,14 +7,14 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/mattermost/mattermost-plugin-autolink/server/link"
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
 const PluginIDContextValue = "pluginid"
 
 type LinkStore interface {
-	GetLinks() []link.Link
-	SaveLinks([]link.Link) error
+	GetLinks() []autolink.Autolink
+	SaveLinks([]autolink.Autolink) error
 }
 
 type Authorization interface {
@@ -100,7 +100,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, fromPluginID
 }
 
 func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
-	var newLink link.Link
+	var newLink autolink.Autolink
 	if err := json.NewDecoder(r.Body).Decode(&newLink); err != nil {
 		h.handleError(w, fmt.Errorf("Unable to decode body: %w", err))
 		return

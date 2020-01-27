@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-autolink/server/link"
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
@@ -18,8 +18,8 @@ import (
 
 func TestPlugin(t *testing.T) {
 	conf := Config{
-		Links: []link.Link{
-			link.Link{
+		Links: []autolink.Autolink{
+			autolink.Autolink{
 				Pattern:  "(Mattermost)",
 				Template: "[Mattermost](https://mattermost.com)",
 			},
@@ -56,27 +56,27 @@ func TestPlugin(t *testing.T) {
 }
 
 func TestSpecialCases(t *testing.T) {
-	links := make([]link.Link, 0)
-	links = append(links, link.Link{
+	links := make([]autolink.Autolink, 0)
+	links = append(links, autolink.Autolink{
 		Pattern:  "(Mattermost)",
 		Template: "[Mattermost](https://mattermost.com)",
-	}, link.Link{
+	}, autolink.Autolink{
 		Pattern:  "(Example)",
 		Template: "[Example](https://example.com)",
-	}, link.Link{
+	}, autolink.Autolink{
 		Pattern:  "MM-(?P<jira_id>\\d+)",
 		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
-	}, link.Link{
+	}, autolink.Autolink{
 		Pattern:  "https://mattermost.atlassian.net/browse/MM-(?P<jira_id>\\d+)",
 		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
-	}, link.Link{
+	}, autolink.Autolink{
 		Pattern:  "(foo!bar)",
 		Template: "fb",
-	}, link.Link{
+	}, autolink.Autolink{
 		Pattern:  "(example)",
 		Template: "test",
 		Scope:    []string{"team/off-topic"},
-	}, link.Link{
+	}, autolink.Autolink{
 		Pattern:  "(example)",
 		Template: "test",
 		Scope:    []string{"other-team/town-square"},
@@ -281,12 +281,12 @@ func TestSpecialCases(t *testing.T) {
 
 func TestHashtags(t *testing.T) {
 	conf := Config{
-		Links: []link.Link{
-			link.Link{
+		Links: []autolink.Autolink{
+			autolink.Autolink{
 				Pattern:  "foo",
 				Template: "#bar",
 			},
-			link.Link{
+			autolink.Autolink{
 				Pattern:  "hash tags",
 				Template: "#hash #tags",
 			},
@@ -329,8 +329,8 @@ func TestHashtags(t *testing.T) {
 
 func TestAPI(t *testing.T) {
 	conf := Config{
-		Links: []link.Link{
-			link.Link{
+		Links: []autolink.Autolink{
+			autolink.Autolink{
 				Name:     "existing",
 				Pattern:  "thing",
 				Template: "otherthing",
@@ -362,7 +362,7 @@ func TestAPI(t *testing.T) {
 	p.OnConfigurationChange()
 	p.OnActivate()
 
-	jbyte, _ := json.Marshal(&link.Link{Name: "new", Pattern: "newpat", Template: "newtemp"})
+	jbyte, _ := json.Marshal(&autolink.Autolink{Name: "new", Pattern: "newpat", Template: "newtemp"})
 	recorder := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/api/v1/link", bytes.NewReader(jbyte))
 	p.ServeHTTP(&plugin.Context{SourcePluginId: "somthing"}, recorder, req)

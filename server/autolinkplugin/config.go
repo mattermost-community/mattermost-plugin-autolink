@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mattermost/mattermost-plugin-autolink/server/link"
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
@@ -14,7 +14,7 @@ import (
 type Config struct {
 	EnableAdminCommand bool
 	EnableOnUpdate     bool
-	Links              []link.Link
+	Links              []autolink.Autolink
 }
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
@@ -59,13 +59,13 @@ func (p *Plugin) getConfig() Config {
 	return p.conf
 }
 
-func (p *Plugin) GetLinks() []link.Link {
+func (p *Plugin) GetLinks() []autolink.Autolink {
 	p.confLock.RLock()
 	defer p.confLock.RUnlock()
 	return p.conf.Links
 }
 
-func (p *Plugin) SaveLinks(links []link.Link) error {
+func (p *Plugin) SaveLinks(links []autolink.Autolink) error {
 	p.UpdateConfig(func(conf *Config) {
 		conf.Links = links
 	})
@@ -102,7 +102,7 @@ func (conf Config) ToConfig() map[string]interface{} {
 // Sorted returns a clone of the Config, with links sorted alphabetically
 func (conf Config) Sorted() Config {
 	sorted := conf
-	sorted.Links = append([]link.Link{}, conf.Links...)
+	sorted.Links = append([]autolink.Autolink{}, conf.Links...)
 	sort.Slice(conf.Links, func(i, j int) bool {
 		return strings.Compare(conf.Links[i].DisplayName(), conf.Links[j].DisplayName()) < 0
 	})
