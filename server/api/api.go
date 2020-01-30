@@ -12,7 +12,7 @@ import (
 
 const PluginIDContextValue = "pluginid"
 
-type LinkStore interface {
+type Store interface {
 	GetLinks() []autolink.Autolink
 	SaveLinks([]autolink.Autolink) error
 }
@@ -23,13 +23,13 @@ type Authorization interface {
 
 type Handler struct {
 	root          *mux.Router
-	linkStore     LinkStore
+	store         Store
 	authorization Authorization
 }
 
-func NewHandler(linkStore LinkStore, authorization Authorization) *Handler {
+func NewHandler(store Store, authorization Authorization) *Handler {
 	h := &Handler{
-		linkStore:     linkStore,
+		store:         store,
 		authorization: authorization,
 	}
 
@@ -46,6 +46,7 @@ func NewHandler(linkStore LinkStore, authorization Authorization) *Handler {
 }
 
 func (h *Handler) handleError(w http.ResponseWriter, err error) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusInternalServerError)
 	b, _ := json.Marshal(struct {
 		Error   string `json:"error"`
@@ -58,6 +59,7 @@ func (h *Handler) handleError(w http.ResponseWriter, err error) {
 }
 
 func (h *Handler) handleErrorWithCode(w http.ResponseWriter, code int, errTitle string, err error) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	b, _ := json.Marshal(struct {
 		Error   string `json:"error"`
@@ -106,7 +108,7 @@ func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	links := h.linkStore.GetLinks()
+	links := h.store.GetLinks()
 	found := false
 	for i := range links {
 		if links[i].Name == newLink.Name || links[i].Pattern == newLink.Pattern {
@@ -116,14 +118,15 @@ func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if !found {
-		links = append(h.linkStore.GetLinks(), newLink)
+		links = append(h.store.GetLinks(), newLink)
 	}
 
-	if err := h.linkStore.SaveLinks(links); err != nil {
+	if err := h.store.SaveLinks(links); err != nil {
 		h.handleError(w, fmt.Errorf("Unable to save link: %w", err))
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"status": "OK"}`))
 }
