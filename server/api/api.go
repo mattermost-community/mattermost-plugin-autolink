@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,8 +8,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
-
-const PluginIDContextValue = "pluginid"
 
 type Store interface {
 	GetLinks() []autolink.Autolink
@@ -86,9 +83,8 @@ func (h *Handler) adminOrPluginRequired(next http.Handler) http.Handler {
 			}
 		}
 
-		ifPluginId := r.Context().Value(PluginIDContextValue)
-		pluginId, ok := ifPluginId.(string)
-		if ok && pluginId != "" {
+		pluginId := r.Header.Get("Mattermost-Plugin-ID")
+		if pluginId != "" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -97,8 +93,8 @@ func (h *Handler) adminOrPluginRequired(next http.Handler) http.Handler {
 	})
 }
 
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request, fromPluginID string) {
-	h.root.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), PluginIDContextValue, fromPluginID)))
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.root.ServeHTTP(w, r)
 }
 
 func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
@@ -119,11 +115,10 @@ func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 	}
 	if !found {
 		links = append(h.store.GetLinks(), newLink)
-	}
-
-	if err := h.store.SaveLinks(links); err != nil {
-		h.handleError(w, fmt.Errorf("Unable to save link: %w", err))
-		return
+		if err := h.store.SaveLinks(links); err != nil {
+			h.handleError(w, fmt.Errorf("Unable to save link: %w", err))
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

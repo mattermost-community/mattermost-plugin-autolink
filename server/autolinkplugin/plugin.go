@@ -139,7 +139,8 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	p.handler.ServeHTTP(w, r, c.SourcePluginId)
+	r.Header.Add("Mattermost-Plugin-ID", c.SourcePluginId)
+	p.handler.ServeHTTP(w, r)
 }
 
 // MessageWillBePosted is invoked when a message is posted by a user before it is committed
