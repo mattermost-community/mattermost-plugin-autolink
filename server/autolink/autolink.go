@@ -21,6 +21,25 @@ type Autolink struct {
 	canReplaceAll bool
 }
 
+func (l Autolink) Equals(x Autolink) bool {
+	if l.Disabled != x.Disabled ||
+		l.DisableNonWordPrefix != x.DisableNonWordPrefix ||
+		l.DisableNonWordSuffix != x.DisableNonWordSuffix ||
+		l.Name != x.Name ||
+		l.Pattern != x.Pattern ||
+		len(l.Scope) != len(x.Scope) ||
+		l.Template != x.Template ||
+		l.WordMatch != x.WordMatch {
+		return false
+	}
+	for i, scope := range l.Scope {
+		if scope != x.Scope[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // DisplayName returns a display name for the link.
 func (l Autolink) DisplayName() string {
 	if l.Name != "" {
