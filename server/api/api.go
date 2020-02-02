@@ -79,7 +79,7 @@ func (h *Handler) adminOrPluginRequired(next http.Handler) http.Handler {
 		}
 
 		userID := r.Header.Get("Mattermost-User-ID")
-		if userID != "" {
+		if !authorized && userID != "" {
 			authorized, err = h.authorization.IsAuthorizedAdmin(userID)
 			if err != nil {
 				http.Error(w, "Not authorized", http.StatusUnauthorized)
