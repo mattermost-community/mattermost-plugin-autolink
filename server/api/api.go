@@ -70,29 +70,28 @@ func (h *Handler) handleErrorWithCode(w http.ResponseWriter, code int, errTitle 
 
 func (h *Handler) adminOrPluginRequired(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID := r.Header.Get("Mattermost-User-ID")
-		if userID == "" {
-			http.Error(w, "Not authorized", http.StatusUnauthorized)
-			return
-		}
-
-		authorized, err := h.authorization.IsAuthorizedAdmin(userID)
-		if err != nil {
-			http.Error(w, "Not authorized", http.StatusUnauthorized)
-			return
-		}
-		if authorized {
-			next.ServeHTTP(w, r)
-			return
-		}
-
+		var err error
+		authorized := false
 		pluginId := r.Header.Get("Mattermost-Plugin-ID")
 		if pluginId != "" {
-			next.ServeHTTP(w, r)
-			return
+			// All other plugins are allowed
+			authorized = true
 		}
 
-		http.Error(w, "Not authorized", http.StatusUnauthorized)
+		userID := r.Header.Get("Mattermost-User-ID")
+		if userID != "" {
+			authorized, err = h.authorization.IsAuthorizedAdmin(userID)
+			if err != nil {
+				http.Error(w, "Not authorized", http.StatusUnauthorized)
+				return
+			}
+		}
+
+		if !authorized {
+			http.Error(w, "Not authorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 

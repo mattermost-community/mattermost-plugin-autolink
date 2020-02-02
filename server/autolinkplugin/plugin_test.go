@@ -354,7 +354,6 @@ func TestAPI(t *testing.T) {
 	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil))
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
 	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
-	api.On("GetUser", mock.AnythingOfType("string")).Return(&testTeam, nil)
 	api.On("SavePluginConfig", mock.AnythingOfType("map[string]interface {}")).Return(nil)
 
 	p := Plugin{}
