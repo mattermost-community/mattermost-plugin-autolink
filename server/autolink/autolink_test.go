@@ -557,3 +557,31 @@ func TestWordMatch(t *testing.T) {
 		})
 	}
 }
+func TestEquals(t *testing.T) {
+	for _, tc := range []struct {
+		l1, l2      autolink.Autolink
+		expectEqual bool
+	}{
+		{
+			l1: autolink.Autolink{
+				Name: "test",
+			},
+			expectEqual: false,
+		},
+		{
+			l1: autolink.Autolink{
+				Name: "test",
+			},
+			l2: autolink.Autolink{
+				Name: "test",
+			},
+			expectEqual: true,
+		},
+	} {
+
+		t.Run(tc.l1.Name+"-"+tc.l2.Name, func(t *testing.T) {
+			eq := tc.l1.Equals(tc.l2)
+			assert.Equal(t, tc.expectEqual, eq)
+		})
+	}
+}

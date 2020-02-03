@@ -70,26 +70,28 @@ func (h *Handler) handleErrorWithCode(w http.ResponseWriter, code int, errTitle 
 
 func (h *Handler) adminOrPluginRequired(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var err error
+		authorized := false
+		pluginId := r.Header.Get("Mattermost-Plugin-ID")
+		if pluginId != "" {
+			// All other plugins are allowed
+			authorized = true
+		}
+
 		userID := r.Header.Get("Mattermost-User-ID")
-		if userID != "" {
-			authorized, err := h.authorization.IsAuthorizedAdmin(userID)
+		if !authorized && userID != "" {
+			authorized, err = h.authorization.IsAuthorizedAdmin(userID)
 			if err != nil {
 				http.Error(w, "Not authorized", http.StatusUnauthorized)
 				return
 			}
-			if authorized {
-				next.ServeHTTP(w, r)
-				return
-			}
 		}
 
-		pluginId := r.Header.Get("Mattermost-Plugin-ID")
-		if pluginId != "" {
-			next.ServeHTTP(w, r)
+		if !authorized {
+			http.Error(w, "Not authorized", http.StatusUnauthorized)
 			return
 		}
-
-		http.Error(w, "Not authorized", http.StatusUnauthorized)
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -106,22 +108,31 @@ func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 
 	links := h.store.GetLinks()
 	found := false
+	changed := false
 	for i := range links {
 		if links[i].Name == newLink.Name || links[i].Pattern == newLink.Pattern {
-			links[i] = newLink
+			if !links[i].Equals(newLink) {
+				links[i] = newLink
+				changed = true
+			}
 			found = true
 			break
 		}
 	}
 	if !found {
 		links = append(h.store.GetLinks(), newLink)
+		changed = true
+	}
+	status := http.StatusNotModified
+	if changed {
 		if err := h.store.SaveLinks(links); err != nil {
 			h.handleError(w, fmt.Errorf("Unable to save link: %w", err))
 			return
 		}
+		status = http.StatusOK
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 	_, _ = w.Write([]byte(`{"status": "OK"}`))
 }
