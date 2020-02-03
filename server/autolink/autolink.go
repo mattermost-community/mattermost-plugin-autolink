@@ -1,28 +1,47 @@
-package main
+package autolink
 
 import (
 	"fmt"
 	"regexp"
 )
 
-// Link represents a pattern to autolink.
-type Link struct {
-	Name                 string
-	Disabled             bool
-	Pattern              string
-	Template             string
-	Scope                []string
-	WordMatch            bool
-	DisableNonWordPrefix bool
-	DisableNonWordSuffix bool
+// Autolink represents a pattern to autolink.
+type Autolink struct {
+	Name                 string   `json:"name"`
+	Disabled             bool     `json:"disabled"`
+	Pattern              string   `json:"pattern"`
+	Template             string   `json:"template"`
+	Scope                []string `json:"scope"`
+	WordMatch            bool     `json:"wordmatch"`
+	DisableNonWordPrefix bool     `json:"disable_non_word_prefix"`
+	DisableNonWordSuffix bool     `json:"disable_non_word_suffix"`
 
 	template      string
 	re            *regexp.Regexp
 	canReplaceAll bool
 }
 
+func (l Autolink) Equals(x Autolink) bool {
+	if l.Disabled != x.Disabled ||
+		l.DisableNonWordPrefix != x.DisableNonWordPrefix ||
+		l.DisableNonWordSuffix != x.DisableNonWordSuffix ||
+		l.Name != x.Name ||
+		l.Pattern != x.Pattern ||
+		len(l.Scope) != len(x.Scope) ||
+		l.Template != x.Template ||
+		l.WordMatch != x.WordMatch {
+		return false
+	}
+	for i, scope := range l.Scope {
+		if scope != x.Scope[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // DisplayName returns a display name for the link.
-func (l Link) DisplayName() string {
+func (l Autolink) DisplayName() string {
 	if l.Name != "" {
 		return l.Name
 	}
@@ -30,7 +49,7 @@ func (l Link) DisplayName() string {
 }
 
 // Compile compiles the link's regular expression
-func (l *Link) Compile() error {
+func (l *Autolink) Compile() error {
 	if l.Disabled || len(l.Pattern) == 0 || len(l.Template) == 0 {
 		return nil
 	}
@@ -71,7 +90,7 @@ func (l *Link) Compile() error {
 }
 
 // Replace will subsitute the regex's with the supplied links
-func (l Link) Replace(message string) string {
+func (l Autolink) Replace(message string) string {
 	if l.re == nil {
 		return message
 	}
@@ -98,7 +117,7 @@ func (l Link) Replace(message string) string {
 }
 
 // ToMarkdown prints a Link as a markdown list element
-func (l Link) ToMarkdown(i int) string {
+func (l Autolink) ToMarkdown(i int) string {
 	text := "- "
 	if i > 0 {
 		text += fmt.Sprintf("%v: ", i)
@@ -136,7 +155,7 @@ func (l Link) ToMarkdown(i int) string {
 // ToConfig returns a JSON-encodable Link represented solely with map[string]
 // interface and []string types, compatible with gob/RPC, to be used in
 // SavePluginConfig
-func (l Link) ToConfig() map[string]interface{} {
+func (l Autolink) ToConfig() map[string]interface{} {
 	return map[string]interface{}{
 		"Name":                 l.Name,
 		"Pattern":              l.Pattern,

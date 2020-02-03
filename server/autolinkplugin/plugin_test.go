@@ -1,19 +1,25 @@
-package main
+package autolinkplugin
 
 import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest/mock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPlugin(t *testing.T) {
 	conf := Config{
-		Links: []Link{
-			Link{
+		Links: []autolink.Autolink{
+			autolink.Autolink{
 				Pattern:  "(Mattermost)",
 				Template: "[Mattermost](https://mattermost.com)",
 			},
@@ -30,7 +36,7 @@ func TestPlugin(t *testing.T) {
 
 	api := &plugintest.API{}
 
-	api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.Config")).Return(func(dest interface{}) error {
+	api.On("LoadPluginConfiguration", mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
 		*dest.(*Config) = conf
 		return nil
 	})
@@ -50,27 +56,27 @@ func TestPlugin(t *testing.T) {
 }
 
 func TestSpecialCases(t *testing.T) {
-	links := make([]Link, 0)
-	links = append(links, Link{
+	links := make([]autolink.Autolink, 0)
+	links = append(links, autolink.Autolink{
 		Pattern:  "(Mattermost)",
 		Template: "[Mattermost](https://mattermost.com)",
-	}, Link{
+	}, autolink.Autolink{
 		Pattern:  "(Example)",
 		Template: "[Example](https://example.com)",
-	}, Link{
+	}, autolink.Autolink{
 		Pattern:  "MM-(?P<jira_id>\\d+)",
 		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
-	}, Link{
+	}, autolink.Autolink{
 		Pattern:  "https://mattermost.atlassian.net/browse/MM-(?P<jira_id>\\d+)",
 		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
-	}, Link{
+	}, autolink.Autolink{
 		Pattern:  "(foo!bar)",
 		Template: "fb",
-	}, Link{
+	}, autolink.Autolink{
 		Pattern:  "(example)",
 		Template: "test",
 		Scope:    []string{"team/off-topic"},
-	}, Link{
+	}, autolink.Autolink{
 		Pattern:  "(example)",
 		Template: "test",
 		Scope:    []string{"other-team/town-square"},
@@ -91,7 +97,7 @@ func TestSpecialCases(t *testing.T) {
 
 	api := &plugintest.API{}
 
-	api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.Config")).Return(func(dest interface{}) error {
+	api.On("LoadPluginConfiguration", mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
 		*dest.(*Config) = validConfig
 		return nil
 	})
@@ -275,12 +281,12 @@ func TestSpecialCases(t *testing.T) {
 
 func TestHashtags(t *testing.T) {
 	conf := Config{
-		Links: []Link{
-			Link{
+		Links: []autolink.Autolink{
+			autolink.Autolink{
 				Pattern:  "foo",
 				Template: "#bar",
 			},
-			Link{
+			autolink.Autolink{
 				Pattern:  "hash tags",
 				Template: "#hash #tags",
 			},
@@ -297,7 +303,7 @@ func TestHashtags(t *testing.T) {
 
 	api := &plugintest.API{}
 
-	api.On("LoadPluginConfiguration", mock.AnythingOfType("*main.Config")).Return(func(dest interface{}) error {
+	api.On("LoadPluginConfiguration", mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
 		*dest.(*Config) = conf
 		return nil
 	})
@@ -319,4 +325,48 @@ func TestHashtags(t *testing.T) {
 	rpost, _ = p.MessageWillBePosted(&plugin.Context{}, post)
 
 	assert.Equal(t, "#hash #tags", rpost.Hashtags)
+}
+
+func TestAPI(t *testing.T) {
+	conf := Config{
+		Links: []autolink.Autolink{
+			autolink.Autolink{
+				Name:     "existing",
+				Pattern:  "thing",
+				Template: "otherthing",
+			},
+		},
+	}
+
+	testChannel := model.Channel{
+		Name: "TestChanel",
+	}
+
+	testTeam := model.Team{
+		Name: "TestTeam",
+	}
+
+	api := &plugintest.API{}
+	api.On("LoadPluginConfiguration", mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
+		*dest.(*Config) = conf
+		return nil
+	})
+	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil))
+	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
+	api.On("SavePluginConfig", mock.AnythingOfType("map[string]interface {}")).Return(nil)
+
+	p := Plugin{}
+	p.SetAPI(api)
+	p.OnConfigurationChange()
+	p.OnActivate()
+
+	jbyte, _ := json.Marshal(&autolink.Autolink{Name: "new", Pattern: "newpat", Template: "newtemp"})
+	recorder := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/v1/link", bytes.NewReader(jbyte))
+	p.ServeHTTP(&plugin.Context{SourcePluginId: "somthing"}, recorder, req)
+	resp := recorder.Result()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Len(t, p.conf.Links, 2)
+	assert.Equal(t, "new", p.conf.Links[1].Name)
 }
