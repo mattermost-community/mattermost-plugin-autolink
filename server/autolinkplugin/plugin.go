@@ -21,8 +21,14 @@ type Plugin struct {
 	handler *api.Handler
 
 	// configuration and a muttex to control concurrent access
-	conf     Config
+	conf     *Config
 	confLock sync.RWMutex
+}
+
+func New() *Plugin {
+	return &Plugin{
+		conf: new(Config),
+	}
 }
 
 func (p *Plugin) OnActivate() error {
@@ -31,14 +37,25 @@ func (p *Plugin) OnActivate() error {
 	return nil
 }
 
-func (p *Plugin) IsAuthorizedAdmin(mattermostID string) (bool, error) {
-	user, err := p.API.GetUser(mattermostID)
+func (p *Plugin) IsAuthorizedAdmin(userId string) (bool, error) {
+	user, err := p.API.GetUser(userId)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf(
+			"failed to obtain information about user `%s`: %w", userId, err)
 	}
 	if strings.Contains(user.Roles, "system_admin") {
+		mlog.Info(
+			fmt.Sprintf("UserId `%s` is authorized basing on the sysadmin role membership", userId))
 		return true, nil
 	}
+
+	conf := p.getConfig()
+	if _, ok := conf.AdminUserIds[userId]; ok {
+		mlog.Info(
+			fmt.Sprintf("UserId `%s` is authorized basing on the list of plugin admins list", userId))
+		return true, nil
+	}
+
 	return false, nil
 }
 
