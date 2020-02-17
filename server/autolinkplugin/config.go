@@ -43,6 +43,7 @@ func (p *Plugin) OnConfigurationChange() error {
 				DisplayName:      "Autolink",
 				Description:      "Autolink administration.",
 				AutoComplete:     true,
+				AutoCompleteDesc: "Available commands: add, delete, disable, enable, list, set, test",
 				AutoCompleteHint: "[command]",
 			})
 		} else {
