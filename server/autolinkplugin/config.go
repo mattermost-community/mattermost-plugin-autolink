@@ -37,7 +37,7 @@ func (p *Plugin) OnConfigurationChange() error {
 		}
 	}
 
-	// NOTE(prozlach): Plugin admin UserId parsing and validation errors are
+	// Plugin admin UserId parsing and validation errors are
 	// not fatal, if everything fails only sysadmin will be able to manage the
 	// config which is still OK
 	c.parsePluginAdminList(p)
@@ -131,9 +131,9 @@ func (conf *Config) parsePluginAdminList(p *Plugin) {
 		return
 	}
 
-	split := strings.Split(conf.PluginAdmins, ",")
+	userIDs := strings.Split(conf.PluginAdmins, ",")
 
-	for _, v := range split {
+	for _, v := range userIDs {
 		userId := strings.TrimSpace(v)
 		// Let's verify that the given user really exists
 		_, appErr := p.API.GetUser(userId)

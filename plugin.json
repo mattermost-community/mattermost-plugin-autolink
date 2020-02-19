@@ -32,7 +32,7 @@
         "key": "PluginAdmins",
         "display_name": "Admin User IDs",
         "type": "text",
-        "help_text": "Comma-separated list of userIds of users authorized to administer the plugin in addition to the System Admins.\n \nUser IDs can be found by navigating to **System Console** > **Users**. After clicking into a user's name, their ID is on the right-hand side of the blue header."
+        "help_text": "Comma-separated list of userIDs authorized to administer the plugin in addition to the System Admins.\n \nUser IDs can be found by navigating to **System Console** > **Users**."
       }
     ]
   }
