@@ -25,6 +25,12 @@ func setupTestPlugin(t *testing.T, l autolink.Autolink) *autolinkplugin.Plugin {
 		TeamId: "theteam_id0123456789012345",
 		Name:   "thechannel_name",
 	}, (*model.AppError)(nil))
+
+	testUser := model.User{
+		IsBot: false,
+	}
+	api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil)
+
 	p.SetAPI(api)
 
 	err := l.Compile()

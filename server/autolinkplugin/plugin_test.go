@@ -47,6 +47,11 @@ func TestPlugin(t *testing.T) {
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
 	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
 
+	testUser := model.User{
+		IsBot: false,
+	}
+	api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil)
+
 	p := New()
 	p.SetAPI(api)
 	p.OnConfigurationChange()
@@ -314,6 +319,11 @@ func TestSpecialCases(t *testing.T) {
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
 	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
 
+	testUser := model.User{
+		IsBot: false,
+	}
+	api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil)
+
 	p := New()
 	p.SetAPI(api)
 	p.OnConfigurationChange()
@@ -487,6 +497,95 @@ func TestSpecialCases(t *testing.T) {
 	}
 }
 
+func TestBotMessagesAreRewritenWhenGetUserFails(t *testing.T) {
+	conf := Config{
+		Links: []autolink.Autolink{
+			autolink.Autolink{
+				Pattern:  "(Mattermost)",
+				Template: "[Mattermost](https://mattermost.com)",
+			},
+		},
+	}
+
+	testChannel := model.Channel{
+		Name: "TestChanel",
+	}
+
+	testTeam := model.Team{
+		Name: "TestTeam",
+	}
+
+	api := &plugintest.API{}
+
+	api.On("LoadPluginConfiguration", mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
+		*dest.(*Config) = conf
+		return nil
+	}).Once()
+	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil)).Once()
+
+	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil).Once()
+	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil).Once()
+	api.On("LogError", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("*model.AppError"))
+
+	err := &model.AppError{
+		Message: "foo error!",
+	}
+	api.On("GetUser", mock.AnythingOfType("string")).Return(nil, err).Once()
+
+	p := Plugin{}
+	p.SetAPI(api)
+	p.OnConfigurationChange()
+
+	post := &model.Post{Message: "Welcome to Mattermost!"}
+	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
+
+	assert.Equal(t, "Welcome to [Mattermost](https://mattermost.com)!", rpost.Message)
+}
+
+func TestBotMessagesAreNotRewriten(t *testing.T) {
+	conf := Config{
+		Links: []autolink.Autolink{
+			autolink.Autolink{
+				Pattern:  "(Mattermost)",
+				Template: "[Mattermost](https://mattermost.com)",
+			},
+		},
+	}
+
+	testChannel := model.Channel{
+		Name: "TestChanel",
+	}
+
+	testTeam := model.Team{
+		Name: "TestTeam",
+	}
+
+	api := &plugintest.API{}
+
+	api.On("LoadPluginConfiguration", mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
+		*dest.(*Config) = conf
+		return nil
+	}).Once()
+	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil)).Once()
+
+	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil).Once()
+	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil).Once()
+	testUser := model.User{
+		IsBot: true,
+	}
+	api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil).Once()
+	api.On("LogDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+
+	p := Plugin{}
+	p.SetAPI(api)
+	p.OnConfigurationChange()
+
+	post := &model.Post{Message: "Welcome to Mattermost!"}
+	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
+
+	assert.Nil(t, rpost)
+}
+
 func TestHashtags(t *testing.T) {
 	conf := Config{
 		Links: []autolink.Autolink{
@@ -519,6 +618,11 @@ func TestHashtags(t *testing.T) {
 
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
 	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
+
+	testUser := model.User{
+		IsBot: false,
+	}
+	api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil)
 
 	p := New()
 	p.SetAPI(api)

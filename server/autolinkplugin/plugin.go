@@ -78,7 +78,29 @@ func contains(team string, channel string, list []string) bool {
 	return false
 }
 
+func (p *Plugin) isBotUser(userId string) (bool, *model.AppError) {
+	user, appErr := p.API.GetUser(userId)
+	if appErr != nil {
+		p.API.LogError("failed to check if message for rewriting was send by a bot", "error", appErr)
+		return false, appErr
+	}
+
+	return user.IsBot, nil
+}
+
 func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, string) {
+	isBot, appErr := p.isBotUser(post.UserId)
+	if appErr != nil {
+		// NOTE: Not sure how we want to handle errors here, we can either:
+		// * assume that occasional rewrites of Bot messges are ok
+		// * assume that occasional not rewriting of all messages is ok
+		// Let's assume for now that former is a lesser evil and carry on.
+	}
+	if isBot {
+		p.API.LogDebug("not rewriting message from bot", "userId", post.UserId)
+		return nil, ""
+	}
+
 	conf := p.getConfig()
 	postText := post.Message
 	offset := 0
