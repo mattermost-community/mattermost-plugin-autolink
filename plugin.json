@@ -27,6 +27,41 @@
         "display_name": "Apply plugin to updated posts as well as new posts",
         "type": "bool",
         "default": false
+      },
+      {
+        "key": "EnableMasterCard",
+        "display_name": "MasterCard",
+        "type": "dropdown",
+        "help_text": "Conceal Mastercard Entries",
+        "default": "disabled",
+        "options": [{
+            "display_name": "disabled",
+            "value": "disabled" 
+        }, {
+            "display_name": "enabled",
+            "value": "Pattern: (?P<MasterCard](term>([Cc]ustomer [Oo]bsession)(?P<part1>5[1-5]\\d{2})[ -]?(?P<part2>\\d{4})[ -]?(?P<part3>\\d{4})[ -]?(?P<LastFour>[0-9]{4})) Template: MasterCard XXXX-XXXX-XXXX-$LastFour WordMatch: true"
+        }]
+      },
+      {
+        "key": "EnableMasterCardOld",
+        "display_name": "MasterCard",
+        "help_text": "Conceal Mastercard Entries",
+        "type": "bool",
+        "default": false
+      },
+      {
+        "key": "EnableVisaCard",
+        "display_name": "Visa Card",
+        "help_text": "Conceal Visa Card Entries",
+        "type": "bool",
+        "default": false
+      },
+      {
+        "key": "EnableSSN",
+        "display_name": "Social Security Numbers",
+        "help_text": "Conceal SSN Entries",
+        "type": "bool",
+        "default": false
       }
     ]
   }
