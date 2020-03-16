@@ -542,6 +542,46 @@ func TestBotMessagesAreRewritenWhenGetUserFails(t *testing.T) {
 	assert.Equal(t, "Welcome to [Mattermost](https://mattermost.com)!", rpost.Message)
 }
 
+func TestGetUserApiCallIsNotExecutedWhenThereAreNoChanges(t *testing.T) {
+	conf := Config{
+		Links: []autolink.Autolink{
+			autolink.Autolink{
+				Pattern:  "(Mattermost)",
+				Template: "[Mattermost](https://mattermost.com)",
+			},
+		},
+	}
+
+	testChannel := model.Channel{
+		Name: "TestChanel",
+	}
+
+	testTeam := model.Team{
+		Name: "TestTeam",
+	}
+
+	api := &plugintest.API{}
+
+	api.On("LoadPluginConfiguration", mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
+		*dest.(*Config) = conf
+		return nil
+	}).Once()
+	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil)).Once()
+
+	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil).Once()
+	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil).Once()
+	api.On("LogDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+
+	p := Plugin{}
+	p.SetAPI(api)
+	p.OnConfigurationChange()
+
+	post := &model.Post{Message: "Welcome to FooBarism!"}
+	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
+
+	assert.Equal(t, "Welcome to FooBarism!", rpost.Message)
+}
+
 func TestBotMessagesAreNotRewriten(t *testing.T) {
 	conf := Config{
 		Links: []autolink.Autolink{
