@@ -37,7 +37,9 @@ func setupTestPlugin(t *testing.T, l autolink.Autolink) *autolinkplugin.Plugin {
 	require.Nil(t, err)
 	p.UpdateConfig(func(conf *autolinkplugin.Config) {
 		conf.Links = []autolink.Autolink{l}
+		p.AddPreConfigLinks(conf)
 	})
+	fmt.Printf("p = %+v\n", p)
 	return p
 }
 
@@ -54,6 +56,36 @@ const (
 	replaceDiscover   = "Discover XXXX-XXXX-XXXX-$LastFour"
 	replaceAMEX       = "American Express XXXX-XXXXXX-X$LastFour"
 )
+
+func Test2CCRegex(t *testing.T) {
+	for _, tc := range []struct {
+		Name    string
+		RE      string
+		Replace string
+		In      string
+		Out     string
+	}{
+		{"Visa happy spaces", reVISA, replaceVISA, " abc 4111 1111 1111 1234 def", " abc VISA XXXX-XXXX-XXXX-1234 def"},
+		{"Visa happy dashes", reVISA, replaceVISA, "4111-1111-1111-1234", "VISA XXXX-XXXX-XXXX-1234"},
+		{"Visa happy mixed", reVISA, replaceVISA, "41111111 1111-1234", "VISA XXXX-XXXX-XXXX-1234"},
+		{"Visa happy digits", reVISA, replaceVISA, "abc 4111111111111234 def", "abc VISA XXXX-XXXX-XXXX-1234 def"},
+		{"Visa non-match start", reVISA, replaceVISA, "3111111111111234", ""},
+		{"Visa non-match num digits", reVISA, replaceVISA, " 4111-1111-1111-123", ""},
+		{"Visa non-match sep", reVISA, replaceVISA, "4111=1111=1111_1234", ""},
+		{"Visa non-match no break before", reVISA, replaceVISA, "abc4111-1111-1111-1234", "abcVISA XXXX-XXXX-XXXX-1234"},
+		{"Visa non-match no break after", reVISA, replaceVISA, "4111-1111-1111-1234def", "VISA XXXX-XXXX-XXXX-1234def"},
+	} {
+		t.Run(tc.Name, func(t *testing.T) {
+			re := regexp.MustCompile(tc.RE)
+			result := re.ReplaceAllString(tc.In, tc.Replace)
+			if tc.Out != "" {
+				assert.Equal(t, tc.Out, result)
+			} else {
+				assert.Equal(t, tc.In, result)
+			}
+		})
+	}
+}
 
 func TestCCRegex(t *testing.T) {
 	for _, tc := range []struct {

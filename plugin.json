@@ -35,7 +35,7 @@
         "help_text": "Comma-separated list of userIDs authorized to administer the plugin in addition to the System Admins.\n \nUser IDs can be found by navigating to **System Console** > **Users**."
       },
       {
-        "key": "EnableMasterCardOld",
+        "key": "EnableMasterCard",
         "display_name": "MasterCard",
         "help_text": "Conceal Mastercard Entries",
         "type": "bool",
