@@ -5,5 +5,5 @@ var manifest = struct {
 	Version string
 }{
 	Id:      "mattermost-autolink",
-	Version: "1.1.2",
+	Version: "1.1.3",
 }
