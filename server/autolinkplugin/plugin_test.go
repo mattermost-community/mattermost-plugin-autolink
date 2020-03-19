@@ -367,6 +367,6 @@ func TestAPI(t *testing.T) {
 	p.ServeHTTP(&plugin.Context{SourcePluginId: "somthing"}, recorder, req)
 	resp := recorder.Result()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	require.Len(t, p.conf.Links, 2)
-	assert.Equal(t, "new", p.conf.Links[1].Name)
+	require.Len(t, p.conf.Links, 5)
+	assert.Equal(t, "VisaCard", p.conf.Links[1].Name)
 }

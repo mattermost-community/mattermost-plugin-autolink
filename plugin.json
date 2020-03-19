@@ -31,20 +31,6 @@
       {
         "key": "EnableMasterCard",
         "display_name": "MasterCard",
-        "type": "dropdown",
-        "help_text": "Conceal Mastercard Entries",
-        "default": "disabled",
-        "options": [{
-            "display_name": "disabled",
-            "value": "disabled" 
-        }, {
-            "display_name": "enabled",
-            "value": "Pattern: (?P<MasterCard](term>([Cc]ustomer [Oo]bsession)(?P<part1>5[1-5]\\d{2})[ -]?(?P<part2>\\d{4})[ -]?(?P<part3>\\d{4})[ -]?(?P<LastFour>[0-9]{4})) Template: MasterCard XXXX-XXXX-XXXX-$LastFour WordMatch: true"
-        }]
-      },
-      {
-        "key": "EnableMasterCardOld",
-        "display_name": "MasterCard",
         "help_text": "Conceal Mastercard Entries",
         "type": "bool",
         "default": false
