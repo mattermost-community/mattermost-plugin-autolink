@@ -107,7 +107,7 @@ func (conf *Config) ToConfig() map[string]interface{} {
 	return map[string]interface{}{
 		"EnableAdminCommand": conf.EnableAdminCommand,
 		"EnableOnUpdate":     conf.EnableOnUpdate,
-		"AdminUsers":         conf.PluginAdmins,
+		"PluginAdmins":       conf.PluginAdmins,
 		"Links":              links,
 	}
 }
