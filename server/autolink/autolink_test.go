@@ -15,7 +15,7 @@ import (
 )
 
 func setupTestPlugin(t *testing.T, l autolink.Autolink) *autolinkplugin.Plugin {
-	p := &autolinkplugin.Plugin{}
+	p := autolinkplugin.New()
 	api := &plugintest.API{}
 
 	api.On("GetChannel", mock.AnythingOfType("string")).Run(func(args mock.Arguments) {
