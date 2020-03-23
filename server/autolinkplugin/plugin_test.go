@@ -532,7 +532,7 @@ func TestBotMessagesAreRewritenWhenGetUserFails(t *testing.T) {
 	}
 	api.On("GetUser", mock.AnythingOfType("string")).Return(nil, err).Once()
 
-	p := Plugin{}
+	p := New()
 	p.SetAPI(api)
 	p.OnConfigurationChange()
 
@@ -572,7 +572,7 @@ func TestGetUserApiCallIsNotExecutedWhenThereAreNoChanges(t *testing.T) {
 	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil).Once()
 	api.On("LogDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 
-	p := Plugin{}
+	p := New()
 	p.SetAPI(api)
 	p.OnConfigurationChange()
 
@@ -616,7 +616,7 @@ func TestBotMessagesAreNotRewriten(t *testing.T) {
 	api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil).Once()
 	api.On("LogDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
 
-	p := Plugin{}
+	p := New()
 	p.SetAPI(api)
 	p.OnConfigurationChange()
 
