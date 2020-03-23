@@ -6,5 +6,5 @@ import (
 )
 
 func main() {
-	plugin.ClientMain(&autolinkplugin.Plugin{})
+	plugin.ClientMain(autolinkplugin.New())
 }

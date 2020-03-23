@@ -3,6 +3,7 @@ package autolinkplugin
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestPlugin(t *testing.T) {
@@ -45,7 +47,7 @@ func TestPlugin(t *testing.T) {
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
 	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
 
-	p := Plugin{}
+	p := New()
 	p.SetAPI(api)
 	p.OnConfigurationChange()
 
@@ -53,6 +55,212 @@ func TestPlugin(t *testing.T) {
 	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
 
 	assert.Equal(t, "Welcome to [Mattermost](https://mattermost.com)!", rpost.Message)
+}
+
+type SuiteAuthorization struct {
+	suite.Suite
+
+	api *plugintest.API
+
+	adminUsernames string
+	userInfo       map[string]*model.User
+}
+
+func (suite *SuiteAuthorization) SetupTest() {
+	suite.adminUsernames = ""
+	suite.userInfo = make(map[string]*model.User)
+
+	suite.api = &plugintest.API{}
+	suite.api.On(
+		"LoadPluginConfiguration",
+		mock.AnythingOfType("*autolinkplugin.Config"),
+	).Return(
+		func(dest interface{}) error {
+			*dest.(*Config) = Config{
+				PluginAdmins: suite.adminUsernames,
+			}
+			return nil
+		},
+	)
+	suite.api.On(
+		"GetUser",
+		mock.AnythingOfType("string"),
+	).Return(
+		func(userId string) *model.User {
+			return suite.userInfo[userId]
+		},
+		func(userId string) *model.AppError {
+			if _, ok := suite.userInfo[userId]; ok {
+				return nil
+			} else {
+				return &model.AppError{
+					Message: fmt.Sprintf("user %s not found", userId),
+				}
+			}
+		},
+	)
+	suite.api.On(
+		"UnregisterCommand",
+		mock.AnythingOfType("string"),
+		mock.AnythingOfType("string"),
+	).Return(
+		(*model.AppError)(nil),
+	)
+}
+
+func (suite *SuiteAuthorization) TestSysadminIsAuthorized() {
+	suite.userInfo["marynaId"] = &model.User{
+		Username: "maryna",
+		Id:       "marynaId",
+		Roles:    "smurf,system_admin,reaper",
+	}
+
+	p := New()
+	p.SetAPI(suite.api)
+
+	err := p.OnConfigurationChange()
+	require.NoError(suite.T(), err)
+
+	allowed, err := p.IsAuthorizedAdmin("marynaId")
+	require.NoError(suite.T(), err)
+	assert.True(suite.T(), allowed)
+}
+
+func (suite *SuiteAuthorization) TestPlainUserIsDenied() {
+	suite.userInfo["marynaId"] = &model.User{
+		Username: "maryna",
+		Id:       "marynaId",
+		Roles:    "smurf,reaper",
+	}
+
+	p := New()
+	p.SetAPI(suite.api)
+
+	err := p.OnConfigurationChange()
+	require.NoError(suite.T(), err)
+
+	allowed, err := p.IsAuthorizedAdmin("marynaId")
+	require.NoError(suite.T(), err)
+	assert.False(suite.T(), allowed)
+}
+
+func (suite *SuiteAuthorization) TestAdminUserIsAuthorized() {
+	suite.userInfo["marynaId"] = &model.User{
+		Username: "maryna",
+		Id:       "marynaId",
+		Roles:    "smurf,reaper",
+	}
+	suite.adminUsernames = "marynaId"
+
+	p := New()
+	p.SetAPI(suite.api)
+
+	err := p.OnConfigurationChange()
+	require.NoError(suite.T(), err)
+
+	allowed, err := p.IsAuthorizedAdmin("marynaId")
+	require.NoError(suite.T(), err)
+	assert.True(suite.T(), allowed)
+}
+
+func (suite *SuiteAuthorization) TestMultipleUsersAreAuthorized() {
+	suite.userInfo["marynaId"] = &model.User{
+		Username: "maryna",
+		Id:       "marynaId",
+		Roles:    "smurf,reaper",
+	}
+	suite.userInfo["borynaId"] = &model.User{
+		Username: "boryna",
+		Id:       "borynaId",
+		Roles:    "smurf",
+	}
+	suite.userInfo["karynaId"] = &model.User{
+		Username: "karyna",
+		Id:       "karynaId",
+		Roles:    "screamer",
+	}
+	suite.adminUsernames = "marynaId,karynaId"
+
+	p := New()
+	p.SetAPI(suite.api)
+
+	err := p.OnConfigurationChange()
+	require.NoError(suite.T(), err)
+
+	allowed, err := p.IsAuthorizedAdmin("marynaId")
+	require.NoError(suite.T(), err)
+	assert.True(suite.T(), allowed)
+
+	allowed, err = p.IsAuthorizedAdmin("karynaId")
+	require.NoError(suite.T(), err)
+	assert.True(suite.T(), allowed)
+
+	allowed, err = p.IsAuthorizedAdmin("borynaId")
+	require.NoError(suite.T(), err)
+	assert.False(suite.T(), allowed)
+}
+
+func (suite *SuiteAuthorization) TestWhitespaceIsIgnored() {
+	suite.userInfo["marynaId"] = &model.User{
+		Username: "maryna",
+		Id:       "marynaId",
+		Roles:    "smurf,reaper",
+	}
+	suite.userInfo["borynaId"] = &model.User{
+		Username: "boryna",
+		Id:       "borynaId",
+		Roles:    "smurf",
+	}
+	suite.userInfo["karynaId"] = &model.User{
+		Username: "karyna",
+		Id:       "karynaId",
+		Roles:    "screamer",
+	}
+	suite.adminUsernames = "marynaId , karynaId, borynaId "
+
+	p := New()
+	p.SetAPI(suite.api)
+
+	err := p.OnConfigurationChange()
+	require.NoError(suite.T(), err)
+
+	allowed, err := p.IsAuthorizedAdmin("marynaId")
+	require.NoError(suite.T(), err)
+	assert.True(suite.T(), allowed)
+
+	allowed, err = p.IsAuthorizedAdmin("karynaId")
+	require.NoError(suite.T(), err)
+	assert.True(suite.T(), allowed)
+
+	allowed, err = p.IsAuthorizedAdmin("borynaId")
+	require.NoError(suite.T(), err)
+	assert.True(suite.T(), allowed)
+}
+
+func (suite *SuiteAuthorization) TestNonExistantUsersAreIgnored() {
+	suite.userInfo["marynaId"] = &model.User{
+		Username: "maryna",
+		Id:       "marynaId",
+		Roles:    "smurf,reaper",
+	}
+	suite.adminUsernames = "marynaId,karynaId"
+
+	p := New()
+	p.SetAPI(suite.api)
+
+	err := p.OnConfigurationChange()
+	require.NoError(suite.T(), err)
+
+	allowed, err := p.IsAuthorizedAdmin("marynaId")
+	require.NoError(suite.T(), err)
+	assert.True(suite.T(), allowed)
+
+	allowed, err = p.IsAuthorizedAdmin("karynaId")
+	require.Error(suite.T(), err)
+}
+
+func TestSuiteAuthorization(t *testing.T) {
+	suite.Run(t, new(SuiteAuthorization))
 }
 
 func TestSpecialCases(t *testing.T) {
@@ -106,7 +314,7 @@ func TestSpecialCases(t *testing.T) {
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
 	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
 
-	p := Plugin{}
+	p := New()
 	p.SetAPI(api)
 	p.OnConfigurationChange()
 
@@ -312,7 +520,7 @@ func TestHashtags(t *testing.T) {
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
 	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
 
-	p := Plugin{}
+	p := New()
 	p.SetAPI(api)
 	p.OnConfigurationChange()
 
@@ -356,7 +564,7 @@ func TestAPI(t *testing.T) {
 	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
 	api.On("SavePluginConfig", mock.AnythingOfType("map[string]interface {}")).Return(nil)
 
-	p := Plugin{}
+	p := New()
 	p.SetAPI(api)
 	p.OnConfigurationChange()
 	p.OnActivate()
