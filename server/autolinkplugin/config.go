@@ -27,7 +27,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	for i := range c.Links {
 		err = c.Links[i].Compile()
 		if err != nil {
-			p.API.LogError(fmt.Sprintf("Error creating autolinker: %+v: %v", c.Links[i], err))
+			p.API.LogError("Error creating autolinker", "link", c.Links[i], "error", err.Error())
 		}
 	}
 
