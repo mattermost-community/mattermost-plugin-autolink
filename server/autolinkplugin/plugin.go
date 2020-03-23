@@ -103,14 +103,16 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 			startPos, endPos = autolinkNode.RawDestination.Position+offset, autolinkNode.RawDestination.End+offset
 			origText = postText[startPos:endPos]
 			if autolinkNode.Destination() != origText {
-				p.API.LogError(fmt.Sprintf("Markdown autolink did not match range text, '%s' != '%s'", autolinkNode.Destination(), origText))
+				p.API.LogError(fmt.Sprintf("Markdown autolink did not match range text, '%s' != '%s'",
+					autolinkNode.Destination(), origText))
 				return true
 			}
 		} else if textNode, ok := node.(*markdown.Text); ok {
 			startPos, endPos = textNode.Range.Position+offset, textNode.Range.End+offset
 			origText = postText[startPos:endPos]
 			if textNode.Text != origText {
-				p.API.LogError(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", textNode.Text, origText))
+				p.API.LogError(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", textNode.Text,
+					origText))
 				return true
 			}
 		}

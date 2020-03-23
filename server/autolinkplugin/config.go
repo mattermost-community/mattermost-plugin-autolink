@@ -33,7 +33,8 @@ func (p *Plugin) OnConfigurationChange() error {
 
 	for i := range c.Links {
 		if err := c.Links[i].Compile(); err != nil {
-			p.API.LogError("Error creating autolinker", "link", c.Links[i], "error", err.Error())		}
+			p.API.LogError("Error creating autolinker", "link", c.Links[i], "error", err.Error())
+		}
 	}
 
 	// Plugin admin UserId parsing and validation errors are
