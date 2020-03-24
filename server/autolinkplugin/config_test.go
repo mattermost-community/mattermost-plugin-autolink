@@ -52,7 +52,7 @@ func TestOnConfigurationChangeInvalidLink(t *testing.T) {
 	api.On("UnregisterCommand", mock.AnythingOfType("string"),
 		mock.AnythingOfType("string")).Return((*model.AppError)(nil))
 
-	p := Plugin{}
+	p := New()
 	p.SetAPI(api)
 	p.OnConfigurationChange()
 
