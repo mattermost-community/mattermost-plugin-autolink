@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
-	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
 )
 
@@ -138,8 +137,7 @@ func (conf *Config) parsePluginAdminList(p *Plugin) {
 		// Let's verify that the given user really exists
 		_, appErr := p.API.GetUser(userId)
 		if appErr != nil {
-			mlog.Error(fmt.Sprintf(
-				"error occured while verifying userId %s: %v", v, appErr))
+			p.API.LogError(fmt.Sprintf("error occured while verifying userId %s: %v", v, appErr))
 		} else {
 			conf.AdminUserIds[userId] = struct{}{}
 		}

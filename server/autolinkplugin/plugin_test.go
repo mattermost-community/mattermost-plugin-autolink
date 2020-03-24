@@ -245,6 +245,8 @@ func (suite *SuiteAuthorization) TestNonExistantUsersAreIgnored() {
 	}
 	suite.adminUsernames = "marynaId,karynaId"
 
+	suite.api.On("LogError", mock.AnythingOfType("string")).Return(nil)
+
 	p := New()
 	p.SetAPI(suite.api)
 
