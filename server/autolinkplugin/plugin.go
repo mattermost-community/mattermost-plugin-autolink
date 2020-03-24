@@ -122,14 +122,14 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 
 			channel, cErr := p.API.GetChannel(post.ChannelId)
 			if cErr != nil {
-				p.API.LogError("Failed to get Channel", cErr.Error())
+				p.API.LogError("Failed to get Channel", "error", cErr.Error())
 				return false
 			}
 			teamName := ""
 			if channel.TeamId != "" {
 				team, tErr := p.API.GetTeam(channel.TeamId)
 				if tErr != nil {
-					p.API.LogError("Failed to get Team", tErr.Error())
+					p.API.LogError("Failed to get Team", "error", tErr.Error())
 					return false
 				}
 				teamName = team.Name
