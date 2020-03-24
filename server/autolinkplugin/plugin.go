@@ -44,14 +44,14 @@ func (p *Plugin) IsAuthorizedAdmin(userId string) (bool, error) {
 			"failed to obtain information about user `%s`: %w", userId, err)
 	}
 	if strings.Contains(user.Roles, "system_admin") {
-		mlog.Info(
+		p.API.LogInfo(
 			fmt.Sprintf("UserId `%s` is authorized basing on the sysadmin role membership", userId))
 		return true, nil
 	}
 
 	conf := p.getConfig()
 	if _, ok := conf.AdminUserIds[userId]; ok {
-		mlog.Info(
+		p.API.LogInfo(
 			fmt.Sprintf("UserId `%s` is authorized basing on the list of plugin admins list", userId))
 		return true, nil
 	}
