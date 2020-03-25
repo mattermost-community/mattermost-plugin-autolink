@@ -47,7 +47,7 @@ func TestOnConfigurationChange(t *testing.T) {
 		api.On("LogError",
 			mock.AnythingOfType("string"),
 			mock.AnythingOfType("string"),
-			mock.AnythingOfType("Autolink"),
+			mock.AnythingOfType("autolink.Autolink"),
 			mock.AnythingOfType("string"),
 			mock.AnythingOfType("string")).Return(nil)
 
