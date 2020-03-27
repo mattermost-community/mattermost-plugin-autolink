@@ -44,14 +44,14 @@ func (p *Plugin) IsAuthorizedAdmin(userId string) (bool, error) {
 			"failed to obtain information about user `%s`: %w", userId, err)
 	}
 	if strings.Contains(user.Roles, "system_admin") {
-		mlog.Info(
+		p.API.LogInfo(
 			fmt.Sprintf("UserId `%s` is authorized basing on the sysadmin role membership", userId))
 		return true, nil
 	}
 
 	conf := p.getConfig()
 	if _, ok := conf.AdminUserIds[userId]; ok {
-		mlog.Info(
+		p.API.LogInfo(
 			fmt.Sprintf("UserId `%s` is authorized basing on the list of plugin admins list", userId))
 		return true, nil
 	}
@@ -103,14 +103,16 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 			startPos, endPos = autolinkNode.RawDestination.Position+offset, autolinkNode.RawDestination.End+offset
 			origText = postText[startPos:endPos]
 			if autolinkNode.Destination() != origText {
-				mlog.Error(fmt.Sprintf("Markdown autolink did not match range text, '%s' != '%s'", autolinkNode.Destination(), origText))
+				p.API.LogError(fmt.Sprintf("Markdown autolink did not match range text, '%s' != '%s'",
+					autolinkNode.Destination(), origText))
 				return true
 			}
 		} else if textNode, ok := node.(*markdown.Text); ok {
 			startPos, endPos = textNode.Range.Position+offset, textNode.Range.End+offset
 			origText = postText[startPos:endPos]
 			if textNode.Text != origText {
-				mlog.Error(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", textNode.Text, origText))
+				p.API.LogError(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", textNode.Text,
+					origText))
 				return true
 			}
 		}
@@ -120,14 +122,14 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 
 			channel, cErr := p.API.GetChannel(post.ChannelId)
 			if cErr != nil {
-				mlog.Error(cErr.Error())
+				p.API.LogError("Failed to get Channel", "error", cErr.Error())
 				return false
 			}
 			teamName := ""
 			if channel.TeamId != "" {
 				team, tErr := p.API.GetTeam(channel.TeamId)
 				if tErr != nil {
-					mlog.Error(tErr.Error())
+					p.API.LogError("Failed to get Team", "error", tErr.Error())
 					return false
 				}
 				teamName = team.Name

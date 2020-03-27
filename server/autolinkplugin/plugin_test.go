@@ -115,6 +115,8 @@ func (suite *SuiteAuthorization) TestSysadminIsAuthorized() {
 		Roles:    "smurf,system_admin,reaper",
 	}
 
+	suite.api.On("LogInfo", mock.AnythingOfType("string")).Return(nil)
+
 	p := New()
 	p.SetAPI(suite.api)
 
@@ -152,6 +154,8 @@ func (suite *SuiteAuthorization) TestAdminUserIsAuthorized() {
 	}
 	suite.adminUsernames = "marynaId"
 
+	suite.api.On("LogInfo", mock.AnythingOfType("string")).Return(nil)
+
 	p := New()
 	p.SetAPI(suite.api)
 
@@ -180,6 +184,8 @@ func (suite *SuiteAuthorization) TestMultipleUsersAreAuthorized() {
 		Roles:    "screamer",
 	}
 	suite.adminUsernames = "marynaId,karynaId"
+
+	suite.api.On("LogInfo", mock.AnythingOfType("string")).Return(nil)
 
 	p := New()
 	p.SetAPI(suite.api)
@@ -218,6 +224,8 @@ func (suite *SuiteAuthorization) TestWhitespaceIsIgnored() {
 	}
 	suite.adminUsernames = "marynaId , karynaId, borynaId "
 
+	suite.api.On("LogInfo", mock.AnythingOfType("string")).Return(nil)
+
 	p := New()
 	p.SetAPI(suite.api)
 
@@ -244,6 +252,9 @@ func (suite *SuiteAuthorization) TestNonExistantUsersAreIgnored() {
 		Roles:    "smurf,reaper",
 	}
 	suite.adminUsernames = "marynaId,karynaId"
+
+	suite.api.On("LogError", mock.AnythingOfType("string")).Return(nil)
+	suite.api.On("LogInfo", mock.AnythingOfType("string")).Return(nil)
 
 	p := New()
 	p.SetAPI(suite.api)
