@@ -20,10 +20,8 @@ type Config struct {
 	// administrative operations on the plugin configuration (i.e. plugin
 	// admins). On each configuration change the contents of PluginAdmins
 	// config field is parsed into this field.
-	AdminUserIds     map[string]struct{}
-	EnableVisaCard   bool
-	EnableMasterCard bool
-	EnableSSN        bool
+	AdminUserIds  map[string]struct{}
+	EnableZenDesk bool
 }
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
@@ -96,29 +94,17 @@ func (p *Plugin) SaveLinks(links []autolink.Autolink) error {
 
 // GetPreConFigLinks gets the preconfigured links from the plugin config
 func (p *Plugin) AddPreConfigLinks(c *Config) []autolink.Autolink {
-	link := autolink.Autolink{
-		Name:     "VisaCard",
-		Pattern:  "(?P<VISA>(?P<part1>4\\d{3})[ -]?(?P<part2>\\d{4})[ -]?(?P<part3>\\d{4})[ -]?(?P<LastFour>[0-9]{4}))",
-		Template: "VISA XXXX-XXXX-XXXX-$LastFour",
-		Disabled: !c.EnableVisaCard,
-	}
-	c.Links = append(c.Links, link)
 
-	link = autolink.Autolink{
-		Name:     "MasterCard",
-		Pattern:  "(?P<MasterCard]((?P<part1>5[1-5]\\d{2})[ -]?(?P<part2>\\d{4})[ -]?(?P<part3>\\d{4})[ -]?(?P<LastFour>[0-9]{4}))",
-		Template: "MasterCard XXXX-XXXX-XXXX-$LastFour",
-		Disabled: !c.EnableMasterCard,
+	var link autolink.Autolink
+	if c.EnableZenDesk {
+		link = autolink.Autolink{
+			Name:     "SSN",
+			Pattern:  "(?P<SSN>(?P<part1>\\d{3})[ -]?(?P<part2>\\d{2})[ -]?(?P<LastFour>[0-9]{4}))",
+			Template: "XXX-XX-$LastFour",
+			Disabled: !c.EnableZenDesk,
+		}
+		c.Links = append(c.Links, link)
 	}
-	c.Links = append(c.Links, link)
-
-	link = autolink.Autolink{
-		Name:     "SSN",
-		Pattern:  "(?P<SSN>(?P<part1>\\d{3})[ -]?(?P<part2>\\d{2})[ -]?(?P<LastFour>[0-9]{4}))",
-		Template: "XXX-XX-$LastFour",
-		Disabled: !c.EnableSSN,
-	}
-	c.Links = append(c.Links, link)
 
 	return c.Links
 }
@@ -142,9 +128,7 @@ func (conf *Config) ToConfig() map[string]interface{} {
 		"EnableOnUpdate":     conf.EnableOnUpdate,
 		"PluginAdmins":       conf.PluginAdmins,
 		"Links":              links,
-		"EnableVisaCard":     conf.EnableVisaCard,
-		"EnableMasterCard":   conf.EnableMasterCard,
-		"EnableSSN":          conf.EnableSSN,
+		"EnableZenDesk":      conf.EnableZenDesk,
 	}
 }
 

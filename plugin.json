@@ -35,23 +35,9 @@
         "help_text": "Comma-separated list of userIDs authorized to administer the plugin in addition to the System Admins.\n \nUser IDs can be found by navigating to **System Console** > **Users**."
       },
       {
-        "key": "EnableMasterCard",
-        "display_name": "MasterCard",
-        "help_text": "Conceal Mastercard Entries",
-        "type": "bool",
-        "default": false
-      },
-      {
-        "key": "EnableVisaCard",
-        "display_name": "Visa Card",
-        "help_text": "Conceal Visa Card Entries",
-        "type": "bool",
-        "default": false
-      },
-      {
-        "key": "EnableSSN",
-        "display_name": "Social Security Numbers",
-        "help_text": "Conceal SSN Entries",
+        "key": "EnableZenDesk",
+        "display_name": "Zen Desk",
+        "help_text": "Enable Zen Desk autolinks",
         "type": "bool",
         "default": false
       }
