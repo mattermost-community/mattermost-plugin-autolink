@@ -29,6 +29,7 @@ const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	`/autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))` + "\n" +
 	"/autolink set Visa Template VISA XXXX-XXXX-XXXX-$LastFour\n" +
 	"/autolink set Visa WordMatch true\n" +
+	"/autolink set Visa Scope team/townsquare\n" +
 	"/autolink test Vi 4356-7891-2345-1111 -- (4111222233334444)\n" +
 	"/autolink enable Visa\n" +
 	"```\n" +
