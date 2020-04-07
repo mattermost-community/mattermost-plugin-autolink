@@ -733,3 +733,223 @@ func TestAPI(t *testing.T) {
 	require.Len(t, p.conf.Links, 2)
 	assert.Equal(t, "new", p.conf.Links[1].Name)
 }
+
+func TestResolveScope(t *testing.T) {
+	t.Run("resolve channel name and team name", func(t *testing.T) {
+		testChannel := model.Channel{
+			Name:   "TestChannel",
+			TeamId: "TestId",
+		}
+
+		testTeam := model.Team{
+			Name: "TestTeam",
+		}
+
+		api := &plugintest.API{}
+		api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+		api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
+
+		p := Plugin{}
+		p.SetAPI(api)
+		channelName, teamName, _ := p.resolveScope("TestId")
+		assert.Equal(t, "TestChannel", channelName)
+		assert.Equal(t, "TestTeam", teamName)
+	})
+
+	t.Run("resolve channel name and returns empty team name", func(t *testing.T) {
+		testChannel := model.Channel{
+			Name: "TestChannel",
+		}
+
+		api := &plugintest.API{}
+		api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+
+		p := Plugin{}
+		p.SetAPI(api)
+
+		channelName, teamName, _ := p.resolveScope("TestId")
+		assert.Equal(t, "TestChannel", channelName)
+		assert.Equal(t, "", teamName)
+	})
+
+	t.Run("error when api fails to get channel", func(t *testing.T) {
+		api := &plugintest.API{}
+
+		api.On("GetChannel",
+			mock.AnythingOfType("string")).Return(nil, &model.AppError{})
+		api.On("LogError",
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("string")).Return(nil)
+
+		p := Plugin{}
+		p.SetAPI(api)
+
+		channelName, teamName, err := p.resolveScope("TestId")
+		assert.Error(t, err)
+		assert.Equal(t, teamName, "")
+		assert.Equal(t, channelName, "")
+	})
+
+	t.Run("error when api fails to get team", func(t *testing.T) {
+		testChannel := model.Channel{
+			Name:   "TestChannel",
+			TeamId: "TestId",
+		}
+
+		api := &plugintest.API{}
+
+		api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+		api.On("GetTeam", mock.AnythingOfType("string")).Return(nil, &model.AppError{})
+		api.On("LogError",
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("string")).Return(nil)
+
+		p := Plugin{}
+		p.SetAPI(api)
+
+		channelName, teamName, err := p.resolveScope("TestId")
+		assert.Error(t, err)
+		assert.Equal(t, channelName, "")
+		assert.Equal(t, teamName, "")
+	})
+}
+
+func TestProcessPost(t *testing.T) {
+	t.Run("cannot resolve scope", func(t *testing.T) {
+		conf := Config{
+			Links: []autolink.Autolink{
+				autolink.Autolink{
+					Pattern:  "(Mattermost)",
+					Template: "[Mattermost](https://mattermost.com)",
+					Scope:    []string{"TestChannel/TestTeam"},
+				},
+			},
+		}
+
+		api := &plugintest.API{}
+
+		api.On("LoadPluginConfiguration",
+			mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
+			*dest.(*Config) = conf
+			return nil
+		})
+		api.On("UnregisterCommand", mock.AnythingOfType("string"),
+			mock.AnythingOfType("string")).Return((*model.AppError)(nil))
+
+		api.On("GetChannel", mock.AnythingOfType("string")).Return(nil, &model.AppError{})
+
+		api.On("LogError",
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("string")).Return(nil)
+
+		testUser := model.User{
+			IsBot: false,
+		}
+		api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil)
+
+		p := New()
+		p.SetAPI(api)
+		p.OnConfigurationChange()
+
+		post := &model.Post{Message: "Welcome to Mattermost!"}
+		rpost, _ := p.ProcessPost(&plugin.Context{}, post)
+
+		assert.Equal(t, "Welcome to Mattermost!", rpost.Message)
+	})
+
+	t.Run("team name is empty", func(t *testing.T) {
+		conf := Config{
+			Links: []autolink.Autolink{
+				autolink.Autolink{
+					Pattern:  "(Mattermost)",
+					Template: "[Mattermost](https://mattermost.com)",
+					Scope:    []string{"TestChannel/TestTeam"},
+				},
+			},
+		}
+
+		testChannel := model.Channel{
+			Name: "TestChannel",
+		}
+
+		api := &plugintest.API{}
+
+		api.On("LoadPluginConfiguration",
+			mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
+			*dest.(*Config) = conf
+			return nil
+		})
+		api.On("UnregisterCommand", mock.AnythingOfType("string"),
+			mock.AnythingOfType("string")).Return((*model.AppError)(nil))
+		api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+		api.On("LogError",
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("string")).Return(nil)
+
+		testUser := model.User{
+			IsBot: false,
+		}
+		api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil)
+
+		p := New()
+		p.SetAPI(api)
+		p.OnConfigurationChange()
+
+		post := &model.Post{Message: "Welcome to Mattermost!"}
+		rpost, _ := p.ProcessPost(&plugin.Context{}, post)
+
+		assert.Equal(t, "Welcome to Mattermost!", rpost.Message)
+	})
+
+	t.Run("valid scope replaces text", func(t *testing.T) {
+		conf := Config{
+			Links: []autolink.Autolink{
+				autolink.Autolink{
+					Pattern:  "(Mattermost)",
+					Template: "[Mattermost](https://mattermost.com)",
+					Scope:    []string{"TestChannel/TestTeam"},
+				},
+			},
+		}
+
+		testChannel := model.Channel{
+			Name:   "TestChannel",
+			TeamId: "TestId",
+		}
+
+		testTeam := model.Team{
+			Name: "TestTeam",
+		}
+
+		api := &plugintest.API{}
+
+		api.On("LoadPluginConfiguration",
+			mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
+			*dest.(*Config) = conf
+			return nil
+		})
+		api.On("UnregisterCommand", mock.AnythingOfType("string"),
+			mock.AnythingOfType("string")).Return((*model.AppError)(nil))
+
+		api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+		api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
+
+		testUser := model.User{
+			IsBot: false,
+		}
+		api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil)
+
+		p := New()
+		p.SetAPI(api)
+		p.OnConfigurationChange()
+
+		post := &model.Post{Message: "Welcome to Mattermost!"}
+		rpost, _ := p.ProcessPost(&plugin.Context{}, post)
+
+		assert.Equal(t, "Welcome to [Mattermost](https://mattermost.com)!", rpost.Message)
+	})
+}

@@ -78,6 +78,26 @@ func contains(team string, channel string, list []string) bool {
 	return false
 }
 
+func (p *Plugin) resolveScope(channelId string) (string, string, *model.AppError) {
+	channel, cErr := p.API.GetChannel(channelId)
+	if cErr != nil {
+		p.API.LogError("Failed to get Channel", "error", cErr.Error())
+		return "", "", cErr
+	}
+
+	if channel.TeamId == "" {
+		return channel.Name, "", nil
+	}
+
+	team, tErr := p.API.GetTeam(channel.TeamId)
+	if tErr != nil {
+		p.API.LogError("Failed to get Team", "error", tErr.Error())
+		return "", "", tErr
+	}
+
+	return channel.Name, team.Name, nil
+}
+
 func (p *Plugin) isBotUser(userId string) (bool, *model.AppError) {
 	user, appErr := p.API.GetUser(userId)
 	if appErr != nil {
@@ -130,25 +150,18 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 		if origText != "" {
 			newText := origText
 
-			channel, cErr := p.API.GetChannel(post.ChannelId)
-			if cErr != nil {
-				p.API.LogError("Failed to get Channel", "error", cErr.Error())
-				return false
-			}
-			teamName := ""
-			if channel.TeamId != "" {
-				team, tErr := p.API.GetTeam(channel.TeamId)
-				if tErr != nil {
-					p.API.LogError("Failed to get Team", "error", tErr.Error())
-					return false
-				}
-				teamName = team.Name
-			}
-
 			for _, l := range conf.Links {
 				if len(l.Scope) == 0 {
 					newText = l.Replace(newText)
-				} else if teamName != "" && contains(teamName, channel.Name, l.Scope) {
+					continue
+				}
+
+				teamName, channelName, rsErr := p.resolveScope(post.ChannelId)
+				if rsErr != nil {
+					return false
+				}
+
+				if teamName != "" && contains(teamName, channelName, l.Scope) {
 					newText = l.Replace(newText)
 				}
 			}
