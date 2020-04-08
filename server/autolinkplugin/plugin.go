@@ -80,6 +80,10 @@ func (p *Plugin) resolveScope(channelId string) (string, string, *model.AppError
 
 func (p *Plugin) inScope(scope []string, channelName string, teamName string) bool {
 
+	if len(scope) == 0 {
+		return true
+	}
+
 	if teamName == "" {
 		return false
 	}
@@ -121,9 +125,24 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 	postText := post.Message
 	offset := 0
 
-	channelName, teamName, rsErr := p.resolveScope(post.ChannelId)
-	if rsErr != nil {
-		p.API.LogError("Failed to resolve scope", "error", rsErr.Error())
+	hasOneOrMoreScopes := false
+	for _, link := range conf.Links {
+		if len(link.Scope) > 0 {
+			hasOneOrMoreScopes = true
+			break
+		}
+	}
+
+	channelName := ""
+	teamName := ""
+	if hasOneOrMoreScopes {
+		cn, tn, rsErr := p.resolveScope(post.ChannelId)
+		channelName = cn
+		teamName = tn
+
+		if rsErr != nil {
+			p.API.LogError("Failed to resolve scope", "error", rsErr.Error())
+		}
 	}
 
 	markdown.Inspect(post.Message, func(node interface{}) bool {
@@ -164,14 +183,9 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 		if origText != "" {
 			newText := origText
 
-			for _, l := range conf.Links {
-				if len(l.Scope) == 0 {
-					newText = l.Replace(newText)
-					continue
-				}
-
-				if p.inScope(l.Scope, channelName, teamName) {
-					newText = l.Replace(newText)
+			for _, link := range conf.Links {
+				if p.inScope(link.Scope, channelName, teamName) {
+					newText = link.Replace(newText)
 				}
 			}
 			if origText != newText {

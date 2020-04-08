@@ -955,6 +955,13 @@ func TestProcessPost(t *testing.T) {
 }
 
 func TestInScope(t *testing.T) {
+
+	t.Run("returns true if scope array is empty", func(t *testing.T) {
+		p := &Plugin{}
+		result := p.inScope([]string{}, "TestChannel", "TestTeam")
+		assert.Equal(t, true, result)
+	})
+
 	t.Run("returns true when team and channels are valid", func(t *testing.T) {
 		p := &Plugin{}
 		result := p.inScope([]string{"TestTeam/TestChannel"}, "TestChannel", "TestTeam")
