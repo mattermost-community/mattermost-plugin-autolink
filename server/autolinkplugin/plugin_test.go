@@ -823,7 +823,7 @@ func TestProcessPost(t *testing.T) {
 				autolink.Autolink{
 					Pattern:  "(Mattermost)",
 					Template: "[Mattermost](https://mattermost.com)",
-					Scope:    []string{"TestChannel/TestTeam"},
+					Scope:    []string{"TestTeam/TestChannel"},
 				},
 			},
 		}
@@ -866,7 +866,7 @@ func TestProcessPost(t *testing.T) {
 				autolink.Autolink{
 					Pattern:  "(Mattermost)",
 					Template: "[Mattermost](https://mattermost.com)",
-					Scope:    []string{"TestChannel/TestTeam"},
+					Scope:    []string{"TestTeam/TestChannel"},
 				},
 			},
 		}
@@ -911,7 +911,7 @@ func TestProcessPost(t *testing.T) {
 				autolink.Autolink{
 					Pattern:  "(Mattermost)",
 					Template: "[Mattermost](https://mattermost.com)",
-					Scope:    []string{"TestChannel/TestTeam"},
+					Scope:    []string{"TestTeam/TestChannel"},
 				},
 			},
 		}

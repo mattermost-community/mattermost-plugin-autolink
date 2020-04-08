@@ -98,6 +98,19 @@ func (p *Plugin) resolveScope(channelId string) (string, string, *model.AppError
 	return channel.Name, team.Name, nil
 }
 
+func (p *Plugin) inScope(scope []string, channelId string) bool {
+	channelName, teamName, err := p.resolveScope(channelId)
+	if err != nil {
+		return false
+	}
+
+	if teamName == "" {
+		return false
+	}
+
+	return contains(teamName, channelName, scope)
+}
+
 func (p *Plugin) isBotUser(userId string) (bool, *model.AppError) {
 	user, appErr := p.API.GetUser(userId)
 	if appErr != nil {
@@ -156,12 +169,7 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 					continue
 				}
 
-				teamName, channelName, rsErr := p.resolveScope(post.ChannelId)
-				if rsErr != nil {
-					return false
-				}
-
-				if teamName != "" && contains(teamName, channelName, l.Scope) {
+				if p.inScope(l.Scope, post.ChannelId) {
 					newText = l.Replace(newText)
 				}
 			}
