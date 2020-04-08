@@ -61,7 +61,6 @@ func (p *Plugin) IsAuthorizedAdmin(userId string) (bool, error) {
 func (p *Plugin) resolveScope(channelId string) (string, string, *model.AppError) {
 	channel, cErr := p.API.GetChannel(channelId)
 	if cErr != nil {
-		p.API.LogError("Failed to get Channel", "error", cErr.Error())
 		return "", "", cErr
 	}
 
@@ -71,7 +70,6 @@ func (p *Plugin) resolveScope(channelId string) (string, string, *model.AppError
 
 	team, tErr := p.API.GetTeam(channel.TeamId)
 	if tErr != nil {
-		p.API.LogError("Failed to get Team", "error", tErr.Error())
 		return "", "", tErr
 	}
 

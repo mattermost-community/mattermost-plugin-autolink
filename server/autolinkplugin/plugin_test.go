@@ -777,10 +777,6 @@ func TestResolveScope(t *testing.T) {
 
 		api.On("GetChannel",
 			mock.AnythingOfType("string")).Return(nil, &model.AppError{})
-		api.On("LogError",
-			mock.AnythingOfType("string"),
-			mock.AnythingOfType("string"),
-			mock.AnythingOfType("string")).Return(nil)
 
 		p := Plugin{}
 		p.SetAPI(api)
@@ -801,10 +797,6 @@ func TestResolveScope(t *testing.T) {
 
 		api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
 		api.On("GetTeam", mock.AnythingOfType("string")).Return(nil, &model.AppError{})
-		api.On("LogError",
-			mock.AnythingOfType("string"),
-			mock.AnythingOfType("string"),
-			mock.AnythingOfType("string")).Return(nil)
 
 		p := Plugin{}
 		p.SetAPI(api)
