@@ -8,7 +8,6 @@ import (
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/api"
 
-	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/mattermost/mattermost-server/v5/utils/markdown"
@@ -59,25 +58,6 @@ func (p *Plugin) IsAuthorizedAdmin(userId string) (bool, error) {
 	return false, nil
 }
 
-func contains(team string, channel string, list []string) bool {
-	for _, channelTeam := range list {
-		channelTeamSplit := strings.Split(channelTeam, "/")
-		if len(channelTeamSplit) == 2 {
-			if strings.EqualFold(channelTeamSplit[0], team) && strings.EqualFold(channelTeamSplit[1], channel) {
-				return true
-			}
-		} else if len(channelTeamSplit) == 1 {
-			if strings.EqualFold(channelTeamSplit[0], team) {
-				return true
-			}
-		} else {
-			mlog.Error("error splitting channel & team combination.")
-		}
-
-	}
-	return false
-}
-
 func (p *Plugin) resolveScope(channelId string) (string, string, *model.AppError) {
 	channel, cErr := p.API.GetChannel(channelId)
 	if cErr != nil {
@@ -98,17 +78,32 @@ func (p *Plugin) resolveScope(channelId string) (string, string, *model.AppError
 	return channel.Name, team.Name, nil
 }
 
-func (p *Plugin) inScope(scope []string, channelId string) bool {
-	channelName, teamName, err := p.resolveScope(channelId)
-	if err != nil {
-		return false
-	}
+func (p *Plugin) inScope(scope []string, channelName string, teamName string) bool {
 
 	if teamName == "" {
 		return false
 	}
 
-	return contains(teamName, channelName, scope)
+	for _, teamChannel := range scope {
+		split := strings.Split(teamChannel, "/")
+
+		splitLength := len(split)
+
+		if splitLength == 1 && split[0] == "" {
+			return false
+		}
+
+		if splitLength == 1 && strings.EqualFold(split[0], teamName) {
+			return true
+		}
+
+		scopeMatch := strings.EqualFold(split[0], teamName) && strings.EqualFold(split[1], channelName)
+		if splitLength == 2 && scopeMatch {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (p *Plugin) isBotUser(userId string) (bool, *model.AppError) {
@@ -125,6 +120,12 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 	conf := p.getConfig()
 	postText := post.Message
 	offset := 0
+
+	channelName, teamName, rsErr := p.resolveScope(post.ChannelId)
+	if rsErr != nil {
+		p.API.LogError("Failed to resolve scope", "error", rsErr.Error())
+	}
+
 	markdown.Inspect(post.Message, func(node interface{}) bool {
 		switch node.(type) {
 		// never descend into the text content of a link/image
@@ -169,7 +170,7 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 					continue
 				}
 
-				if p.inScope(l.Scope, post.ChannelId) {
+				if p.inScope(l.Scope, channelName, teamName) {
 					newText = l.Replace(newText)
 				}
 			}

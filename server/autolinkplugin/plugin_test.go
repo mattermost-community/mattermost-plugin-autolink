@@ -953,3 +953,35 @@ func TestProcessPost(t *testing.T) {
 		assert.Equal(t, "Welcome to [Mattermost](https://mattermost.com)!", rpost.Message)
 	})
 }
+
+func TestInScope(t *testing.T) {
+	t.Run("returns true when team and channels are valid", func(t *testing.T) {
+		p := &Plugin{}
+		result := p.inScope([]string{"TestTeam/TestChannel"}, "TestChannel", "TestTeam")
+		assert.Equal(t, true, result)
+	})
+
+	t.Run("returns false when channel is empty", func(t *testing.T) {
+		p := &Plugin{}
+		result := p.inScope([]string{"TestTeam/"}, "TestChannel", "TestTeam")
+		assert.Equal(t, false, result)
+	})
+
+	t.Run("returns false when team is empty", func(t *testing.T) {
+		p := &Plugin{}
+		result := p.inScope([]string{"TestTeam/TestChannel"}, "TestChannel", "")
+		assert.Equal(t, false, result)
+	})
+
+	t.Run("returns false on empty scope", func(t *testing.T) {
+		p := &Plugin{}
+		result := p.inScope([]string{""}, "TestChannel", "TestTeam")
+		assert.Equal(t, false, result)
+	})
+
+	t.Run("returns true on team scope only", func(t *testing.T) {
+		p := &Plugin{}
+		result := p.inScope([]string{"TestTeam"}, "TestChannel", "TestTeam")
+		assert.Equal(t, true, result)
+	})
+}
