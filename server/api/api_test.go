@@ -7,8 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
 type authorizeAll struct{}
@@ -50,11 +51,9 @@ func TestSetLink(t *testing.T) {
 			},
 			expectStatus:     http.StatusOK,
 			expectSaveCalled: true,
-			expectSaved: []autolink.Autolink{
-				autolink.Autolink{
-					Name: "test",
-				},
-			},
+			expectSaved: []autolink.Autolink{{
+				Name: "test",
+			}},
 		},
 		{
 			name: "add new link",
@@ -63,27 +62,22 @@ func TestSetLink(t *testing.T) {
 				Pattern:  ".*1",
 				Template: "test1",
 			},
-			prevLinks: []autolink.Autolink{
-				autolink.Autolink{
-					Name:     "test2",
-					Pattern:  ".*2",
-					Template: "test2",
-				},
-			},
+			prevLinks: []autolink.Autolink{{
+				Name:     "test2",
+				Pattern:  ".*2",
+				Template: "test2",
+			}},
 			expectStatus:     http.StatusOK,
 			expectSaveCalled: true,
-			expectSaved: []autolink.Autolink{
-				autolink.Autolink{
-					Name:     "test2",
-					Pattern:  ".*2",
-					Template: "test2",
-				},
-				autolink.Autolink{
-					Name:     "test1",
-					Pattern:  ".*1",
-					Template: "test1",
-				},
-			},
+			expectSaved: []autolink.Autolink{{
+				Name:     "test2",
+				Pattern:  ".*2",
+				Template: "test2",
+			}, {
+				Name:     "test1",
+				Pattern:  ".*1",
+				Template: "test1",
+			}},
 		}, {
 			name: "replace link",
 			link: autolink.Autolink{
@@ -91,42 +85,34 @@ func TestSetLink(t *testing.T) {
 				Pattern:  ".*2",
 				Template: "new template",
 			},
-			prevLinks: []autolink.Autolink{
-				autolink.Autolink{
-					Name:     "test1",
-					Pattern:  ".*1",
-					Template: "test1",
-				},
-				autolink.Autolink{
-					Name:     "test2",
-					Pattern:  ".*2",
-					Template: "test2",
-				},
-				autolink.Autolink{
-					Name:     "test3",
-					Pattern:  ".*3",
-					Template: "test3",
-				},
-			},
+			prevLinks: []autolink.Autolink{{
+				Name:     "test1",
+				Pattern:  ".*1",
+				Template: "test1",
+			}, {
+				Name:     "test2",
+				Pattern:  ".*2",
+				Template: "test2",
+			}, {
+				Name:     "test3",
+				Pattern:  ".*3",
+				Template: "test3",
+			}},
 			expectStatus:     http.StatusOK,
 			expectSaveCalled: true,
-			expectSaved: []autolink.Autolink{
-				autolink.Autolink{
-					Name:     "test1",
-					Pattern:  ".*1",
-					Template: "test1",
-				},
-				autolink.Autolink{
-					Name:     "test2",
-					Pattern:  ".*2",
-					Template: "new template",
-				},
-				autolink.Autolink{
-					Name:     "test3",
-					Pattern:  ".*3",
-					Template: "test3",
-				},
-			},
+			expectSaved: []autolink.Autolink{{
+				Name:     "test1",
+				Pattern:  ".*1",
+				Template: "test1",
+			}, {
+				Name:     "test2",
+				Pattern:  ".*2",
+				Template: "new template",
+			}, {
+				Name:     "test3",
+				Pattern:  ".*3",
+				Template: "test3",
+			}},
 		},
 		{
 			name: "no change",
@@ -135,18 +121,15 @@ func TestSetLink(t *testing.T) {
 				Pattern:  ".*2",
 				Template: "test2",
 			},
-			prevLinks: []autolink.Autolink{
-				autolink.Autolink{
-					Name:     "test1",
-					Pattern:  ".*1",
-					Template: "test1",
-				},
-				autolink.Autolink{
-					Name:     "test2",
-					Pattern:  ".*2",
-					Template: "test2",
-				},
-			},
+			prevLinks: []autolink.Autolink{{
+				Name:     "test1",
+				Pattern:  ".*1",
+				Template: "test1",
+			}, {
+				Name:     "test2",
+				Pattern:  ".*2",
+				Template: "test2",
+			}},
 			expectStatus:     http.StatusNotModified,
 			expectSaveCalled: false,
 		},

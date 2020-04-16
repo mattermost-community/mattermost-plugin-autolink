@@ -5,10 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
 const helpText = "###### Mattermost Autolink Plugin Administration\n" +
@@ -69,7 +70,7 @@ func (ch CommandHandler) Handle(p *Plugin, c *plugin.Context, header *model.Comm
 func (p *Plugin) ExecuteCommand(c *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
 	isAdmin, err := p.IsAuthorizedAdmin(commandArgs.UserId)
 	if err != nil {
-		return responsef("error occured while authorizing the command: %v", err), nil
+		return responsef("error occurred while authorizing the command: %v", err), nil
 	}
 	if !isAdmin {
 		return responsef("`/autolink` commands can only be executed by a system administrator or `autolink` plugin admins."), nil
@@ -114,7 +115,7 @@ func executeDelete(p *Plugin, c *plugin.Context, header *model.CommandArgs, args
 
 	removed := oldLinks[n]
 	newLinks := oldLinks[:n]
-	if int(n+1) < len(oldLinks) {
+	if n+1 < len(oldLinks) {
 		newLinks = append(newLinks, oldLinks[n+1:]...)
 	}
 
@@ -294,7 +295,7 @@ func parseLinkRef(p *Plugin, requireUnique bool, args ...string) ([]autolink.Aut
 	links := p.getConfig().Sorted().Links
 	if len(args) == 0 {
 		if requireUnique {
-			return nil, nil, errors.New("Unreachable")
+			return nil, nil, errors.New("unreachable")
 		}
 
 		return links, nil, nil
