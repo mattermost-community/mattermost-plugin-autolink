@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
@@ -55,25 +56,12 @@ func (h *Handler) handleError(w http.ResponseWriter, err error) {
 	_, _ = w.Write(b)
 }
 
-func (h *Handler) handleErrorWithCode(w http.ResponseWriter, code int, errTitle string, err error) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	b, _ := json.Marshal(struct {
-		Error   string `json:"error"`
-		Details string `json:"details"`
-	}{
-		Error:   errTitle,
-		Details: err.Error(),
-	})
-	_, _ = w.Write(b)
-}
-
 func (h *Handler) adminOrPluginRequired(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
 		authorized := false
-		pluginId := r.Header.Get("Mattermost-Plugin-ID")
-		if pluginId != "" {
+		pluginID := r.Header.Get("Mattermost-Plugin-ID")
+		if pluginID != "" {
 			// All other plugins are allowed
 			authorized = true
 		}
@@ -102,7 +90,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 	var newLink autolink.Autolink
 	if err := json.NewDecoder(r.Body).Decode(&newLink); err != nil {
-		h.handleError(w, fmt.Errorf("Unable to decode body: %w", err))
+		h.handleError(w, fmt.Errorf("unable to decode body: %w", err))
 		return
 	}
 
@@ -126,7 +114,7 @@ func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusNotModified
 	if changed {
 		if err := h.store.SaveLinks(links); err != nil {
-			h.handleError(w, fmt.Errorf("Unable to save link: %w", err))
+			h.handleError(w, fmt.Errorf("unable to save link: %w", err))
 			return
 		}
 		status = http.StatusOK

@@ -70,11 +70,11 @@ func (l *Autolink) Compile() error {
 	}
 	if !l.DisableNonWordSuffix {
 		if l.WordMatch {
-			pattern = pattern + `\b`
+			pattern += `\b`
 			canReplaceAll = true
 		} else {
-			pattern = pattern + `(?P<MattermostNonWordSuffix>$|[\s\.\!\?\,\)])`
-			template = template + `${MattermostNonWordSuffix}`
+			pattern += `(?P<MattermostNonWordSuffix>$|[\s\.\!\?\,\)])`
+			template += `${MattermostNonWordSuffix}`
 		}
 	}
 
@@ -126,11 +126,11 @@ func (l Autolink) ToMarkdown(i int) string {
 		if l.Disabled {
 			text += fmt.Sprintf("~~%s~~", l.Name)
 		} else {
-			text += fmt.Sprintf("%s", l.Name)
+			text += l.Name
 		}
 	}
 	if l.Disabled {
-		text += fmt.Sprintf(" **Disabled**")
+		text += " **Disabled**"
 	}
 	text += "\n"
 
