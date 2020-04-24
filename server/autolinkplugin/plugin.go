@@ -58,8 +58,8 @@ func (p *Plugin) IsAuthorizedAdmin(userID string) (bool, error) {
 	return false, nil
 }
 
-func (p *Plugin) resolveScope(channelId string) (string, string, *model.AppError) {
-	channel, cErr := p.API.GetChannel(channelId)
+func (p *Plugin) resolveScope(channelID string) (string, string, *model.AppError) {
+	channel, cErr := p.API.GetChannel(channelID)
 	if cErr != nil {
 		return "", "", cErr
 	}
