@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
@@ -16,16 +15,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
 func TestPlugin(t *testing.T) {
 	conf := Config{
-		Links: []autolink.Autolink{
-			autolink.Autolink{
-				Pattern:  "(Mattermost)",
-				Template: "[Mattermost](https://mattermost.com)",
-			},
-		},
+		Links: []autolink.Autolink{{
+			Pattern:  "(Mattermost)",
+			Template: "[Mattermost](https://mattermost.com)",
+		}},
 	}
 
 	testChannel := model.Channel{
@@ -54,7 +53,8 @@ func TestPlugin(t *testing.T) {
 
 	p := New()
 	p.SetAPI(api)
-	p.OnConfigurationChange()
+	err := p.OnConfigurationChange()
+	require.NoError(t, err)
 
 	post := &model.Post{Message: "Welcome to Mattermost!"}
 	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
@@ -91,17 +91,17 @@ func (suite *SuiteAuthorization) SetupTest() {
 		"GetUser",
 		mock.AnythingOfType("string"),
 	).Return(
-		func(userId string) *model.User {
-			return suite.userInfo[userId]
+		func(userID string) *model.User {
+			return suite.userInfo[userID]
 		},
-		func(userId string) *model.AppError {
-			if _, ok := suite.userInfo[userId]; ok {
-				return nil
-			} else {
+		func(userID string) *model.AppError {
+			if _, ok := suite.userInfo[userID]; !ok {
 				return &model.AppError{
-					Message: fmt.Sprintf("user %s not found", userId),
+					Message: fmt.Sprintf("user %s not found", userID),
 				}
 			}
+
+			return nil
 		},
 	)
 	suite.api.On(
@@ -273,6 +273,7 @@ func (suite *SuiteAuthorization) TestNonExistantUsersAreIgnored() {
 
 	allowed, err = p.IsAuthorizedAdmin("karynaId")
 	require.Error(suite.T(), err)
+	require.False(suite.T(), allowed)
 }
 
 func TestSuiteAuthorization(t *testing.T) {
@@ -337,7 +338,8 @@ func TestSpecialCases(t *testing.T) {
 
 	p := New()
 	p.SetAPI(api)
-	p.OnConfigurationChange()
+	err := p.OnConfigurationChange()
+	require.NoError(t, err)
 
 	var tests = []struct {
 		inputMessage    string
@@ -510,12 +512,10 @@ func TestSpecialCases(t *testing.T) {
 
 func TestBotMessagesAreRewritenWhenGetUserFails(t *testing.T) {
 	conf := Config{
-		Links: []autolink.Autolink{
-			autolink.Autolink{
-				Pattern:  "(Mattermost)",
-				Template: "[Mattermost](https://mattermost.com)",
-			},
-		},
+		Links: []autolink.Autolink{{
+			Pattern:  "(Mattermost)",
+			Template: "[Mattermost](https://mattermost.com)",
+		}},
 	}
 
 	testChannel := model.Channel{
@@ -538,14 +538,14 @@ func TestBotMessagesAreRewritenWhenGetUserFails(t *testing.T) {
 	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil).Once()
 	api.On("LogError", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("*model.AppError"))
 
-	err := &model.AppError{
+	api.On("GetUser", mock.AnythingOfType("string")).Return(nil, &model.AppError{
 		Message: "foo error!",
-	}
-	api.On("GetUser", mock.AnythingOfType("string")).Return(nil, err).Once()
+	}).Once()
 
 	p := New()
 	p.SetAPI(api)
-	p.OnConfigurationChange()
+	err := p.OnConfigurationChange()
+	require.NoError(t, err)
 
 	post := &model.Post{Message: "Welcome to Mattermost!"}
 	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
@@ -555,12 +555,10 @@ func TestBotMessagesAreRewritenWhenGetUserFails(t *testing.T) {
 
 func TestGetUserApiCallIsNotExecutedWhenThereAreNoChanges(t *testing.T) {
 	conf := Config{
-		Links: []autolink.Autolink{
-			autolink.Autolink{
-				Pattern:  "(Mattermost)",
-				Template: "[Mattermost](https://mattermost.com)",
-			},
-		},
+		Links: []autolink.Autolink{{
+			Pattern:  "(Mattermost)",
+			Template: "[Mattermost](https://mattermost.com)",
+		}},
 	}
 
 	testChannel := model.Channel{
@@ -585,7 +583,8 @@ func TestGetUserApiCallIsNotExecutedWhenThereAreNoChanges(t *testing.T) {
 
 	p := New()
 	p.SetAPI(api)
-	p.OnConfigurationChange()
+	err := p.OnConfigurationChange()
+	require.NoError(t, err)
 
 	post := &model.Post{Message: "Welcome to FooBarism!"}
 	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
@@ -595,12 +594,10 @@ func TestGetUserApiCallIsNotExecutedWhenThereAreNoChanges(t *testing.T) {
 
 func TestBotMessagesAreNotRewriten(t *testing.T) {
 	conf := Config{
-		Links: []autolink.Autolink{
-			autolink.Autolink{
-				Pattern:  "(Mattermost)",
-				Template: "[Mattermost](https://mattermost.com)",
-			},
-		},
+		Links: []autolink.Autolink{{
+			Pattern:  "(Mattermost)",
+			Template: "[Mattermost](https://mattermost.com)",
+		}},
 	}
 
 	testChannel := model.Channel{
@@ -629,7 +626,8 @@ func TestBotMessagesAreNotRewriten(t *testing.T) {
 
 	p := New()
 	p.SetAPI(api)
-	p.OnConfigurationChange()
+	err := p.OnConfigurationChange()
+	require.NoError(t, err)
 
 	post := &model.Post{Message: "Welcome to Mattermost!"}
 	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
@@ -639,16 +637,13 @@ func TestBotMessagesAreNotRewriten(t *testing.T) {
 
 func TestHashtags(t *testing.T) {
 	conf := Config{
-		Links: []autolink.Autolink{
-			autolink.Autolink{
-				Pattern:  "foo",
-				Template: "#bar",
-			},
-			autolink.Autolink{
-				Pattern:  "hash tags",
-				Template: "#hash #tags",
-			},
-		},
+		Links: []autolink.Autolink{{
+			Pattern:  "foo",
+			Template: "#bar",
+		}, {
+			Pattern:  "hash tags",
+			Template: "#hash #tags",
+		}},
 	}
 
 	testChannel := model.Channel{
@@ -677,7 +672,8 @@ func TestHashtags(t *testing.T) {
 
 	p := New()
 	p.SetAPI(api)
-	p.OnConfigurationChange()
+	err := p.OnConfigurationChange()
+	require.NoError(t, err)
 
 	post := &model.Post{Message: "foo"}
 	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
@@ -692,13 +688,11 @@ func TestHashtags(t *testing.T) {
 
 func TestAPI(t *testing.T) {
 	conf := Config{
-		Links: []autolink.Autolink{
-			autolink.Autolink{
-				Name:     "existing",
-				Pattern:  "thing",
-				Template: "otherthing",
-			},
-		},
+		Links: []autolink.Autolink{{
+			Name:     "existing",
+			Pattern:  "thing",
+			Template: "otherthing",
+		}},
 	}
 
 	testChannel := model.Channel{
@@ -721,16 +715,21 @@ func TestAPI(t *testing.T) {
 
 	p := New()
 	p.SetAPI(api)
-	p.OnConfigurationChange()
-	p.OnActivate()
+	err := p.OnConfigurationChange()
+	require.NoError(t, err)
+	err = p.OnActivate()
+	require.NoError(t, err)
 
-	jbyte, _ := json.Marshal(&autolink.Autolink{Name: "new", Pattern: "newpat", Template: "newtemp"})
+	jbyte, err := json.Marshal(&autolink.Autolink{Name: "new", Pattern: "newpat", Template: "newtemp"})
+	require.NoError(t, err)
 	recorder := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/api/v1/link", bytes.NewReader(jbyte))
+	req, err := http.NewRequest("POST", "/api/v1/link", bytes.NewReader(jbyte))
+	require.NoError(t, err)
 	p.ServeHTTP(&plugin.Context{SourcePluginId: "somthing"}, recorder, req)
 	resp := recorder.Result()
+	require.NotNil(t, resp)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	require.Len(t, p.conf.Links, 2)
+	assert.Len(t, p.conf.Links, 2)
 	assert.Equal(t, "new", p.conf.Links[1].Name)
 }
 

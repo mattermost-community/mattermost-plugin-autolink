@@ -5,8 +5,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 	"github.com/mattermost/mattermost-server/v5/model"
+
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
 // Config from config.json
@@ -83,7 +84,7 @@ func (p *Plugin) SaveLinks(links []autolink.Autolink) error {
 	})
 	appErr := p.API.SavePluginConfig(p.getConfig().ToConfig())
 	if appErr != nil {
-		return fmt.Errorf("Unable to save links: %w", appErr)
+		return fmt.Errorf("unable to save links: %w", appErr)
 	}
 
 	return nil
@@ -133,13 +134,13 @@ func (conf *Config) parsePluginAdminList(p *Plugin) {
 	userIDs := strings.Split(conf.PluginAdmins, ",")
 
 	for _, v := range userIDs {
-		userId := strings.TrimSpace(v)
+		userID := strings.TrimSpace(v)
 		// Let's verify that the given user really exists
-		_, appErr := p.API.GetUser(userId)
+		_, appErr := p.API.GetUser(userID)
 		if appErr != nil {
-			p.API.LogError(fmt.Sprintf("error occured while verifying userId %s: %v", v, appErr))
+			p.API.LogError(fmt.Sprintf("error occurred while verifying userID %s: %v", v, appErr))
 		} else {
-			conf.AdminUserIds[userId] = struct{}{}
+			conf.AdminUserIds[userID] = struct{}{}
 		}
 	}
 }

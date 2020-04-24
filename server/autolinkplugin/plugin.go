@@ -7,10 +7,11 @@ import (
 	"sync"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/api"
-
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/mattermost/mattermost-server/v5/utils/markdown"
+
+	"github.com/mattermost/mattermost-plugin-autolink/server/api"
 )
 
 // Plugin the main struct for everything
@@ -36,22 +37,22 @@ func (p *Plugin) OnActivate() error {
 	return nil
 }
 
-func (p *Plugin) IsAuthorizedAdmin(userId string) (bool, error) {
-	user, err := p.API.GetUser(userId)
+func (p *Plugin) IsAuthorizedAdmin(userID string) (bool, error) {
+	user, err := p.API.GetUser(userID)
 	if err != nil {
 		return false, fmt.Errorf(
-			"failed to obtain information about user `%s`: %w", userId, err)
+			"failed to obtain information about user `%s`: %w", userID, err)
 	}
 	if strings.Contains(user.Roles, "system_admin") {
 		p.API.LogInfo(
-			fmt.Sprintf("UserId `%s` is authorized basing on the sysadmin role membership", userId))
+			fmt.Sprintf("UserID `%s` is authorized basing on the sysadmin role membership", userID))
 		return true, nil
 	}
 
 	conf := p.getConfig()
-	if _, ok := conf.AdminUserIds[userId]; ok {
+	if _, ok := conf.AdminUserIds[userID]; ok {
 		p.API.LogInfo(
-			fmt.Sprintf("UserId `%s` is authorized basing on the list of plugin admins list", userId))
+			fmt.Sprintf("UserID `%s` is authorized basing on the list of plugin admins list", userID))
 		return true, nil
 	}
 
@@ -108,8 +109,8 @@ func (p *Plugin) inScope(scope []string, channelName string, teamName string) bo
 	return false
 }
 
-func (p *Plugin) isBotUser(userId string) (bool, *model.AppError) {
-	user, appErr := p.API.GetUser(userId)
+func (p *Plugin) isBotUser(userID string) (bool, *model.AppError) {
+	user, appErr := p.API.GetUser(userID)
 	if appErr != nil {
 		p.API.LogError("failed to check if message for rewriting was send by a bot", "error", appErr)
 		return false, appErr
@@ -203,9 +204,9 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 			// Let's assume for now that former is a lesser evil and carry on.
 		} else if isBot {
 			// We intentionally use a single if/else block so that the code is
-			// more readable and does not relly on hidden side effect of
+			// more readable and does not rely on hidden side effect of
 			// isBot==false when appErr!=nil.
-			p.API.LogDebug("not rewriting message from bot", "userId", post.UserId)
+			p.API.LogDebug("not rewriting message from bot", "userID", post.UserId)
 			return nil, ""
 		}
 
@@ -232,9 +233,9 @@ func (p *Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mode
 // to the database.
 func (p *Plugin) MessageWillBeUpdated(c *plugin.Context, post *model.Post, _ *model.Post) (*model.Post, string) {
 	conf := p.getConfig()
-	if conf.EnableOnUpdate {
-		return p.ProcessPost(c, post)
-	} else {
+	if !conf.EnableOnUpdate {
 		return post, ""
 	}
+
+	return p.ProcessPost(c, post)
 }

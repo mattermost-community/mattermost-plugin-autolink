@@ -2,21 +2,23 @@ package autolinkplugin
 
 import (
 	"errors"
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
+	"testing"
+
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest/mock"
 	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
 func TestOnConfigurationChange(t *testing.T) {
-
 	t.Run("Invalid Configuration", func(t *testing.T) {
 		api := &plugintest.API{}
 		api.On("LoadPluginConfiguration",
 			mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
-			return errors.New("LoadPluginConfiguration Error")
+			return errors.New("loadPluginConfiguration Error")
 		})
 
 		p := Plugin{}
@@ -28,13 +30,11 @@ func TestOnConfigurationChange(t *testing.T) {
 
 	t.Run("Invalid Autolink", func(t *testing.T) {
 		conf := Config{
-			Links: []autolink.Autolink{
-				autolink.Autolink{
-					Name:     "existing",
-					Pattern:  ")",
-					Template: "otherthing",
-				},
-			},
+			Links: []autolink.Autolink{{
+				Name:     "existing",
+				Pattern:  ")",
+				Template: "otherthing",
+			}},
 		}
 
 		api := &plugintest.API{}
@@ -56,7 +56,8 @@ func TestOnConfigurationChange(t *testing.T) {
 
 		p := New()
 		p.SetAPI(api)
-		p.OnConfigurationChange()
+		err := p.OnConfigurationChange()
+		require.NoError(t, err)
 
 		api.AssertNumberOfCalls(t, "LogError", 1)
 	})

@@ -10,7 +10,7 @@ import (
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
-const autolinkPluginId = "mattermost-autolink"
+const autolinkPluginID = "mattermost-autolink"
 
 type PluginAPI interface {
 	PluginHTTP(*http.Request) *http.Response
@@ -27,7 +27,7 @@ type pluginAPIRoundTripper struct {
 func (p *pluginAPIRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp := p.api.PluginHTTP(req)
 	if resp == nil {
-		return nil, fmt.Errorf("Failed to make interplugin request")
+		return nil, fmt.Errorf("failed to make interplugin request")
 	}
 	return resp, nil
 }
@@ -45,7 +45,7 @@ func (c *Client) Add(links ...autolink.Autolink) error {
 			return err
 		}
 
-		req, err := http.NewRequest("POST", "/"+autolinkPluginId+"/api/v1/link", bytes.NewReader(linkBytes))
+		req, err := http.NewRequest("POST", "/"+autolinkPluginID+"/api/v1/link", bytes.NewReader(linkBytes))
 		if err != nil {
 			return err
 		}
@@ -54,10 +54,11 @@ func (c *Client) Add(links ...autolink.Autolink) error {
 		if err != nil {
 			return err
 		}
-		resp.Body.Close()
-		if resp == nil || resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
 			respBody, _ := ioutil.ReadAll(resp.Body)
-			return fmt.Errorf("Unable to install autolink. Error: %v, %v", resp.StatusCode, string(respBody))
+			return fmt.Errorf("unable to install autolink. Error: %v, %v", resp.StatusCode, string(respBody))
 		}
 	}
 

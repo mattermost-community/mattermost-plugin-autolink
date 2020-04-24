@@ -5,13 +5,14 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolinkplugin"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolinkplugin"
 )
 
 func setupTestPlugin(t *testing.T, l autolink.Autolink) *autolinkplugin.Plugin {
@@ -197,9 +198,11 @@ func TestCreditCard(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			_ = tt.Link.Compile()
+			err := tt.Link.Compile()
 			actual := tt.Link.Replace(tt.inputMessage)
+
 			assert.Equal(t, tt.expectedMessage, actual)
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -355,7 +358,6 @@ func TestLink(t *testing.T) {
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345)",
 		},
 	} {
-
 		t.Run(tc.Name, func(t *testing.T) {
 			p := setupTestPlugin(t, tc.Link)
 			post, _ := p.MessageWillBePosted(nil, &model.Post{
@@ -371,7 +373,6 @@ func TestLegacyWordBoundaries(t *testing.T) {
 	const pattern = "(KEY)(-)(?P<ID>\\d+)"
 	const template = "[KEY-$ID](someurl/KEY-$ID)"
 	const ref = "KEY-12345"
-	const ID = "12345"
 	const markdown = "[KEY-12345](someurl/KEY-12345)"
 
 	var defaultLink = autolink.Autolink{
@@ -434,7 +435,6 @@ func TestLegacyWordBoundaries(t *testing.T) {
 		{Sep: "lsbracket", Name: "bracket neither prefix suffix", Prefix: "[", Link: linkNoPrefixNoSuffix},
 		{Sep: "rand", Name: "random separators", Prefix: "%() ", Suffix: "?! $%^&"},
 	} {
-
 		orig := fmt.Sprintf("word1%s%s%sword2", tc.Prefix, ref, tc.Suffix)
 		expected := fmt.Sprintf("word1%s%s%sword2", tc.Prefix, markdown, tc.Suffix)
 
@@ -472,7 +472,6 @@ func TestWordMatch(t *testing.T) {
 	const pattern = "(KEY)(-)(?P<ID>\\d+)"
 	const template = "[KEY-$ID](someurl/KEY-$ID)"
 	const ref = "KEY-12345"
-	const ID = "12345"
 	const markdown = "[KEY-12345](someurl/KEY-12345)"
 
 	var defaultLink = autolink.Autolink{
@@ -530,7 +529,6 @@ func TestWordMatch(t *testing.T) {
 		{Sep: "rsbracket", Name: "bracket", Suffix: "]", Link: linkNoPrefix},
 		{Sep: "rand", Name: "random separators", Prefix: "% (", Suffix: "-- $%^&"},
 	} {
-
 		orig := fmt.Sprintf("word1%s%s%sword2", tc.Prefix, ref, tc.Suffix)
 		expected := fmt.Sprintf("word1%s%s%sword2", tc.Prefix, markdown, tc.Suffix)
 
@@ -584,7 +582,6 @@ func TestEquals(t *testing.T) {
 			expectEqual: true,
 		},
 	} {
-
 		t.Run(tc.l1.Name+"-"+tc.l2.Name, func(t *testing.T) {
 			eq := tc.l1.Equals(tc.l2)
 			assert.Equal(t, tc.expectEqual, eq)
