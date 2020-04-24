@@ -811,7 +811,7 @@ func TestProcessPost(t *testing.T) {
 	t.Run("cannot resolve scope", func(t *testing.T) {
 		conf := Config{
 			Links: []autolink.Autolink{
-				autolink.Autolink{
+				{
 					Pattern:  "(Mattermost)",
 					Template: "[Mattermost](https://mattermost.com)",
 					Scope:    []string{"TestTeam/TestChannel"},
@@ -843,7 +843,7 @@ func TestProcessPost(t *testing.T) {
 
 		p := New()
 		p.SetAPI(api)
-		p.OnConfigurationChange()
+		_ = p.OnConfigurationChange()
 
 		post := &model.Post{Message: "Welcome to Mattermost!"}
 		rpost, _ := p.ProcessPost(&plugin.Context{}, post)
@@ -854,7 +854,7 @@ func TestProcessPost(t *testing.T) {
 	t.Run("team name is empty", func(t *testing.T) {
 		conf := Config{
 			Links: []autolink.Autolink{
-				autolink.Autolink{
+				{
 					Pattern:  "(Mattermost)",
 					Template: "[Mattermost](https://mattermost.com)",
 					Scope:    []string{"TestTeam/TestChannel"},
@@ -888,7 +888,7 @@ func TestProcessPost(t *testing.T) {
 
 		p := New()
 		p.SetAPI(api)
-		p.OnConfigurationChange()
+		_ = p.OnConfigurationChange()
 
 		post := &model.Post{Message: "Welcome to Mattermost!"}
 		rpost, _ := p.ProcessPost(&plugin.Context{}, post)
@@ -899,7 +899,7 @@ func TestProcessPost(t *testing.T) {
 	t.Run("valid scope replaces text", func(t *testing.T) {
 		conf := Config{
 			Links: []autolink.Autolink{
-				autolink.Autolink{
+				{
 					Pattern:  "(Mattermost)",
 					Template: "[Mattermost](https://mattermost.com)",
 					Scope:    []string{"TestTeam/TestChannel"},
@@ -936,7 +936,7 @@ func TestProcessPost(t *testing.T) {
 
 		p := New()
 		p.SetAPI(api)
-		p.OnConfigurationChange()
+		_ = p.OnConfigurationChange()
 
 		post := &model.Post{Message: "Welcome to Mattermost!"}
 		rpost, _ := p.ProcessPost(&plugin.Context{}, post)
@@ -946,7 +946,6 @@ func TestProcessPost(t *testing.T) {
 }
 
 func TestInScope(t *testing.T) {
-
 	t.Run("returns true if scope array is empty", func(t *testing.T) {
 		p := &Plugin{}
 		result := p.inScope([]string{}, "TestChannel", "TestTeam")

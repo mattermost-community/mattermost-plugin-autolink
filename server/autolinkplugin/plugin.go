@@ -77,7 +77,6 @@ func (p *Plugin) resolveScope(channelId string) (string, string, *model.AppError
 }
 
 func (p *Plugin) inScope(scope []string, channelName string, teamName string) bool {
-
 	if len(scope) == 0 {
 		return true
 	}
