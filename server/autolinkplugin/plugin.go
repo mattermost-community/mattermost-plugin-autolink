@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mattermost/mattermost-server/v5/mlog"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/mattermost/mattermost-server/v5/utils/markdown"
@@ -59,20 +58,49 @@ func (p *Plugin) IsAuthorizedAdmin(userID string) (bool, error) {
 	return false, nil
 }
 
-func contains(team string, channel string, list []string) bool {
-	for _, channelTeam := range list {
-		channelTeamSplit := strings.Split(channelTeam, "/")
-		switch len(channelTeamSplit) {
-		case 1:
-			if strings.EqualFold(channelTeamSplit[0], team) {
-				return true
-			}
-		case 2:
-			if strings.EqualFold(channelTeamSplit[0], team) && strings.EqualFold(channelTeamSplit[1], channel) {
-				return true
-			}
-		default:
-			mlog.Error("error splitting channel & team combination.")
+func (p *Plugin) resolveScope(channelID string) (string, string, *model.AppError) {
+	channel, cErr := p.API.GetChannel(channelID)
+	if cErr != nil {
+		return "", "", cErr
+	}
+
+	if channel.TeamId == "" {
+		return channel.Name, "", nil
+	}
+
+	team, tErr := p.API.GetTeam(channel.TeamId)
+	if tErr != nil {
+		return "", "", tErr
+	}
+
+	return channel.Name, team.Name, nil
+}
+
+func (p *Plugin) inScope(scope []string, channelName string, teamName string) bool {
+	if len(scope) == 0 {
+		return true
+	}
+
+	if teamName == "" {
+		return false
+	}
+
+	for _, teamChannel := range scope {
+		split := strings.Split(teamChannel, "/")
+
+		splitLength := len(split)
+
+		if splitLength == 1 && split[0] == "" {
+			return false
+		}
+
+		if splitLength == 1 && strings.EqualFold(split[0], teamName) {
+			return true
+		}
+
+		scopeMatch := strings.EqualFold(split[0], teamName) && strings.EqualFold(split[1], channelName)
+		if splitLength == 2 && scopeMatch {
+			return true
 		}
 	}
 
@@ -93,6 +121,27 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 	conf := p.getConfig()
 	postText := post.Message
 	offset := 0
+
+	hasOneOrMoreScopes := false
+	for _, link := range conf.Links {
+		if len(link.Scope) > 0 {
+			hasOneOrMoreScopes = true
+			break
+		}
+	}
+
+	channelName := ""
+	teamName := ""
+	if hasOneOrMoreScopes {
+		cn, tn, rsErr := p.resolveScope(post.ChannelId)
+		channelName = cn
+		teamName = tn
+
+		if rsErr != nil {
+			p.API.LogError("Failed to resolve scope", "error", rsErr.Error())
+		}
+	}
+
 	markdown.Inspect(post.Message, func(node interface{}) bool {
 		switch node.(type) {
 		// never descend into the text content of a link/image
@@ -131,26 +180,9 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 		if origText != "" {
 			newText := origText
 
-			channel, cErr := p.API.GetChannel(post.ChannelId)
-			if cErr != nil {
-				p.API.LogError("Failed to get Channel", "error", cErr.Error())
-				return false
-			}
-			teamName := ""
-			if channel.TeamId != "" {
-				team, tErr := p.API.GetTeam(channel.TeamId)
-				if tErr != nil {
-					p.API.LogError("Failed to get Team", "error", tErr.Error())
-					return false
-				}
-				teamName = team.Name
-			}
-
-			for _, l := range conf.Links {
-				if len(l.Scope) == 0 {
-					newText = l.Replace(newText)
-				} else if teamName != "" && contains(teamName, channel.Name, l.Scope) {
-					newText = l.Replace(newText)
+			for _, link := range conf.Links {
+				if p.inScope(link.Scope, channelName, teamName) {
+					newText = link.Replace(newText)
 				}
 			}
 			if origText != newText {

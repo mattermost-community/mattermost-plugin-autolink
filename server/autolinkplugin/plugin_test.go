@@ -732,3 +732,253 @@ func TestAPI(t *testing.T) {
 	assert.Len(t, p.conf.Links, 2)
 	assert.Equal(t, "new", p.conf.Links[1].Name)
 }
+
+func TestResolveScope(t *testing.T) {
+	t.Run("resolve channel name and team name", func(t *testing.T) {
+		testChannel := model.Channel{
+			Name:   "TestChannel",
+			TeamId: "TestId",
+		}
+
+		testTeam := model.Team{
+			Name: "TestTeam",
+		}
+
+		api := &plugintest.API{}
+		api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+		api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
+
+		p := Plugin{}
+		p.SetAPI(api)
+		channelName, teamName, _ := p.resolveScope("TestId")
+		assert.Equal(t, "TestChannel", channelName)
+		assert.Equal(t, "TestTeam", teamName)
+	})
+
+	t.Run("resolve channel name and returns empty team name", func(t *testing.T) {
+		testChannel := model.Channel{
+			Name: "TestChannel",
+		}
+
+		api := &plugintest.API{}
+		api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+
+		p := Plugin{}
+		p.SetAPI(api)
+
+		channelName, teamName, _ := p.resolveScope("TestId")
+		assert.Equal(t, "TestChannel", channelName)
+		assert.Equal(t, "", teamName)
+	})
+
+	t.Run("error when api fails to get channel", func(t *testing.T) {
+		api := &plugintest.API{}
+
+		api.On("GetChannel",
+			mock.AnythingOfType("string")).Return(nil, &model.AppError{})
+
+		p := Plugin{}
+		p.SetAPI(api)
+
+		channelName, teamName, err := p.resolveScope("TestId")
+		assert.Error(t, err)
+		assert.Equal(t, teamName, "")
+		assert.Equal(t, channelName, "")
+	})
+
+	t.Run("error when api fails to get team", func(t *testing.T) {
+		testChannel := model.Channel{
+			Name:   "TestChannel",
+			TeamId: "TestId",
+		}
+
+		api := &plugintest.API{}
+
+		api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+		api.On("GetTeam", mock.AnythingOfType("string")).Return(nil, &model.AppError{})
+
+		p := Plugin{}
+		p.SetAPI(api)
+
+		channelName, teamName, err := p.resolveScope("TestId")
+		assert.Error(t, err)
+		assert.Equal(t, channelName, "")
+		assert.Equal(t, teamName, "")
+	})
+}
+
+func TestProcessPost(t *testing.T) {
+	t.Run("cannot resolve scope", func(t *testing.T) {
+		conf := Config{
+			Links: []autolink.Autolink{
+				{
+					Pattern:  "(Mattermost)",
+					Template: "[Mattermost](https://mattermost.com)",
+					Scope:    []string{"TestTeam/TestChannel"},
+				},
+			},
+		}
+
+		api := &plugintest.API{}
+
+		api.On("LoadPluginConfiguration",
+			mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
+			*dest.(*Config) = conf
+			return nil
+		})
+		api.On("UnregisterCommand", mock.AnythingOfType("string"),
+			mock.AnythingOfType("string")).Return((*model.AppError)(nil))
+
+		api.On("GetChannel", mock.AnythingOfType("string")).Return(nil, &model.AppError{})
+
+		api.On("LogError",
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("string")).Return(nil)
+
+		testUser := model.User{
+			IsBot: false,
+		}
+		api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil)
+
+		p := New()
+		p.SetAPI(api)
+		_ = p.OnConfigurationChange()
+
+		post := &model.Post{Message: "Welcome to Mattermost!"}
+		rpost, _ := p.ProcessPost(&plugin.Context{}, post)
+
+		assert.Equal(t, "Welcome to Mattermost!", rpost.Message)
+	})
+
+	t.Run("team name is empty", func(t *testing.T) {
+		conf := Config{
+			Links: []autolink.Autolink{
+				{
+					Pattern:  "(Mattermost)",
+					Template: "[Mattermost](https://mattermost.com)",
+					Scope:    []string{"TestTeam/TestChannel"},
+				},
+			},
+		}
+
+		testChannel := model.Channel{
+			Name: "TestChannel",
+		}
+
+		api := &plugintest.API{}
+
+		api.On("LoadPluginConfiguration",
+			mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
+			*dest.(*Config) = conf
+			return nil
+		})
+		api.On("UnregisterCommand", mock.AnythingOfType("string"),
+			mock.AnythingOfType("string")).Return((*model.AppError)(nil))
+		api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+		api.On("LogError",
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("string"),
+			mock.AnythingOfType("string")).Return(nil)
+
+		testUser := model.User{
+			IsBot: false,
+		}
+		api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil)
+
+		p := New()
+		p.SetAPI(api)
+		_ = p.OnConfigurationChange()
+
+		post := &model.Post{Message: "Welcome to Mattermost!"}
+		rpost, _ := p.ProcessPost(&plugin.Context{}, post)
+
+		assert.Equal(t, "Welcome to Mattermost!", rpost.Message)
+	})
+
+	t.Run("valid scope replaces text", func(t *testing.T) {
+		conf := Config{
+			Links: []autolink.Autolink{
+				{
+					Pattern:  "(Mattermost)",
+					Template: "[Mattermost](https://mattermost.com)",
+					Scope:    []string{"TestTeam/TestChannel"},
+				},
+			},
+		}
+
+		testChannel := model.Channel{
+			Name:   "TestChannel",
+			TeamId: "TestId",
+		}
+
+		testTeam := model.Team{
+			Name: "TestTeam",
+		}
+
+		api := &plugintest.API{}
+
+		api.On("LoadPluginConfiguration",
+			mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
+			*dest.(*Config) = conf
+			return nil
+		})
+		api.On("UnregisterCommand", mock.AnythingOfType("string"),
+			mock.AnythingOfType("string")).Return((*model.AppError)(nil))
+
+		api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+		api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
+
+		testUser := model.User{
+			IsBot: false,
+		}
+		api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil)
+
+		p := New()
+		p.SetAPI(api)
+		_ = p.OnConfigurationChange()
+
+		post := &model.Post{Message: "Welcome to Mattermost!"}
+		rpost, _ := p.ProcessPost(&plugin.Context{}, post)
+
+		assert.Equal(t, "Welcome to [Mattermost](https://mattermost.com)!", rpost.Message)
+	})
+}
+
+func TestInScope(t *testing.T) {
+	t.Run("returns true if scope array is empty", func(t *testing.T) {
+		p := &Plugin{}
+		result := p.inScope([]string{}, "TestChannel", "TestTeam")
+		assert.Equal(t, true, result)
+	})
+
+	t.Run("returns true when team and channels are valid", func(t *testing.T) {
+		p := &Plugin{}
+		result := p.inScope([]string{"TestTeam/TestChannel"}, "TestChannel", "TestTeam")
+		assert.Equal(t, true, result)
+	})
+
+	t.Run("returns false when channel is empty", func(t *testing.T) {
+		p := &Plugin{}
+		result := p.inScope([]string{"TestTeam/"}, "TestChannel", "TestTeam")
+		assert.Equal(t, false, result)
+	})
+
+	t.Run("returns false when team is empty", func(t *testing.T) {
+		p := &Plugin{}
+		result := p.inScope([]string{"TestTeam/TestChannel"}, "TestChannel", "")
+		assert.Equal(t, false, result)
+	})
+
+	t.Run("returns false on empty scope", func(t *testing.T) {
+		p := &Plugin{}
+		result := p.inScope([]string{""}, "TestChannel", "TestTeam")
+		assert.Equal(t, false, result)
+	})
+
+	t.Run("returns true on team scope only", func(t *testing.T) {
+		p := &Plugin{}
+		result := p.inScope([]string{"TestTeam"}, "TestChannel", "TestTeam")
+		assert.Equal(t, true, result)
+	})
+}
