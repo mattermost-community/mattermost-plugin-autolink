@@ -289,11 +289,14 @@ func TestSpecialCases(t *testing.T) {
 		Pattern:  "(Example)",
 		Template: "[Example](https://example.com)",
 	}, autolink.Autolink{
-		Pattern:  "MM-(?P<jira_id>\\d+)",
-		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+		Pattern:             "MM-(?P<jira_id>\\d+)",
+		Template:            "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+		WordMatch:           true,
+		DisableInHyperlinks: true,
 	}, autolink.Autolink{
-		Pattern:  "https://mattermost.atlassian.net/browse/MM-(?P<jira_id>\\d+)",
-		Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+		Pattern:   "https://mattermost.atlassian.net/browse/MM-(?P<jira_id>\\d+)",
+		Template:  "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+		WordMatch: true,
 	}, autolink.Autolink{
 		Pattern:  "(foo!bar)",
 		Template: "fb",
@@ -453,6 +456,15 @@ func TestSpecialCases(t *testing.T) {
 		}, {
 			"check out MM-12345 too",
 			"check out [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) too",
+		}, {
+			"also MM-12345, (MM-12345), MM-12345? :MM-12345.",
+			"also [MM-12345](https://mattermost.atlassian.net/browse/MM-12345), " +
+				"([MM-12345](https://mattermost.atlassian.net/browse/MM-12345)), " +
+				"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345)? " +
+				":[MM-12345](https://mattermost.atlassian.net/browse/MM-12345).",
+		}, {
+			"you can look at https://some-other-system/ticket/MM-12345 if you want",
+			"you can look at https://some-other-system/ticket/MM-12345 if you want",
 		},
 	}
 

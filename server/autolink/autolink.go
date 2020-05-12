@@ -12,6 +12,7 @@ type Autolink struct {
 	Pattern              string   `json:"pattern"`
 	Template             string   `json:"template"`
 	Scope                []string `json:"scope"`
+	DisableInHyperlinks  bool     `json:"disableInHyperlinks"`
 	WordMatch            bool     `json:"wordmatch"`
 	DisableNonWordPrefix bool     `json:"disable_non_word_prefix"`
 	DisableNonWordSuffix bool     `json:"disable_non_word_suffix"`
@@ -29,6 +30,7 @@ func (l Autolink) Equals(x Autolink) bool {
 		l.Pattern != x.Pattern ||
 		len(l.Scope) != len(x.Scope) ||
 		l.Template != x.Template ||
+		l.DisableInHyperlinks != x.DisableInHyperlinks ||
 		l.WordMatch != x.WordMatch {
 		return false
 	}
@@ -54,8 +56,8 @@ func (l *Autolink) Compile() error {
 		return nil
 	}
 
-	// `\b` can be used with ReplaceAll since it does not consume characters,
-	// custom patterns can not and need to be processed one at a time.
+	// `\b` can be used with ReplaceAll since it does not consume characters.
+	// Custom patterns can not and need to be processed one at a time.
 	canReplaceAll := false
 	pattern := l.Pattern
 	template := l.Template
@@ -89,7 +91,7 @@ func (l *Autolink) Compile() error {
 	return nil
 }
 
-// Replace will subsitute the regex's with the supplied links
+// Replace will substitute the regexes with the supplied links
 func (l Autolink) Replace(message string) string {
 	if l.re == nil {
 		return message
@@ -149,6 +151,9 @@ func (l Autolink) ToMarkdown(i int) string {
 	if l.WordMatch {
 		text += fmt.Sprintf("  - WordMatch: `%v`\n", l.WordMatch)
 	}
+	if l.DisableInHyperlinks {
+		text += fmt.Sprintf("  - ApplyToHyperlinks: `%v`\n", l.DisableInHyperlinks)
+	}
 	return text
 }
 
@@ -163,6 +168,7 @@ func (l Autolink) ToConfig() map[string]interface{} {
 		"Scope":                l.Scope,
 		"DisableNonWordPrefix": l.DisableNonWordPrefix,
 		"DisableNonWordSuffix": l.DisableNonWordSuffix,
+		"DisableInHyperlinks":  l.DisableInHyperlinks,
 		"WordMatch":            l.WordMatch,
 		"Disabled":             l.Disabled,
 	}

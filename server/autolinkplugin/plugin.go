@@ -120,7 +120,6 @@ func (p *Plugin) isBotUser(userID string) (bool, *model.AppError) {
 func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, string) {
 	conf := p.getConfig()
 	postText := post.Message
-	offset := 0
 
 	hasOneOrMoreScopes := false
 	for _, link := range conf.Links {
@@ -142,62 +141,69 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 		}
 	}
 
-	markdown.Inspect(post.Message, func(node interface{}) bool {
-		switch node.(type) {
-		// never descend into the text content of a link/image
-		case *markdown.InlineLink:
-			return false
-		case *markdown.InlineImage:
-			return false
-		case *markdown.ReferenceLink:
-			return false
-		case *markdown.ReferenceImage:
-			return false
+	for _, link := range conf.Links {
+		if !p.inScope(link.Scope, channelName, teamName) {
+			continue
 		}
 
-		origText := ""
-		startPos := 0
-		endPos := 0
-
-		if autolinkNode, ok := node.(*markdown.Autolink); ok {
-			startPos, endPos = autolinkNode.RawDestination.Position+offset, autolinkNode.RawDestination.End+offset
-			origText = postText[startPos:endPos]
-			if autolinkNode.Destination() != origText {
-				p.API.LogError(fmt.Sprintf("Markdown autolink did not match range text, '%s' != '%s'",
-					autolinkNode.Destination(), origText))
-				return true
+		offset := 0
+		markdown.Inspect(postText, func(node interface{}) bool {
+			switch node.(type) {
+			// never descend into the text content of a link/image
+			case *markdown.InlineLink:
+				return false
+			case *markdown.InlineImage:
+				return false
+			case *markdown.ReferenceLink:
+				return false
+			case *markdown.ReferenceImage:
+				return false
 			}
-		} else if textNode, ok := node.(*markdown.Text); ok {
-			startPos, endPos = textNode.Range.Position+offset, textNode.Range.End+offset
-			origText = postText[startPos:endPos]
-			if textNode.Text != origText {
-				p.API.LogError(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", textNode.Text,
-					origText))
-				return true
-			}
-		}
 
-		if origText != "" {
-			newText := origText
+			origText := ""
+			startPos := 0
+			endPos := 0
 
-			for _, link := range conf.Links {
-				if p.inScope(link.Scope, channelName, teamName) {
-					newText = link.Replace(newText)
+			if autolinkNode, ok := node.(*markdown.Autolink); ok {
+				if link.DisableInHyperlinks {
+					return true
+				}
+				startPos, endPos = autolinkNode.RawDestination.Position+offset, autolinkNode.RawDestination.End+offset
+				origText = postText[startPos:endPos]
+				if autolinkNode.Destination() != origText {
+					p.API.LogError(fmt.Sprintf("Markdown autolink did not match range text, '%s' != '%s'",
+						autolinkNode.Destination(), origText))
+					return true
+				}
+			} else if textNode, ok := node.(*markdown.Text); ok {
+				startPos, endPos = textNode.Range.Position+offset, textNode.Range.End+offset
+				origText = postText[startPos:endPos]
+				if textNode.Text != origText {
+					p.API.LogError(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", textNode.Text,
+						origText))
+					return true
 				}
 			}
-			if origText != newText {
-				postText = postText[:startPos] + newText + postText[endPos:]
-				offset += len(newText) - len(origText)
-			}
-		}
 
-		return true
-	})
+			if origText != "" {
+				newText := origText
+
+				newText = link.Replace(newText)
+				if origText != newText {
+					postText = postText[:startPos] + newText + postText[endPos:]
+					offset += len(newText) - len(origText)
+				}
+			}
+
+			return true
+		})
+	}
+
 	if post.Message != postText {
 		isBot, appErr := p.isBotUser(post.UserId)
 		if appErr != nil {
 			// NOTE: Not sure how we want to handle errors here, we can either:
-			// * assume that occasional rewrites of Bot messges are ok
+			// * assume that occasional rewrites of Bot messages are ok
 			// * assume that occasional not rewriting of all messages is ok
 			// Let's assume for now that former is a lesser evil and carry on.
 		} else if isBot {
