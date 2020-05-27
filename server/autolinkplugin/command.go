@@ -12,6 +12,8 @@ import (
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
+const template, pattern = "Template", "Pattern"
+
 const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"<linkref> is either the Name of a link, or its number in the `/autolink list` output. A partial Name can be specified, but some commands require it to be uniquely resolved.\n" +
 	"* `/autolink add <name>` - add a new link, named <name>.\n" +
@@ -19,6 +21,7 @@ const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"* `/autolink disable <linkref>` - disable a link.\n" +
 	"* `/autolink enable <linkref>` - enable a link.\n" +
 	"* `/autolink list <linkref>` - list a specific link.\n" +
+	"* `/autolink list <field> value` - list links whose <field> contains value. Here <field> can be Template or Pattern\n" +
 	"* `/autolink list` - list all configured links.\n" +
 	"* `/autolink set <linkref> <field> value...` - sets a link's field to a value. The entire command line after <field> is used for the value, unescaped, leading/trailing whitespace trimmed.\n" +
 	"* `/autolink test <linkref> test-text...` - test a link on a sample.\n" +
@@ -85,7 +88,15 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, commandArgs *model.CommandArg
 }
 
 func executeList(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
-	links, refs, err := parseLinkRef(p, false, args...)
+	var links []autolink.Autolink
+	var refs []int
+	var err error
+
+	if len(args) > 0 && (args[0] == template || args[0] == pattern) {
+		links, refs, err = parseLinkRefByTemplateOrPattern(p, header, args...)
+	} else {
+		links, refs, err = parseLinkRef(p, false, args...)
+	}
 	if err != nil {
 		return responsef("%v", err)
 	}
@@ -147,9 +158,9 @@ func executeSet(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 	switch fieldName {
 	case "Name":
 		l.Name = value
-	case "Pattern":
+	case pattern:
 		l.Pattern = value
-	case "Template":
+	case template:
 		l.Template = value
 	case "Scope":
 		l.Scope = args[2:]
@@ -324,6 +335,31 @@ func parseLinkRef(p *Plugin, requireUnique bool, args ...string) ([]autolink.Aut
 			names = append(names, links[i].Name)
 		}
 		return nil, nil, errors.Errorf("%q matched more than one link: %q", args[0], names)
+	}
+
+	return links, found, nil
+}
+
+func parseLinkRefByTemplateOrPattern(p *Plugin, header *model.CommandArgs, args ...string) ([]autolink.Autolink, []int, error) {
+	links := p.getConfig().Sorted().Links
+	if len(args) == 1 {
+		return links, nil, nil
+	}
+
+	restOfCommand := header.Command[10:]
+	restOfCommand = restOfCommand[strings.Index(restOfCommand, args[0])+len(args[0]):]
+	value := strings.TrimSpace(restOfCommand)
+
+	found := []int{}
+	for i, l := range links {
+		if (args[0] == template && strings.Contains(l.Template, value)) ||
+			(args[0] == pattern && strings.Contains(l.Pattern, value)) {
+			found = append(found, i)
+		}
+	}
+
+	if len(found) == 0 {
+		return nil, nil, errors.Errorf("%q not found.", value)
 	}
 
 	return links, found, nil
