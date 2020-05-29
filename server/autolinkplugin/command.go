@@ -12,8 +12,17 @@ import (
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
-const optName, optTemplate, optPattern, optScope, optDisabled, optDisableNonWordPrefix, optDisableNonWordSuffix, optWordMatch = "Name", "Template", "Pattern", "Scope", "Disabled", "DisableNonWordPrefix", "DisableNonWordSuffix", "WordMatch"
-const command = "/autolink"
+const (
+	autolinkCommand         = "/autolink"
+	optName                 = "Name"
+	optTemplate             = "Template"
+	optPattern              = "Pattern"
+	optScope                = "Scope"
+	optDisabled             = "Disabled"
+	optDisableNonWordPrefix = "DisableNonWordPrefix"
+	optDisableNonWordSuffix = "DisableNonWordSuffix"
+	optWordMatch            = "WordMatch"
+)
 
 const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"<linkref> is either the Name of a link, or its number in the `/autolink list` output. A partial Name can be specified, but some commands require it to be uniquely resolved.\n" +
@@ -81,7 +90,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, commandArgs *model.CommandArg
 	}
 
 	args := strings.Fields(commandArgs.Command)
-	if len(args) == 0 || args[0] != command {
+	if len(args) == 0 || args[0] != autolinkCommand {
 		return responsef(helpText), nil
 	}
 
@@ -151,7 +160,7 @@ func executeSet(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 	l := &links[refs[0]]
 
 	fieldName := args[1]
-	restOfCommand := header.Command[len(command):] // "/autolink "
+	restOfCommand := header.Command[len(autolinkCommand):] // "/autolink "
 	restOfCommand = restOfCommand[strings.Index(restOfCommand, args[0])+len(args[0]):]
 	restOfCommand = restOfCommand[strings.Index(restOfCommand, args[1])+len(args[1]):]
 	value := strings.TrimSpace(restOfCommand)
@@ -216,7 +225,7 @@ func executeTest(p *Plugin, c *plugin.Context, header *model.CommandArgs, args .
 		return responsef("%v", err)
 	}
 
-	restOfCommand := header.Command[len(command):] // "/autolink "
+	restOfCommand := header.Command[len(autolinkCommand):] // "/autolink "
 	restOfCommand = restOfCommand[strings.Index(restOfCommand, args[0])+len(args[0]):]
 	orig := strings.TrimSpace(restOfCommand)
 	out := ""
@@ -347,7 +356,7 @@ func searchLinkRefByTemplateOrPattern(p *Plugin, header *model.CommandArgs, args
 		return links, nil, nil
 	}
 
-	restOfCommand := header.Command[len(command):]
+	restOfCommand := header.Command[len(autolinkCommand):]
 	restOfCommand = restOfCommand[strings.Index(restOfCommand, args[0])+len(args[0]):]
 	value := strings.TrimSpace(restOfCommand)
 
