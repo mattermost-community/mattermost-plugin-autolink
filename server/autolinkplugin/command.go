@@ -207,16 +207,20 @@ func executeTest(p *Plugin, c *plugin.Context, header *model.CommandArgs, args .
 	restOfCommand := header.Command[10:] // "/autolink "
 	restOfCommand = restOfCommand[strings.Index(restOfCommand, args[0])+len(args[0]):]
 	orig := strings.TrimSpace(restOfCommand)
-	out := ""
+	out := fmt.Sprintf("- Original: `%s`\n", orig)
 
 	for _, ref := range refs {
 		l := links[ref]
 		l.Disabled = false
+		err = l.Compile()
+		if err != nil {
+			return responsef("failed to compile link %s: %v", l.DisplayName(), err)
+		}
 		replaced := l.Replace(orig)
 		if replaced == orig {
-			out += fmt.Sprintf("- %s: _no change_\n", l.DisplayName())
+			out += fmt.Sprintf("- Link %s: _no change_\n", l.DisplayName())
 		} else {
-			out += fmt.Sprintf("- %s: `%s`\n", l.DisplayName(), replaced)
+			out += fmt.Sprintf("- Link %s: changed to `%s`\n", l.DisplayName(), replaced)
 			orig = replaced
 		}
 	}

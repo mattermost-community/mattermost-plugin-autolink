@@ -40,7 +40,7 @@ func NewClientPlugin(api PluginAPI) *Client {
 
 func (c *Client) Add(links ...autolink.Autolink) error {
 	for _, link := range links {
-		linkBytes, err := json.Marshal(&link)
+		linkBytes, err := json.Marshal(link)
 		if err != nil {
 			return err
 		}
