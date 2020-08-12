@@ -362,8 +362,8 @@ func searchLinkRefByTemplateOrPattern(p *Plugin, header *model.CommandArgs, args
 
 	found := []int{}
 	for i, l := range links {
-		if (args[0] == optTemplate && strings.Contains(l.Template, value)) ||
-			(args[0] == optPattern && strings.Contains(l.Pattern, value)) {
+		if (args[0] == optTemplate && strings.Contains(strings.ToLower(l.Template), strings.ToLower(value))) ||
+			(args[0] == optPattern && strings.Contains(strings.ToLower(l.Pattern), strings.ToLower(value))) {
 			found = append(found, i)
 		}
 	}
