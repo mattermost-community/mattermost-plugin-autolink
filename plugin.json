@@ -4,7 +4,7 @@
   "description": "Automatically rewrite text matching a regular expression into a Markdown link.",
   "homepage_url": "https://github.com/mattermost/mattermost-plugin-autolink",
   "support_url": "https://github.com/mattermost/mattermost-plugin-autolink/issues",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "min_server_version": "5.16.0",
   "server": {
     "executables": {
