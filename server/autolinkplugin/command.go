@@ -12,6 +12,18 @@ import (
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
+const (
+	autolinkCommand         = "/autolink"
+	optName                 = "Name"
+	optTemplate             = "Template"
+	optPattern              = "Pattern"
+	optScope                = "Scope"
+	optDisabled             = "Disabled"
+	optDisableNonWordPrefix = "DisableNonWordPrefix"
+	optDisableNonWordSuffix = "DisableNonWordSuffix"
+	optWordMatch            = "WordMatch"
+)
+
 const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"<linkref> is either the Name of a link, or its number in the `/autolink list` output. A partial Name can be specified, but some commands require it to be uniquely resolved.\n" +
 	"* `/autolink add <name>` - add a new link, named <name>.\n" +
@@ -19,6 +31,7 @@ const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"* `/autolink disable <linkref>` - disable a link.\n" +
 	"* `/autolink enable <linkref>` - enable a link.\n" +
 	"* `/autolink list <linkref>` - list a specific link.\n" +
+	"* `/autolink list <field> value` - list links whose <field> contains value. Here <field> can be Template or Pattern\n" +
 	"* `/autolink list` - list all configured links.\n" +
 	"* `/autolink set <linkref> <field> value...` - sets a link's field to a value. The entire command line after <field> is used for the value, unescaped, leading/trailing whitespace trimmed.\n" +
 	"* `/autolink test <linkref> test-text...` - test a link on a sample.\n" +
@@ -77,7 +90,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, commandArgs *model.CommandArg
 	}
 
 	args := strings.Fields(commandArgs.Command)
-	if len(args) == 0 || args[0] != "/autolink" {
+	if len(args) == 0 || args[0] != autolinkCommand {
 		return responsef(helpText), nil
 	}
 
@@ -85,7 +98,15 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, commandArgs *model.CommandArg
 }
 
 func executeList(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
-	links, refs, err := parseLinkRef(p, false, args...)
+	var links []autolink.Autolink
+	var refs []int
+	var err error
+
+	if len(args) > 0 && (args[0] == optTemplate || args[0] == optPattern) {
+		links, refs, err = searchLinkRefByTemplateOrPattern(p, header, args...)
+	} else {
+		links, refs, err = searchLinkRef(p, false, args...)
+	}
 	if err != nil {
 		return responsef("%v", err)
 	}
@@ -107,7 +128,7 @@ func executeDelete(p *Plugin, c *plugin.Context, header *model.CommandArgs, args
 	if len(args) != 1 {
 		return responsef(helpText)
 	}
-	oldLinks, refs, err := parseLinkRef(p, true, args...)
+	oldLinks, refs, err := searchLinkRef(p, true, args...)
 	if err != nil {
 		return responsef("%v", err)
 	}
@@ -132,46 +153,46 @@ func executeSet(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 		return responsef(helpText)
 	}
 
-	links, refs, err := parseLinkRef(p, true, args...)
+	links, refs, err := searchLinkRef(p, true, args...)
 	if err != nil {
 		return responsef("%v", err)
 	}
 	l := &links[refs[0]]
 
 	fieldName := args[1]
-	restOfCommand := header.Command[10:] // "/autolink "
+	restOfCommand := header.Command[len(autolinkCommand):] // "/autolink "
 	restOfCommand = restOfCommand[strings.Index(restOfCommand, args[0])+len(args[0]):]
 	restOfCommand = restOfCommand[strings.Index(restOfCommand, args[1])+len(args[1]):]
 	value := strings.TrimSpace(restOfCommand)
 
 	switch fieldName {
-	case "Name":
+	case optName:
 		l.Name = value
-	case "Pattern":
+	case optPattern:
 		l.Pattern = value
-	case "Template":
+	case optTemplate:
 		l.Template = value
-	case "Scope":
+	case optScope:
 		l.Scope = args[2:]
-	case "DisableNonWordPrefix":
+	case optDisableNonWordPrefix:
 		boolValue, e := parseBoolArg(value)
 		if e != nil {
 			return responsef("%v", e)
 		}
 		l.DisableNonWordPrefix = boolValue
-	case "DisableNonWordSuffix":
+	case optDisableNonWordSuffix:
 		boolValue, e := parseBoolArg(value)
 		if e != nil {
 			return responsef("%v", e)
 		}
 		l.DisableNonWordSuffix = boolValue
-	case "WordMatch":
+	case optWordMatch:
 		boolValue, e := parseBoolArg(value)
 		if e != nil {
 			return responsef("%v", e)
 		}
 		l.WordMatch = boolValue
-	case "Disabled":
+	case optDisabled:
 		boolValue, e := parseBoolArg(value)
 		if e != nil {
 			return responsef("%v", e)
@@ -179,7 +200,7 @@ func executeSet(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 		l.Disabled = boolValue
 	default:
 		return responsef("%q is not a supported field, must be one of %q", fieldName,
-			[]string{"Name", "Disabled", "Pattern", "Template", "Scope", "DisableNonWordPrefix", "DisableNonWordSuffix", "WordMatch"})
+			[]string{optName, optDisabled, optPattern, optTemplate, optScope, optDisableNonWordPrefix, optDisableNonWordSuffix, optWordMatch})
 	}
 
 	err = saveConfigLinks(p, links)
@@ -199,12 +220,12 @@ func executeTest(p *Plugin, c *plugin.Context, header *model.CommandArgs, args .
 		return responsef(helpText)
 	}
 
-	links, refs, err := parseLinkRef(p, false, args...)
+	links, refs, err := searchLinkRef(p, false, args...)
 	if err != nil {
 		return responsef("%v", err)
 	}
 
-	restOfCommand := header.Command[10:] // "/autolink "
+	restOfCommand := header.Command[len(autolinkCommand):] // "/autolink "
 	restOfCommand = restOfCommand[strings.Index(restOfCommand, args[0])+len(args[0]):]
 	orig := strings.TrimSpace(restOfCommand)
 	out := fmt.Sprintf("- Original: `%s`\n", orig)
@@ -243,7 +264,7 @@ func executeDisable(p *Plugin, c *plugin.Context, header *model.CommandArgs, arg
 }
 
 func executeEnableImpl(p *Plugin, c *plugin.Context, header *model.CommandArgs, ref string, enabled bool) *model.CommandResponse {
-	links, refs, err := parseLinkRef(p, true, ref)
+	links, refs, err := searchLinkRef(p, true, ref)
 	if err != nil {
 		return responsef("%v", err)
 	}
@@ -295,7 +316,7 @@ func responsef(format string, args ...interface{}) *model.CommandResponse {
 	}
 }
 
-func parseLinkRef(p *Plugin, requireUnique bool, args ...string) ([]autolink.Autolink, []int, error) {
+func searchLinkRef(p *Plugin, requireUnique bool, args ...string) ([]autolink.Autolink, []int, error) {
 	links := p.getConfig().Sorted().Links
 	if len(args) == 0 {
 		if requireUnique {
@@ -328,6 +349,31 @@ func parseLinkRef(p *Plugin, requireUnique bool, args ...string) ([]autolink.Aut
 			names = append(names, links[i].Name)
 		}
 		return nil, nil, errors.Errorf("%q matched more than one link: %q", args[0], names)
+	}
+
+	return links, found, nil
+}
+
+func searchLinkRefByTemplateOrPattern(p *Plugin, header *model.CommandArgs, args ...string) ([]autolink.Autolink, []int, error) {
+	links := p.getConfig().Sorted().Links
+	if len(args) == 1 {
+		return links, nil, nil
+	}
+
+	restOfCommand := header.Command[len(autolinkCommand):]
+	restOfCommand = restOfCommand[strings.Index(restOfCommand, args[0])+len(args[0]):]
+	value := strings.TrimSpace(restOfCommand)
+
+	found := []int{}
+	for i, l := range links {
+		if (args[0] == optTemplate && strings.Contains(strings.ToLower(l.Template), strings.ToLower(value))) ||
+			(args[0] == optPattern && strings.Contains(strings.ToLower(l.Pattern), strings.ToLower(value))) {
+			found = append(found, i)
+		}
+	}
+
+	if len(found) == 0 {
+		return nil, nil, errors.Errorf("%q not found.", value)
 	}
 
 	return links, found, nil
