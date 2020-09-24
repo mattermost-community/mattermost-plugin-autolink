@@ -64,7 +64,7 @@ func (l *Autolink) Compile() error {
 			pattern = `\b` + pattern
 			canReplaceAll = true
 		} else {
-			pattern = `(?P<MattermostNonWordPrefix>(^|\s))` + pattern
+			pattern = `(?P<MattermostNonWordPrefix>(^|[\s\(]))` + pattern
 			template = `${MattermostNonWordPrefix}` + template
 		}
 	}
