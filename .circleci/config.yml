@@ -11,7 +11,7 @@ workflows:
           filters:
             tags:
               only: /^v.*/
-      - plugin-ci/coverage:
+      - plugin-ci/test:
           filters:
             tags:
               only: /^v.*/
@@ -19,6 +19,9 @@ workflows:
           filters:
             tags:
               only: /^v.*/
+      - plugin-ci/coverage:
+          requires:
+            - plugin-ci/test
       - plugin-ci/deploy-ci:
           filters:
             branches:
@@ -26,7 +29,7 @@ workflows:
           context: plugin-ci
           requires:
             - plugin-ci/lint
-            - plugin-ci/coverage
+            - plugin-ci/test
             - plugin-ci/build
       - plugin-ci/deploy-release-github:
           filters:
@@ -37,5 +40,5 @@ workflows:
           context: matterbuild-github-token
           requires:
             - plugin-ci/lint
-            - plugin-ci/coverage
+            - plugin-ci/test
             - plugin-ci/build
