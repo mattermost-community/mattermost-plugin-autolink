@@ -336,7 +336,7 @@ func searchLinkRef(p *Plugin, requireUnique bool, args ...string) ([]autolink.Au
 
 	found := []int{}
 	for i, l := range links {
-		if strings.Contains(l.Name, args[0]) {
+		if strings.Compare(l.Name, args[0]) == 0 {
 			found = append(found, i)
 		}
 	}
