@@ -55,6 +55,7 @@ func (p *Plugin) OnConfigurationChange() error {
 				AutoComplete:     true,
 				AutoCompleteDesc: "Available commands: add, delete, disable, enable, list, set, test",
 				AutoCompleteHint: "[command]",
+				AutocompleteData: getAutoCompleteData(),
 			})
 		} else {
 			_ = p.API.UnregisterCommand("", "autolink")
@@ -62,6 +63,74 @@ func (p *Plugin) OnConfigurationChange() error {
 	}()
 
 	return nil
+}
+
+func getAutoCompleteData() *model.AutocompleteData {
+	autolink := model.NewAutocompleteData("autolink", "[command]",
+		"Available command : add, delete, disable, enable list, set, test")
+
+	add := model.NewAutocompleteData("add", "",
+		"Add a new link with a given name")
+	add.AddTextArgument("Name for a new link", "[name]", "")
+	autolink.AddCommand(add)
+
+	delete := model.NewAutocompleteData("delete", "",
+		"Delete a link with a given name")
+	delete.AddTextArgument("Name of the link to delete", "[name]", "")
+	autolink.AddCommand(delete)
+
+	disable := model.NewAutocompleteData("disable", "",
+		"Disable a link with a given name")
+	disable.AddTextArgument("Name of the link to disable", "[name]", "")
+	autolink.AddCommand(disable)
+
+	enable := model.NewAutocompleteData("enable", "",
+		"Enable a link with a given name")
+	enable.AddTextArgument("Name of the link to enable", "[name]", "")
+	autolink.AddCommand(enable)
+
+	list := model.NewAutocompleteData("list", "",
+		"List all configured links")
+	list.AddStaticListArgument("If `name` of a link is provided, it will only list a configuration of a  link with `name`",
+		false, []model.AutocompleteListItem{{
+			HelpText: "If `name` of a link is provided, it will only list a configuration of `name` link ",
+			Hint:     "(optional)",
+			Item:     "[name]",
+		}})
+	autolink.AddCommand(list)
+
+	set := model.NewAutocompleteData("set", "",
+		"Set a field of a link with  a given value")
+	set.AddTextArgument("Name of a link to set", "[name]", "")
+	set.AddStaticListArgument("A name of a field to set a value", false,
+		[]model.AutocompleteListItem{
+			{
+				HelpText: "Set the `Template` field",
+				Hint:     "",
+				Item:     "Template",
+			},
+			{
+				HelpText: "Set the `Pattern` field",
+				Hint:     "",
+				Item:     "Pattern",
+			},
+			{
+				HelpText: "If true uses the \\b word boundaries",
+				Hint:     "",
+				Item:     "WordMatch",
+			},
+		})
+	autolink.AddCommand(set)
+
+	test := model.NewAutocompleteData("test", "",
+		"Test a link on a sample")
+	test.AddTextArgument("Name of a link to test with", "[name]", "")
+	test.AddTextArgument("Sample text to test with a given link", "[sample text]", "")
+
+	help := model.NewAutocompleteData("help", "", "Autolink plugin slash command help")
+	autolink.AddCommand(help)
+
+	return autolink
 }
 
 func (p *Plugin) getConfig() *Config {
