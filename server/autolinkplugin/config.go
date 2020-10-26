@@ -67,7 +67,7 @@ func (p *Plugin) OnConfigurationChange() error {
 
 func getAutoCompleteData() *model.AutocompleteData {
 	autolink := model.NewAutocompleteData("autolink", "[command]",
-		"Available command : add, delete, disable, enable list, set, test")
+		"Available command : add, delete, disable, enable, list, set, test")
 
 	add := model.NewAutocompleteData("add", "",
 		"Add a new link with a given name")
