@@ -5,13 +5,25 @@ orbs:
 
 workflows:
   version: 2
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - plugin-ci/lint
+      - plugin-ci/test
+      - plugin-ci/build
   ci:
     jobs:
       - plugin-ci/lint:
           filters:
             tags:
               only: /^v.*/
-      - plugin-ci/coverage:
+      - plugin-ci/test:
           filters:
             tags:
               only: /^v.*/
@@ -19,6 +31,9 @@ workflows:
           filters:
             tags:
               only: /^v.*/
+      - plugin-ci/coverage:
+          requires:
+            - plugin-ci/test
       - plugin-ci/deploy-ci:
           filters:
             branches:
@@ -26,18 +41,7 @@ workflows:
           context: plugin-ci
           requires:
             - plugin-ci/lint
-            - plugin-ci/coverage
-            - plugin-ci/build
-      - plugin-ci/deploy-release:
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
-          context: plugin-ci
-          requires:
-            - plugin-ci/lint
-            - plugin-ci/coverage
+            - plugin-ci/test
             - plugin-ci/build
       - plugin-ci/deploy-release-github:
           filters:
@@ -48,5 +52,5 @@ workflows:
           context: matterbuild-github-token
           requires:
             - plugin-ci/lint
-            - plugin-ci/coverage
+            - plugin-ci/test
             - plugin-ci/build
