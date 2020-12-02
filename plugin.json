@@ -21,7 +21,7 @@
         "key": "EnableAdminCommand",
         "display_name": "Enable administration with /autolink command",
         "type": "bool",
-        "default": false
+        "default": true
       },
       {
         "key": "EnableOnUpdate",
