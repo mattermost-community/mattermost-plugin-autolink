@@ -140,9 +140,10 @@ func getAutoCompleteData() *model.AutocompleteData {
 	autolink.AddCommand(set)
 
 	test := model.NewAutocompleteData("test", "",
-		"Test a link on a sample")
+		"Test a link on the text provided")
 	test.AddTextArgument("Name of a link to test with", "[name]", "")
-	test.AddTextArgument("Sample text to test with a given link", "[sample text]", "")
+	test.AddTextArgument("Sample text which the link applies", "[sample text]", "")
+	autolink.AddCommand(test)
 
 	help := model.NewAutocompleteData("help", "", "Autolink plugin slash command help")
 	autolink.AddCommand(help)
