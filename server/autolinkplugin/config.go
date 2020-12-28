@@ -91,12 +91,24 @@ func getAutoCompleteData() *model.AutocompleteData {
 
 	list := model.NewAutocompleteData("list", "",
 		"List all configured links")
-	list.AddStaticListArgument("If `name` of a link is provided, it will only list a configuration of a  link with `name`",
-		false, []model.AutocompleteListItem{{
-			HelpText: "If `name` of a link is provided, it will only list a configuration of `name` link ",
-			Hint:     "(optional)",
-			Item:     "[name]",
-		}})
+	list.AddStaticListArgument("List the link which match with the given condition",
+		false, []model.AutocompleteListItem{
+			{
+				HelpText: "If `name` of a link is provided, it will only list a configuration of `name` link ",
+				Hint:     "(optional)",
+				Item:     "[name]",
+			},
+			{
+				HelpText: "List configuration of link matched with the given template",
+				Hint:     "(optional)",
+				Item:     "[Template]",
+			},
+			{
+				HelpText: "List configuration of link matched with the given pattern",
+				Hint:     "(optional)",
+				Item:     "[Pattern]",
+			},
+		})
 	autolink.AddCommand(list)
 
 	set := model.NewAutocompleteData("set", "",
@@ -118,6 +130,11 @@ func getAutoCompleteData() *model.AutocompleteData {
 				HelpText: "If true uses the \\b word boundaries",
 				Hint:     "",
 				Item:     "WordMatch",
+			},
+			{
+				HelpText: "team/channel the autolink applies to",
+				Hint:     "",
+				Item:     "Scope",
 			},
 		})
 	autolink.AddCommand(set)
