@@ -101,18 +101,18 @@ func getAutoCompleteData() *model.AutocompleteData {
 			{
 				HelpText: "List configuration of link matched with the given template",
 				Hint:     "(optional)",
-				Item:     "[Template]",
+				Item:     "Template",
 			},
 			{
 				HelpText: "List configuration of link matched with the given pattern",
 				Hint:     "(optional)",
-				Item:     "[Pattern]",
+				Item:     "Pattern",
 			},
 		})
 	autolink.AddCommand(list)
 
 	set := model.NewAutocompleteData("set", "",
-		"Set a field of a link with  a given value")
+		"Set a field of a link with a given value")
 	set.AddTextArgument("Name of a link to set", "[name]", "")
 	set.AddStaticListArgument("A name of a field to set a value", false,
 		[]model.AutocompleteListItem{
