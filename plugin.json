@@ -15,25 +15,25 @@
     }
   },
   "settings_schema": {
-    "header": "Configure this plugin directly in the config.json file, or using the /autolink command. Learn more [in our documentation](https://github.com/mattermost/mattermost-plugin-autolink/blob/master/README.md).\n\nTo report an issue, make a suggestion or a contribution, [check the plugin repository](https://github.com/mattermost/mattermost-plugin-autolink).",
+    "header": "Configure this plugin directly in the `config.json` file, or using the `/autolink` command. Learn more [in our documentation](https://github.com/mattermost/mattermost-plugin-autolink/blob/master/README.md).\n\n To report an issue, make a suggestion, or submit a contribution, [check the plugin repository](https://github.com/mattermost/mattermost-plugin-autolink).",
     "settings": [
       {
         "key": "EnableAdminCommand",
-        "display_name": "Enable administration with /autolink command",
+        "display_name": "Enable administration with /autolink command:",
         "type": "bool",
         "default": true
       },
       {
         "key": "EnableOnUpdate",
-        "display_name": "Apply plugin to updated posts as well as new posts",
+        "display_name": "Apply plugin to updated posts as well as new posts:",
         "type": "bool",
         "default": false
       },
       {
         "key": "PluginAdmins",
-        "display_name": "Admin User IDs",
+        "display_name": "Admin User IDs:",
         "type": "text",
-        "help_text": "Comma-separated list of userIDs authorized to administer the plugin in addition to the System Admins.\n \nUser IDs can be found by navigating to **System Console** > **Users**."
+        "help_text": "Comma-separated list of user IDs authorized to administer the plugin in addition to the System Admins.\n \n User IDs can be found in the user's profile via **System Console > User Management > Users**."
       }
     ]
   }
