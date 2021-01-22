@@ -143,7 +143,7 @@ The /autolink commands allow the users to easily edit the configurations.
  disable \<*linkref*> | Disable the link |/autolink disable Visa
  add \<*name*> | Creates a new link with the name specified in the command  | /autolink add Visa
  delete \<*linkref*> |  Delete the link | /autolink delete Visa
- set \<*linkref*> \<*field*> *value* | Sets a link's field to a value <br> *Fields* - <br> <ul><li>Template - Sets the Template field</li><li>Pattern - Sets the Pattern field </li> <li> WordMatch - If true uses the [\b word boundaries](https://www.regular-expressions.info/wordboundaries.html) </li> | <br> /autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4})) <br><br> /autolink set Visa Template VISA XXXX-XXXX-XXXX-$LastFour <br><br> /autolink set Visa WordMatch true <br><br>
+ set \<*linkref*> \<*field*> *value* | Sets a link's field to a value <br> *Fields* - <br> <ul><li>Template - Sets the Template field</li><li>Pattern - Sets the Pattern field </li> <li> WordMatch - If true uses the [\b word boundaries](https://www.regular-expressions.info/wordboundaries.html) </li> <li> Scope - Sets the Scope field (`team` or `team/channel` or a whitespace-separated list thereof) </li> | <br> /autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4})) <br><br> /autolink set Visa Template VISA XXXX-XXXX-XXXX-$LastFour <br><br> /autolink set Visa WordMatch true <br><br> /autolink set Visa Scope team/townsquare <br><br>
 
 
 ## Development
