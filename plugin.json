@@ -15,7 +15,7 @@
     }
   },
   "settings_schema": {
-    "header": "Configure this plugin directly in the config.json file, or using the /autolink command. Learn more [in our documentation](https://github.com/mattermost/mattermost-plugin-autolink/blob/master/README.md).\n\n To report an issue, make a suggestion, or contribute [check the plugin repository](https://github.com/mattermost/mattermost-plugin-autolink).",
+    "header": "Configure this plugin directly in the `config.json` file, or using the `/autolink` command. Learn more [in our documentation](https://github.com/mattermost/mattermost-plugin-autolink/blob/master/README.md).\n\n To report an issue, make a suggestion, or contribute, [check the plugin repository](https://github.com/mattermost/mattermost-plugin-autolink).",
     "settings": [
       {
         "key": "EnableAdminCommand",
