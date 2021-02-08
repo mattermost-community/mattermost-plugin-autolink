@@ -5,6 +5,7 @@
   "homepage_url": "https://github.com/mattermost/mattermost-plugin-autolink",
   "support_url": "https://github.com/mattermost/mattermost-plugin-autolink/issues",
   "release_notes_url": "https://github.com/mattermost/mattermost-plugin-autolink/releases/tag/v1.2.1",
+  "icon_path": "assets/icon.svg",
   "version": "1.2.1",
   "min_server_version": "5.16.0",
   "server": {
