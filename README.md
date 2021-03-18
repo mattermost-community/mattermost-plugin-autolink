@@ -109,21 +109,21 @@ Below is an example of regexp patterns used for autolinking at https://community
 ## Examples
 
 1. Autolinking `Ticket ####:text with alphanumberic characters and spaces` to a ticket link. Use:
-  - Pattern: `(?i)(ticket )(?P<ticket_id>.+)(:)(?P<ticket_info>.*)`, or if the ticket_id is a number, then `(?i)(ticket )(?P<ticket_id>\d+)(:)(?P<ticket_info>.*)`
-  - Template: `[Ticket ${ticket_id}: ${ticket_info}](https://github.com/mattermost/mattermost-server/issues/${ticket_id})`
-  - Scope: `["teams/committers"]` (optional)
+   - Pattern: `(?i)(ticket )(?P<ticket_id>.+)(:)(?P<ticket_info>.*)`, or if the ticket_id is a number, then `(?i)(ticket )(?P<ticket_id>\d+)(:)(?P<ticket_info>.*)`
+   - Template: `[Ticket ${ticket_id}: ${ticket_info}](https://github.com/mattermost/mattermost-server/issues/${ticket_id})`
+   - Scope: `["teams/committers"]` (optional)
 
 2. Autolinking a link to a GitHub PR to a format "pr-repo-id". Use:
-  - Pattern: `https://github\\.com/mattermost/(?P<repo>.+)/pull/(?P<id>\\d+)`
-  - Template: `[pr-${repo}-${id}](https://github.com/mattermost/${repo}/pull/${id})`
+   - Pattern: `https://github\\.com/mattermost/(?P<repo>.+)/pull/(?P<id>\\d+)`
+   - Template: `[pr-${repo}-${id}](https://github.com/mattermost/${repo}/pull/${id})`
 
 3. Using autolinking to create group mentions. Use (note that clicking the resulting at-mention redirects to a broken page):
-  - Pattern: `@customgroup*`
-  - Template: `[@customgroup]( \\* @user1 @user2 @user3 \\* )`
+   - Pattern: `@customgroup*`
+   - Template: `[@customgroup]( \\* @user1 @user2 @user3 \\* )`
   
 4. For servers with multiple domains (like community and community-daily on the [public Mattermost Server](https://community.mattermost)), a substitution of absolute conversation links to relative links is recommended to prevent issues in the mobile app. Add one pattern for each domain used:
-  - Pattern: `https://community\\.mattermost\\.com/(?P\u003cteamname\u003e(?a-zA-Z0-9]+)/(?P\u003cid\u003e[a-zA-Z0-9]+)`
-  - Template: `[<jump to convo>](/${teamname}/pl/${id})/${id})`
+   - Pattern: `https://community\\.mattermost\\.com/(?P\u003cteamname\u003e(?a-zA-Z0-9]+)/(?P\u003cid\u003e[a-zA-Z0-9]+)`
+   - Template: `[<jump to convo>](/${teamname}/pl/${id})/${id})`
 
 
 **You can check your pattern with those Regex Testers:**
