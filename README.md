@@ -132,7 +132,7 @@ Below is an example of regexp patterns used for autolinking at https://community
 - https://www.regextester.com/.
 
 ## Configuration Management
-The /autolink commands allow the users to easily edit the configurations.
+The `/autolink` commands allow the users to easily edit the configurations.
 
  Commands | Description | Usage
  ---|---|---|
