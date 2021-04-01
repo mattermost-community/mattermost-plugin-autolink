@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
@@ -205,6 +206,11 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 			// more readable and does not rely on hidden side effect of
 			// isBot==false when appErr!=nil.
 			p.API.LogDebug("not rewriting message from bot", "userID", post.UserId)
+			return nil, ""
+		}
+
+		if runes := utf8.RuneCountInString(postText); runes > model.POST_MESSAGE_MAX_RUNES_V1 {
+			p.API.LogWarn("Rewritten message would be too long, skipping", "rewrittenLength", runes)
 			return nil, ""
 		}
 
