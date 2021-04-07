@@ -241,5 +241,11 @@ func (p *Plugin) MessageWillBeUpdated(c *plugin.Context, post *model.Post, _ *mo
 		return post, ""
 	}
 
-	return p.ProcessPost(c, post)
+	modifiedPost, reason := p.ProcessPost(c, post)
+
+	if modifiedPost == nil && reason == "" {
+		return post, ""
+	}
+
+	return modifiedPost, reason
 }

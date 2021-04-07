@@ -532,7 +532,7 @@ func TestSpecialCases(t *testing.T) {
 				rpost, err := p.MessageWillBeUpdated(&plugin.Context{}, post, post)
 
 				if tt.expectedIgnored {
-					assert.Nil(t, rpost)
+					assert.Same(t, post, rpost)
 				} else {
 					assert.Equal(t, tt.expectedMessage, rpost.Message)
 				}
@@ -552,7 +552,7 @@ func TestSpecialCases(t *testing.T) {
 				rpost, err := p.MessageWillBeUpdated(&plugin.Context{}, originalPost, post)
 
 				if tt.expectedIgnored {
-					assert.Nil(t, rpost)
+					assert.Same(t, originalPost, rpost)
 				} else {
 					assert.Equal(t, tt.expectedMessage, rpost.Message)
 				}
@@ -570,7 +570,7 @@ func TestSpecialCases(t *testing.T) {
 				rpost, err := p.MessageWillBeUpdated(&plugin.Context{}, post, emptyPost)
 
 				if tt.expectedIgnored {
-					assert.Nil(t, rpost)
+					assert.Same(t, post, rpost)
 				} else {
 					assert.Equal(t, tt.expectedMessage, rpost.Message)
 				}
