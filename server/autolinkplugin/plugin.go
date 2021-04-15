@@ -217,7 +217,7 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	r.Header.Add("Mattermost-Plugin-ID", c.SourcePluginId)
+	r.Header.Set("Mattermost-Plugin-ID", c.SourcePluginId)
 	p.handler.ServeHTTP(w, r)
 }
 
