@@ -8,7 +8,7 @@ import (
 
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
-	"github.com/mattermost/mattermost-server/v5/utils/markdown"
+	"github.com/mattermost/mattermost-server/v5/shared/markdown"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/api"
 )
@@ -236,4 +236,12 @@ func (p *Plugin) MessageWillBeUpdated(c *plugin.Context, post *model.Post, _ *mo
 	}
 
 	return p.ProcessPost(c, post)
+}
+
+func (p *Plugin) GetSiteURL() string {
+	s := p.API.GetConfig().ServiceSettings.SiteURL
+	if s == nil {
+		return ""
+	}
+	return *s
 }

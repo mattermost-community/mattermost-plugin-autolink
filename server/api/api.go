@@ -8,12 +8,9 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolinkapp"
+	"github.com/mattermost/mattermost-plugin-autolink/server/store"
 )
-
-type Store interface {
-	GetLinks() []autolink.Autolink
-	SaveLinks([]autolink.Autolink) error
-}
 
 type Authorization interface {
 	IsAuthorizedAdmin(userID string) (bool, error)
@@ -21,11 +18,11 @@ type Authorization interface {
 
 type Handler struct {
 	root          *mux.Router
-	store         Store
+	store         store.Store
 	authorization Authorization
 }
 
-func NewHandler(store Store, authorization Authorization) *Handler {
+func NewHandler(store store.Store, authorization Authorization, service autolinkapp.Service) *Handler {
 	h := &Handler{
 		store:         store,
 		authorization: authorization,
@@ -35,6 +32,12 @@ func NewHandler(store Store, authorization Authorization) *Handler {
 	api := root.PathPrefix("/api/v1").Subrouter()
 	api.Use(h.adminOrPluginRequired)
 	api.HandleFunc("/link", h.setLink).Methods("POST")
+
+	api.Handle("{anything:.*}", http.NotFoundHandler())
+
+	appRouter := root.PathPrefix("/app/v1").Subrouter()
+	// appRouter.Use(h.adminOrPluginRequired) // will fetching the manifest fail?
+	autolinkapp.RegisterRouter(appRouter, store, service)
 
 	api.Handle("{anything:.*}", http.NotFoundHandler())
 
@@ -94,29 +97,14 @@ func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	links := h.store.GetLinks()
-	found := false
-	changed := false
-	for i := range links {
-		if links[i].Name == newLink.Name || links[i].Pattern == newLink.Pattern {
-			if !links[i].Equals(newLink) {
-				links[i] = newLink
-				changed = true
-			}
-			found = true
-			break
-		}
+	changed, err := store.SetLink(h.store, newLink)
+	if err != nil {
+		h.handleError(w, fmt.Errorf("unable to save link: %w", err))
+		return
 	}
-	if !found {
-		links = append(h.store.GetLinks(), newLink)
-		changed = true
-	}
+
 	status := http.StatusNotModified
 	if changed {
-		if err := h.store.SaveLinks(links); err != nil {
-			h.handleError(w, fmt.Errorf("unable to save link: %w", err))
-			return
-		}
 		status = http.StatusOK
 	}
 
