@@ -3,24 +3,53 @@ package autolinkapp
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
+	"strings"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 	"github.com/pkg/errors"
 )
 
-const createOptionValue = "_create"
+const (
+	createOptionValue = "_create"
+
+	fieldLink                 = "link"
+	fieldName                 = "name"
+	fieldEnabled              = "enabled"
+	fieldTemplate             = "template"
+	fieldPattern              = "pattern"
+	fieldScope                = "scope"
+	fieldWordMatch            = "word_match"
+	fieldDisableNonWordPrefix = "disable_non_word_prefix"
+	fieldDisableNonWordSuffix = "disable_non_word_suffix"
+
+	fieldTestInput     = "test_input"
+	fieldTestOutput    = "test_output"
+	fieldSubmitButtons = "submit_buttons"
+
+	submitButtonSave   = "save"
+	submitButtonDelete = "delete"
+	submitButtonTest   = "test"
+)
 
 type FormValues struct {
-	Link       *apps.SelectOption `json:"link"`
-	Name       string             `json:"name"`
-	Template   string             `json:"template"`
-	Pattern    string             `json:"pattern"`
-	TestInput  string             `json:"test_input"`
-	TestOutput string             `json:"test_output"`
+	Link                 apps.SelectOption `json:"link"`
+	Name                 string            `json:"name"`
+	Enabled              bool              `json:"enabled"`
+	Template             string            `json:"template"`
+	Pattern              string            `json:"pattern"`
+	Scope                string            `json:"scope"`
+	WordMatch            bool              `json:"word_match"`
+	DisableNonWordPrefix bool              `json:"disable_non_word_prefix"`
+	DisableNonWordSuffix bool              `json:"disable_non_word_suffix"`
 
-	KeepModalOpen bool               `json:"keep_modal_open"`
-	SubmitButtons *apps.SelectOption `json:"submit_buttons"`
+	TestInput  string `json:"test_input"`
+	TestOutput string `json:"test_output"`
+
+	SubmitButtons string `json:"submit_buttons"`
 }
 
 func (a *app) handleFormFetch(w http.ResponseWriter, r *http.Request) {
@@ -37,6 +66,21 @@ func (a *app) handleFormFetch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if call.SelectedField == fieldLink {
+		if values.Link.Value == createOptionValue {
+			httputils.WriteJSON(w, a.getEmptyFormResponse())
+			return
+		}
+
+		links := a.store.GetLinks()
+		for _, link := range links {
+			if link.Name == values.Link.Value {
+				values = formValuesFromAutolink(link)
+				break
+			}
+		}
+	}
+
 	f := a.getForm(values)
 	resp := apps.CallResponse{
 		Type: apps.CallResponseTypeForm,
@@ -47,73 +91,232 @@ func (a *app) handleFormFetch(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) handleFormSubmit(w http.ResponseWriter, r *http.Request) {
-	_, _ = w.Write(manifestData)
+	call := &apps.CallRequest{}
+	err := json.NewDecoder(r.Body).Decode(call)
+	if err != nil {
+		httputils.WriteJSON(w, apps.NewErrorCallResponse(errors.Wrap(err, "failed to decode call request body")))
+		return
+	}
+
+	values, err := extractFormValues(call.Values)
+	if err != nil {
+		httputils.WriteJSON(w, apps.NewErrorCallResponse(errors.Wrap(err, "error extracting form values")))
+		return
+	}
+
+	var res *apps.CallResponse
+	switch values.SubmitButtons {
+	case submitButtonSave:
+		res = a.handleSaveLink(call)
+	case submitButtonDelete:
+		res = a.handleDeleteLink(call)
+	case submitButtonTest:
+		res = a.handleTestLink(call)
+	default:
+		httputils.WriteJSON(w, apps.NewErrorCallResponse(errors.Errorf("invalid submit button provided: '%s'", values.SubmitButtons)))
+		return
+	}
+
+	httputils.WriteJSON(w, res)
 }
 
-func (a *app) getForm(values FormValues) *apps.Form {
-	linkOption := values.Link
-	if linkOption == nil {
-		linkOption = &apps.SelectOption{
-			Label: "Create New",
-			Value: createOptionValue,
+func (a *app) handleSaveLink(call *apps.CallRequest) *apps.CallResponse {
+	values, err := extractFormValues(call.Values)
+	if err != nil {
+		return apps.NewErrorCallResponse(errors.Wrap(err, "error extracting form values"))
+	}
+
+	newLink := autolinkFromFormValues(values)
+
+	oldLinks := a.store.GetLinks()
+	newLinks := []autolink.Autolink{}
+
+	if values.Name == createOptionValue {
+		return apps.NewErrorCallResponse(errors.Errorf("invalid name '%s'", values.Name))
+	}
+
+	for _, link := range oldLinks {
+		if link.Name == values.Name {
+			if link.Name != values.Link.Value {
+				return apps.NewErrorCallResponse(errors.Errorf("there is already a link named '%s'", values.Name))
+			}
+			newLinks = append(newLinks, newLink) // Overwrite existing link
+		} else if link.Name == values.Link.Value {
+			newLinks = append(newLinks, newLink) // Rename existing link
+		} else {
+			newLinks = append(newLinks, link)
 		}
 	}
 
-	creating := linkOption.Value == createOptionValue
+	if values.Link.Value == createOptionValue {
+		newLinks = append(newLinks, newLink) // Create a new link
+	}
+
+	err = a.store.SaveLinks(newLinks)
+	if err != nil {
+		return apps.NewErrorCallResponse(errors.Wrap(err, "failed to save auto link"))
+	}
+
+	return &apps.CallResponse{
+		Markdown: md.Markdownf("Saved auto link '%s'", values.Name),
+	}
+}
+
+func (a *app) handleDeleteLink(call *apps.CallRequest) *apps.CallResponse {
+	values, err := extractFormValues(call.Values)
+	if err != nil {
+		return apps.NewErrorCallResponse(errors.Wrap(err, "error extracting form values"))
+	}
+
+	links := a.store.GetLinks()
+	out := []autolink.Autolink{}
+
+	for _, link := range links {
+		if link.Name != values.Link.Value {
+			out = append(out, link)
+		}
+	}
+
+	err = a.store.SaveLinks(out)
+	if err != nil {
+		return apps.NewErrorCallResponse(errors.Wrap(err, "error saving links"))
+	}
+
+	return &apps.CallResponse{
+		Markdown: md.Markdownf("Deleted auto link '%s'", values.Link.Value),
+	}
+}
+
+func (a *app) handleTestLink(call *apps.CallRequest) *apps.CallResponse {
+	fv, err := extractFormValues(call.Values)
+	if err != nil {
+		return apps.NewErrorCallResponse(errors.Wrap(err, "error extracting form values"))
+	}
+
+	l := autolinkFromFormValues(fv)
+	err = l.Compile()
+	if err != nil {
+		return apps.NewErrorCallResponse(errors.Wrap(err, "error compiling link"))
+	}
+
+	out := l.Replace(fv.TestInput)
+	fv.TestOutput = out
+	f := a.getForm(fv)
+
+	resp := &apps.CallResponse{
+		Type: apps.CallResponseTypeForm,
+		Form: f,
+	}
+
+	return resp
+}
+
+func (a *app) getForm(values FormValues) *apps.Form {
+	createNewOption := apps.SelectOption{
+		Label: "(create new)",
+		Value: createOptionValue,
+	}
+
+	links := a.store.GetLinks()
+	sort.Slice(links, func(i, j int) bool {
+		return strings.Compare(strings.ToLower(links[i].Name), strings.ToLower(links[j].Name)) < 0
+	})
+
+	linkOptions := []apps.SelectOption{createNewOption}
+	for _, link := range links {
+		linkOptions = append(linkOptions, apps.SelectOption{
+			Label: link.Name,
+			Value: link.Name,
+		})
+	}
+
+	linkOption := createNewOption
+	if values.Link.Value != "" {
+		linkOption = values.Link
+	}
 
 	return &apps.Form{
 		Title:         "Edit Autolinks",
-		SubmitButtons: "submit_buttons",
+		SubmitButtons: fieldSubmitButtons,
 		Call:          apps.NewCall("/edit-links"),
 		Fields: []*apps.Field{
 			{
-				Name:       "link",
-				ModalLabel: "Link",
-				Type:       apps.FieldTypeStaticSelect,
-				Value:      linkOption,
+				Name:                fieldLink,
+				ModalLabel:          "Link",
+				Type:                apps.FieldTypeStaticSelect,
+				Value:               linkOption,
+				SelectStaticOptions: linkOptions,
+				SelectRefresh:       true,
 			},
 			{
-				Name:       "name",
+				Name:       fieldName,
 				ModalLabel: "Name",
 				Type:       apps.FieldTypeText,
 				Value:      values.Name,
-				ReadOnly:   !creating,
+				IsRequired: true,
 			},
 			{
-				Name:       "template",
-				ModalLabel: "Template",
+				Name:       fieldEnabled,
+				ModalLabel: "Enabled",
+				Type:       apps.FieldTypeBool,
+				Value:      values.Enabled,
+			},
+			{
+				Name:        fieldWordMatch,
+				ModalLabel:  "Word Match",
+				Type:        apps.FieldTypeBool,
+				Value:       values.WordMatch,
+				Description: "If true uses the [word boundaries](https://www.regular-expressions.info/wordboundaries.html)",
+			},
+			{
+				Name:       fieldDisableNonWordPrefix,
+				ModalLabel: "Disable Non-word Prefix",
+				Type:       apps.FieldTypeBool,
+				Value:      values.DisableNonWordPrefix,
+			},
+			{
+				Name:       fieldDisableNonWordSuffix,
+				ModalLabel: "Disable Non-word Suffix",
+				Type:       apps.FieldTypeBool,
+				Value:      values.DisableNonWordSuffix,
+			},
+			{
+				Name:       fieldScope,
+				ModalLabel: "Scope",
 				Type:       apps.FieldTypeText,
-				Value:      values.Template,
+				Value:      values.Scope,
 			},
 			{
-				Name:       "pattern",
+				Name:       fieldPattern,
 				ModalLabel: "Pattern",
 				Type:       apps.FieldTypeText,
 				Value:      values.Pattern,
+				IsRequired: true,
 			},
 			{
-				Name:        "test_input",
+				Name:       fieldTemplate,
+				ModalLabel: "Template",
+				Type:       apps.FieldTypeText,
+				Value:      values.Template,
+				IsRequired: true,
+			},
+			{
+				Name:        fieldTestInput,
 				ModalLabel:  "Test Input",
 				Type:        apps.FieldTypeText,
 				TextSubtype: apps.TextFieldSubtypeTextarea,
 				Value:       values.TestInput,
 			},
 			{
-				Name:        "test_output",
+				Name:        fieldTestOutput,
 				ModalLabel:  "Test Output",
 				Type:        apps.FieldTypeText,
 				TextSubtype: apps.TextFieldSubtypeTextarea,
-				Value:       values.TestInput,
+				Value:       values.TestOutput,
 				ReadOnly:    true,
 			},
 			{
-				Name:       "keep_open",
-				ModalLabel: "Keep Modal Open",
-				Type:       apps.FieldTypeBool,
-				Value:      values.KeepModalOpen,
-			},
-			{
-				Name: "submit_buttons",
+				Name: fieldSubmitButtons,
 				Type: apps.FieldTypeStaticSelect,
 				SelectStaticOptions: []apps.SelectOption{
 					{
@@ -135,7 +338,14 @@ func (a *app) getForm(values FormValues) *apps.Form {
 }
 
 func (a *app) getEmptyForm() *apps.Form {
-	return a.getForm(FormValues{})
+	return a.getForm(FormValues{Enabled: true})
+}
+
+func (a *app) getEmptyFormResponse() *apps.CallResponse {
+	return &apps.CallResponse{
+		Type: apps.CallResponseTypeForm,
+		Form: a.getEmptyForm(),
+	}
 }
 
 func extractFormValues(values map[string]interface{}) (fv FormValues, err error) {
@@ -148,7 +358,42 @@ func extractFormValues(values map[string]interface{}) (fv FormValues, err error)
 	return fv, err
 }
 
-var createNewLinkOption = &apps.SelectOption{
-	Label: "Create New",
-	Value: "_create",
+func autolinkFromFormValues(fv FormValues) autolink.Autolink {
+	scope := []string{}
+	if len(fv.Scope) > 0 {
+		scope = strings.Split(strings.Trim(fv.Scope, " "), " ")
+	}
+
+	return autolink.Autolink{
+		Name:                 fv.Name,
+		Pattern:              fv.Pattern,
+		Template:             fv.Template,
+		Scope:                scope,
+		Disabled:             !fv.Enabled,
+		WordMatch:            fv.WordMatch,
+		DisableNonWordPrefix: fv.DisableNonWordPrefix,
+		DisableNonWordSuffix: fv.DisableNonWordPrefix,
+	}
+}
+
+func formValuesFromAutolink(link autolink.Autolink) FormValues {
+	scope := ""
+	if len(link.Scope) > 0 {
+		scope = strings.Join(link.Scope, " ")
+	}
+
+	return FormValues{
+		Name:                 link.Name,
+		Enabled:              !link.Disabled,
+		WordMatch:            link.WordMatch,
+		DisableNonWordPrefix: link.DisableNonWordPrefix,
+		DisableNonWordSuffix: link.DisableNonWordSuffix,
+		Pattern:              link.Pattern,
+		Template:             link.Template,
+		Scope:                scope,
+		Link: apps.SelectOption{
+			Label: link.Name,
+			Value: link.Name,
+		},
+	}
 }

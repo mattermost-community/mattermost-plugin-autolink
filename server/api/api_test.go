@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
@@ -138,7 +139,9 @@ func TestSetLink(t *testing.T) {
 			var saved []autolink.Autolink
 			var saveCalled bool
 
-			h := NewHandler(
+			root := mux.NewRouter()
+			RegisterHandler(
+				root,
 				&linkStore{
 					prev:       tc.prevLinks,
 					saveCalled: &saveCalled,
@@ -161,7 +164,7 @@ func TestSetLink(t *testing.T) {
 			r.Header.Set("Mattermost-Plugin-ID", "testfrom")
 			r.Header.Set("Mattermost-User-ID", "testuser")
 
-			h.ServeHTTP(w, r)
+			root.ServeHTTP(w, r)
 			require.Equal(t, tc.expectStatus, w.Code)
 			require.Equal(t, tc.expectSaveCalled, saveCalled)
 			require.Equal(t, tc.expectSaved, saved)
