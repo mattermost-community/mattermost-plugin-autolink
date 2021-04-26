@@ -41,7 +41,7 @@ const (
 	iconRoute     = "/public/icon.png" // Served from the plugin's public folder
 
 	editLinksRoute        = "/edit-links"
-	editLinksCommandRoute = "/edit-links-command/submit"
+	editLinksCommandRoute = "/edit-links-command"
 )
 
 func RegisterHandler(root *mux.Router, store Store, service Service) {
