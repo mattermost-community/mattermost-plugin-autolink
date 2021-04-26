@@ -31,6 +31,12 @@
         "default": false
       },
       {
+        "key": "AllowEditsToBotPosts",
+        "display_name": "Allow Edits to Bot Posts:",
+        "type": "bool",
+        "help_text": "When enabled, the plugin will be able to edit posts made by bots."
+      },
+      {
         "key": "PluginAdmins",
         "display_name": "Admin User IDs:",
         "type": "text",

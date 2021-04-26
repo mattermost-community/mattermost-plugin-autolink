@@ -194,18 +194,20 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 		return true
 	})
 	if post.Message != postText {
-		isBot, appErr := p.isBotUser(post.UserId)
-		if appErr != nil {
-			// NOTE: Not sure how we want to handle errors here, we can either:
-			// * assume that occasional rewrites of Bot messges are ok
-			// * assume that occasional not rewriting of all messages is ok
-			// Let's assume for now that former is a lesser evil and carry on.
-		} else if isBot {
-			// We intentionally use a single if/else block so that the code is
-			// more readable and does not rely on hidden side effect of
-			// isBot==false when appErr!=nil.
-			p.API.LogDebug("not rewriting message from bot", "userID", post.UserId)
-			return nil, ""
+		if !p.getConfig().AllowEditsToBotPosts {
+			isBot, appErr := p.isBotUser(post.UserId)
+			if appErr != nil {
+				// NOTE: Not sure how we want to handle errors here, we can either:
+				// * assume that occasional rewrites of Bot messges are ok
+				// * assume that occasional not rewriting of all messages is ok
+				// Let's assume for now that former is a lesser evil and carry on.
+			} else if isBot {
+				// We intentionally use a single if/else block so that the code is
+				// more readable and does not rely on hidden side effect of
+				// isBot==false when appErr!=nil.
+				p.API.LogDebug("not rewriting message from bot", "userID", post.UserId)
+				return nil, ""
+			}
 		}
 
 		post.Message = postText
