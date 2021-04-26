@@ -14,7 +14,7 @@ import (
 type Config struct {
 	EnableAdminCommand   bool
 	EnableOnUpdate       bool
-	AllowEditsToBotPosts bool
+	ProcessPostsFromBots bool
 	PluginAdmins         string
 	Links                []autolink.Autolink
 

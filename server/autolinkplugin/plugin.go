@@ -194,7 +194,7 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 		return true
 	})
 	if post.Message != postText {
-		if !p.getConfig().AllowEditsToBotPosts {
+		if !p.getConfig().ProcessPostsFromBots {
 			isBot, appErr := p.isBotUser(post.UserId)
 			if appErr != nil {
 				// NOTE: Not sure how we want to handle errors here, we can either:

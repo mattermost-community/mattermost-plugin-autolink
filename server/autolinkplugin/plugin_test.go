@@ -641,7 +641,7 @@ func TestBotMessagesAreRewritenWhenConfigAllows(t *testing.T) {
 			Pattern:  "(Mattermost)",
 			Template: "[Mattermost](https://mattermost.com)",
 		}},
-		AllowEditsToBotPosts: true,
+		ProcessPostsFromBots: true,
 	}
 
 	testChannel := model.Channel{

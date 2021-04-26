@@ -31,8 +31,8 @@
         "default": false
       },
       {
-        "key": "AllowEditsToBotPosts",
-        "display_name": "Allow Edits to Bot Posts:",
+        "key": "ProcessPostsFromBots",
+        "display_name": "Process Posts from Bots:",
         "type": "bool",
         "help_text": "When enabled, the plugin will be able to edit posts made by bots."
       },
