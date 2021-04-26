@@ -6,18 +6,17 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
-type Authorization interface {
-	IsAuthorizedAdmin(userID string) (bool, error)
-}
-
 type Store interface {
 	GetLinks() []autolink.Autolink
 	SaveLinks([]autolink.Autolink) error
+}
+
+type Authorization interface {
+	IsAuthorizedAdmin(userID string) (bool, error)
 }
 
 type Handler struct {
@@ -109,15 +108,12 @@ func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 		links = append(h.store.GetLinks(), newLink)
 		changed = true
 	}
-	if changed {
-		if err := h.store.SaveLinks(links); err != nil {
-			h.handleError(w, errors.Wrap(err, "unable to save link"))
-			return
-		}
-	}
-
 	status := http.StatusNotModified
 	if changed {
+		if err := h.store.SaveLinks(links); err != nil {
+			h.handleError(w, fmt.Errorf("unable to save link: %w", err))
+			return
+		}
 		status = http.StatusOK
 	}
 
