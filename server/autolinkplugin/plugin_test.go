@@ -635,6 +635,52 @@ func TestBotMessagesAreNotRewriten(t *testing.T) {
 	assert.Nil(t, rpost)
 }
 
+func TestBotMessagesAreRewritenWhenConfigAllows(t *testing.T) {
+	conf := Config{
+		Links: []autolink.Autolink{{
+			Pattern:  "(Mattermost)",
+			Template: "[Mattermost](https://mattermost.com)",
+		}},
+		AllowEditsToBotPosts: true,
+	}
+
+	testChannel := model.Channel{
+		Name: "TestChanel",
+	}
+
+	testTeam := model.Team{
+		Name: "TestTeam",
+	}
+
+	api := &plugintest.API{}
+
+	api.On("LoadPluginConfiguration", mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
+		*dest.(*Config) = conf
+		return nil
+	}).Once()
+	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil)).Once()
+
+	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil).Once()
+	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil).Once()
+	api.On("LogDebug", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"))
+
+	testUser := model.User{
+		IsBot: true,
+	}
+	api.On("GetUser", mock.AnythingOfType("string")).Return(&testUser, nil).Once()
+
+	p := New()
+	p.SetAPI(api)
+	err := p.OnConfigurationChange()
+	require.NoError(t, err)
+
+	post := &model.Post{Message: "Welcome to Mattermost!"}
+	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
+	require.NotNil(t, rpost)
+
+	assert.Equal(t, "Welcome to [Mattermost](https://mattermost.com)!", rpost.Message)
+}
+
 func TestHashtags(t *testing.T) {
 	conf := Config{
 		Links: []autolink.Autolink{{
