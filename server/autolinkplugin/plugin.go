@@ -107,16 +107,6 @@ func (p *Plugin) inScope(scope []string, channelName string, teamName string) bo
 	return false
 }
 
-func (p *Plugin) isBotUser(userID string) (bool, *model.AppError) {
-	user, appErr := p.API.GetUser(userID)
-	if appErr != nil {
-		p.API.LogError("failed to check if message for rewriting was send by a bot", "error", appErr)
-		return false, appErr
-	}
-
-	return user.IsBot, nil
-}
-
 func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, string) {
 	conf := p.getConfig()
 	postText := post.Message
@@ -142,8 +132,8 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 		}
 	}
 
-	// if loading the user fails, assume it is not a bot
-	isBot, _ := p.isBotUser(post.UserId)
+	var author *model.User
+	var authorErr *model.AppError
 
 	markdown.Inspect(post.Message, func(node interface{}) bool {
 		switch node.(type) {
@@ -184,10 +174,29 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 			newText := origText
 
 			for _, link := range conf.Links {
-				avoidBotPost := isBot && !link.ProcessBotPosts
-				if !avoidBotPost && p.inScope(link.Scope, channelName, teamName) {
-					newText = link.Replace(newText)
+				if !p.inScope(link.Scope, channelName, teamName) {
+					continue
 				}
+
+				out := link.Replace(newText)
+				if out == newText {
+					continue
+				}
+
+				if !link.ProcessBotPosts {
+					if author == nil && authorErr == nil {
+						author, authorErr = p.API.GetUser(post.UserId)
+						if authorErr != nil {
+							p.API.LogError("failed to check if message for rewriting was send by a bot", "error", authorErr)
+						}
+					}
+
+					if author != nil && author.IsBot {
+						continue
+					}
+				}
+
+				newText = out
 			}
 			if origText != newText {
 				postText = postText[:startPos] + newText + postText[endPos:]

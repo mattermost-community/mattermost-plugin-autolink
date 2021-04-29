@@ -632,7 +632,7 @@ func TestBotMessagesAreNotRewriten(t *testing.T) {
 	post := &model.Post{Message: "Welcome to Mattermost!"}
 	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
 
-	assert.Nil(t, rpost)
+	assert.Equal(t, post.Message, rpost.Message)
 }
 
 func TestBotMessagesAreRewritenWhenConfigAllows(t *testing.T) {
