@@ -31,12 +31,6 @@
         "default": false
       },
       {
-        "key": "ProcessPostsFromBots",
-        "display_name": "Process Posts from Bots:",
-        "type": "bool",
-        "help_text": "When enabled, the plugin will be able to edit posts made by bots."
-      },
-      {
         "key": "PluginAdmins",
         "display_name": "Admin User IDs:",
         "type": "text",

@@ -142,6 +142,9 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 		}
 	}
 
+	// if loading the user fails, assume it is not a bot
+	isBot, _ := p.isBotUser(post.UserId)
+
 	markdown.Inspect(post.Message, func(node interface{}) bool {
 		switch node.(type) {
 		// never descend into the text content of a link/image
@@ -181,7 +184,8 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 			newText := origText
 
 			for _, link := range conf.Links {
-				if p.inScope(link.Scope, channelName, teamName) {
+				avoidBotPost := isBot && !link.ProcessBotPosts
+				if !avoidBotPost && p.inScope(link.Scope, channelName, teamName) {
 					newText = link.Replace(newText)
 				}
 			}
@@ -194,22 +198,6 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 		return true
 	})
 	if post.Message != postText {
-		if !p.getConfig().ProcessPostsFromBots {
-			isBot, appErr := p.isBotUser(post.UserId)
-			if appErr != nil {
-				// NOTE: Not sure how we want to handle errors here, we can either:
-				// * assume that occasional rewrites of Bot messges are ok
-				// * assume that occasional not rewriting of all messages is ok
-				// Let's assume for now that former is a lesser evil and carry on.
-			} else if isBot {
-				// We intentionally use a single if/else block so that the code is
-				// more readable and does not rely on hidden side effect of
-				// isBot==false when appErr!=nil.
-				p.API.LogDebug("not rewriting message from bot", "userID", post.UserId)
-				return nil, ""
-			}
-		}
-
 		post.Message = postText
 	}
 

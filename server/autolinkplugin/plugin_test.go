@@ -638,10 +638,10 @@ func TestBotMessagesAreNotRewriten(t *testing.T) {
 func TestBotMessagesAreRewritenWhenConfigAllows(t *testing.T) {
 	conf := Config{
 		Links: []autolink.Autolink{{
-			Pattern:  "(Mattermost)",
-			Template: "[Mattermost](https://mattermost.com)",
+			Pattern:         "(Mattermost)",
+			Template:        "[Mattermost](https://mattermost.com)",
+			ProcessBotPosts: true,
 		}},
-		ProcessPostsFromBots: true,
 	}
 
 	testChannel := model.Channel{

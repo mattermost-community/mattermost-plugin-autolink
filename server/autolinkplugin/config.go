@@ -12,11 +12,10 @@ import (
 
 // Config from config.json
 type Config struct {
-	EnableAdminCommand   bool
-	EnableOnUpdate       bool
-	ProcessPostsFromBots bool
-	PluginAdmins         string
-	Links                []autolink.Autolink
+	EnableAdminCommand bool
+	EnableOnUpdate     bool
+	PluginAdmins       string
+	Links              []autolink.Autolink
 
 	// AdminUserIds is a set of UserIds that are permitted to perform
 	// administrative operations on the plugin configuration (i.e. plugin

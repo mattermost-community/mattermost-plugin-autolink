@@ -15,6 +15,7 @@ type Autolink struct {
 	WordMatch            bool
 	DisableNonWordPrefix bool
 	DisableNonWordSuffix bool
+	ProcessBotPosts      bool
 
 	template      string
 	re            *regexp.Regexp

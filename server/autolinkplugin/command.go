@@ -19,6 +19,7 @@ const (
 	optPattern              = "Pattern"
 	optScope                = "Scope"
 	optDisabled             = "Disabled"
+	optProcessBotPosts      = "ProcessBotPosts"
 	optDisableNonWordPrefix = "DisableNonWordPrefix"
 	optDisableNonWordSuffix = "DisableNonWordSuffix"
 	optWordMatch            = "WordMatch"
@@ -198,9 +199,15 @@ func executeSet(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 			return responsef("%v", e)
 		}
 		l.Disabled = boolValue
+	case optProcessBotPosts:
+		boolValue, e := parseBoolArg(value)
+		if e != nil {
+			return responsef("%v", e)
+		}
+		l.ProcessBotPosts = boolValue
 	default:
 		return responsef("%q is not a supported field, must be one of %q", fieldName,
-			[]string{optName, optDisabled, optPattern, optTemplate, optScope, optDisableNonWordPrefix, optDisableNonWordSuffix, optWordMatch})
+			[]string{optName, optDisabled, optPattern, optTemplate, optScope, optDisableNonWordPrefix, optDisableNonWordSuffix, optWordMatch, optProcessBotPosts})
 	}
 
 	err = saveConfigLinks(p, links)
