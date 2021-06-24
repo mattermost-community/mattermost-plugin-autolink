@@ -5,9 +5,12 @@ import (
 	"sort"
 	"strings"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 	"github.com/mattermost/mattermost-server/v5/model"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolinkapp"
 )
 
 // Config from config.json
@@ -47,18 +50,27 @@ func (p *Plugin) OnConfigurationChange() error {
 	})
 
 	go func() {
-		if c.EnableAdminCommand {
-			_ = p.API.RegisterCommand(&model.Command{
-				Trigger:          "autolink",
-				DisplayName:      "Autolink",
-				Description:      "Autolink administration.",
-				AutoComplete:     true,
-				AutoCompleteDesc: "Available commands: add, delete, disable, enable, list, set, test",
-				AutoCompleteHint: "[command]",
-				AutocompleteData: getAutoCompleteData(),
-			})
-		} else {
-			_ = p.API.UnregisterCommand("", "autolink")
+		appsPluginClient := mmclient.NewAppsPluginAPIClientFromPluginAPI(&pluginapi.NewClient(p.API).Plugin)
+
+		app, _ := appsPluginClient.GetApp(autolinkapp.Manifest.AppID)
+		if app == nil || app.Disabled {
+			// Use plugin mode
+
+			if c.EnableAdminCommand {
+				_ = p.API.RegisterCommand(&model.Command{
+					Trigger:          "autolink",
+					DisplayName:      "Autolink",
+					Description:      "Autolink administration.",
+					AutoComplete:     true,
+					AutoCompleteDesc: "Available commands: add, delete, disable, enable, list, set, test",
+					AutoCompleteHint: "[command]",
+					AutocompleteData: getAutoCompleteData(),
+				})
+			} else {
+				_ = p.API.UnregisterCommand("", "autolink")
+			}
+
+			return
 		}
 	}()
 
@@ -147,6 +159,21 @@ func getAutoCompleteData() *model.AutocompleteData {
 
 	help := model.NewAutocompleteData("help", "", "Autolink plugin slash command help")
 	autolink.AddCommand(help)
+
+	experimental := model.NewAutocompleteData("experimental", "", "Enable experimental feature")
+	autolink.AddCommand(experimental)
+
+	app := model.NewAutocompleteData("app", "", "Enhance UX by making us of the Apps Framework")
+	value := []model.AutocompleteListItem{{
+		HelpText: "Enable",
+		Item:     "on",
+	}, {
+		HelpText: "Disable",
+		Item:     "off",
+	}}
+	app.AddStaticListArgument("", true, value)
+
+	experimental.AddCommand(app)
 
 	return autolink
 }

@@ -7,9 +7,13 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/mattermost/mattermost-server/v5/shared/markdown"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/api"
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolinkapp"
@@ -62,6 +66,17 @@ func (p *Plugin) IsAuthorizedAdmin(userID string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func (p *Plugin) DisableApp(appID apps.AppID, sessionID, actingUserID string) error {
+	appsPluginClient := mmclient.NewAppsPluginAPIClientFromPluginAPI(&pluginapi.NewClient(p.API).Plugin)
+
+	err := appsPluginClient.DisableApp(appID, sessionID, actingUserID)
+	if err != nil {
+		return errors.Wrap(err, "failed to disable app")
+	}
+
+	return nil
 }
 
 func (p *Plugin) resolveScope(channelID string) (string, string, *model.AppError) {
@@ -250,9 +265,4 @@ func (p *Plugin) GetSiteURL() string {
 		return ""
 	}
 	return *s
-}
-
-func (p *Plugin) GetPluginURL() string {
-	siteURL := p.GetSiteURL()
-	return siteURL + "/plugins/mattermost-autolink"
 }

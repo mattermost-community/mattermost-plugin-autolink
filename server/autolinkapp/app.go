@@ -2,15 +2,17 @@ package autolinkapp
 
 import (
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
@@ -20,8 +22,8 @@ type Store interface {
 }
 
 type Service interface {
-	GetPluginURL() string
 	IsAuthorizedAdmin(userID string) (bool, error)
+	DisableApp(appID apps.AppID, sessionID, actingUserID string) error
 }
 
 type app struct {
@@ -29,20 +31,38 @@ type app struct {
 	service Service
 }
 
+//go:embed icon.png
+var iconData []byte
+
 const (
 	appID          = "com.mattermost.autolink"
 	appDisplayName = "Autolink"
 
-	autolinkCommand = "autolink-app"
+	autolinkCommand = "autolink"
 
-	appRoute      = "/app/v1"
-	manifestRoute = "/manifest"
+	appIcon       = "icon.png"
+	iconRoute     = "/static/" + appIcon
 	bindingsRoute = "/bindings"
-	iconRoute     = "/public/icon.png" // Served from the plugin's public folder
 
 	editLinksRoute        = "/edit-links"
 	editLinksCommandRoute = "/edit-links-command"
+	appEnableRoute        = "/app/enable"
+	appDisableRoute       = "/app/disable"
 )
+
+var Manifest = apps.Manifest{
+	AppID:       appID,
+	DisplayName: appDisplayName,
+	AppType:     apps.AppTypePlugin,
+	Icon:        appIcon,
+	RequestedPermissions: apps.Permissions{
+		apps.PermissionActAsBot,
+		apps.PermissionActAsUser,
+	},
+	RequestedLocations: apps.Locations{
+		apps.LocationCommand,
+	},
+}
 
 func RegisterHandler(root *mux.Router, store Store, service Service) {
 	a := &app{
@@ -50,36 +70,19 @@ func RegisterHandler(root *mux.Router, store Store, service Service) {
 		service: service,
 	}
 
-	appRouter := root.PathPrefix(appRoute).Subrouter()
-	appRouter.HandleFunc(manifestRoute, a.handleManifest).Methods(http.MethodGet)
+	appRouter := root.PathPrefix(apps.PluginAppPath).Subrouter()
+	appRouter.HandleFunc(iconRoute, a.handleIcon).Methods(http.MethodGet)
 
-	adminRoutes := appRouter.PathPrefix("").Subrouter()
+	adminRoutes := appRouter.NewRoute().Subrouter()
 	adminRoutes.Use(a.adminRequired)
 
 	adminRoutes.HandleFunc(bindingsRoute, a.handleBindings).Methods(http.MethodPost)
 	adminRoutes.HandleFunc(editLinksRoute+"/form", a.handleFormFetch).Methods(http.MethodPost)
 	adminRoutes.HandleFunc(editLinksRoute+"/submit", a.handleFormSubmit).Methods(http.MethodPost)
 	adminRoutes.HandleFunc(editLinksCommandRoute+"/submit", a.handleCommandSubmit).Methods(http.MethodPost)
-}
 
-func (a *app) handleManifest(w http.ResponseWriter, r *http.Request) {
-	pluginURL := a.service.GetPluginURL()
-	rootURL := pluginURL + appRoute
-
-	manifest := apps.Manifest{
-		AppID:       appID,
-		DisplayName: appDisplayName,
-		AppType:     apps.AppTypeHTTP,
-		HTTPRootURL: rootURL,
-		RequestedPermissions: apps.Permissions{
-			apps.PermissionActAsBot,
-		},
-		RequestedLocations: apps.Locations{
-			apps.LocationCommand,
-		},
-	}
-
-	httputils.WriteJSON(w, manifest)
+	adminRoutes.HandleFunc(appEnableRoute+"/"+string(apps.CallTypeSubmit), a.handleAppEnable).Methods(http.MethodPost)
+	adminRoutes.HandleFunc(appDisableRoute+"/"+string(apps.CallTypeSubmit), a.handleAppDisable).Methods(http.MethodPost)
 }
 
 func (a *app) handleBindings(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +93,6 @@ func (a *app) handleBindings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	icon := a.service.GetPluginURL() + iconRoute
 	resp := &apps.CallResponse{
 		Type: apps.CallResponseTypeOK,
 		Data: []apps.Binding{
@@ -98,7 +100,7 @@ func (a *app) handleBindings(w http.ResponseWriter, r *http.Request) {
 				Location: apps.LocationCommand,
 				Bindings: []*apps.Binding{
 					{
-						Icon:        icon,
+						Icon:        appIcon,
 						Label:       autolinkCommand,
 						Location:    autolinkCommand,
 						Description: appDisplayName,
@@ -110,6 +112,32 @@ func (a *app) handleBindings(w http.ResponseWriter, r *http.Request) {
 								Form:     &apps.Form{Fields: []*apps.Field{}},
 								Call: &apps.Call{
 									Path: editLinksCommandRoute,
+								},
+							}, {
+								Location: "experimental",
+								Label:    "experimental",
+								Bindings: []*apps.Binding{
+									{
+										Location: "app",
+										Label:    "app",
+										Bindings: []*apps.Binding{
+											{
+												Location: "on",
+												Label:    "on",
+												Form:     &apps.Form{},
+												Call: &apps.Call{
+													Path: appEnableRoute,
+												},
+											}, {
+												Location: "off",
+												Label:    "off",
+												Form:     &apps.Form{},
+												Call: &apps.Call{
+													Path: appDisableRoute,
+												},
+											},
+										},
+									},
 								},
 							},
 						},
@@ -127,9 +155,39 @@ func (a *app) handleCommandSubmit(w http.ResponseWriter, r *http.Request) {
 	httputils.WriteJSON(w, resp)
 }
 
-func (a *app) handleIcon(w http.ResponseWriter, r *http.Request) {
-	resp := a.getEmptyFormResponse()
+func (a *app) handleAppEnable(w http.ResponseWriter, r *http.Request) {
+	resp := apps.CallResponse{
+		Markdown: "App is already enabled",
+	}
 	httputils.WriteJSON(w, resp)
+}
+
+func (a *app) handleAppDisable(w http.ResponseWriter, r *http.Request) {
+	call := &apps.CallRequest{}
+	err := json.NewDecoder(r.Body).Decode(call)
+	if err != nil {
+		httputils.WriteJSON(w, apps.NewErrorCallResponse(errors.Wrap(err, "failed to decode call request body")))
+		return
+	}
+
+	log.Printf("call.Context.UserID: %#+v\n", call.Context.UserID)
+	log.Printf("call.Context.ActingUserAccessToken: %#+v\n", call.Context.ActingUserAccessToken)
+
+	err = a.service.DisableApp(Manifest.AppID, call.Context.UserID, call.Context.ActingUserAccessToken)
+	if err != nil {
+		httputils.WriteJSON(w, apps.NewErrorCallResponse(errors.Wrap(err, "failed to disable app")))
+		return
+	}
+
+	resp := apps.CallResponse{
+		Markdown: "Successfully disabled autolink app",
+	}
+	httputils.WriteJSON(w, resp)
+}
+
+func (a *app) handleIcon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "image/png")
+	_, _ = w.Write(iconData)
 }
 
 func (a *app) adminRequired(next http.Handler) http.Handler {

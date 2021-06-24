@@ -5,10 +5,11 @@ import (
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/md"
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
+	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
 func (a *app) handleFormSubmit(w http.ResponseWriter, r *http.Request) {

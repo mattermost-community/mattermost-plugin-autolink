@@ -7,9 +7,10 @@ import (
 	"strings"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
-	"github.com/mattermost/mattermost-plugin-apps/server/utils/httputils"
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
+	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
 const (

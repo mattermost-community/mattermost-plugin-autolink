@@ -5,11 +5,14 @@ import (
 	"strconv"
 	"strings"
 
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
+	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolinkapp"
 )
 
 const (
@@ -58,14 +61,15 @@ type CommandHandler struct {
 
 var autolinkCommandHandler = CommandHandler{
 	handlers: map[string]CommandHandlerFunc{
-		"help":    executeHelp,
-		"list":    executeList,
-		"delete":  executeDelete,
-		"disable": executeDisable,
-		"enable":  executeEnable,
-		"add":     executeAdd,
-		"set":     executeSet,
-		"test":    executeTest,
+		"help":         executeHelp,
+		"list":         executeList,
+		"delete":       executeDelete,
+		"disable":      executeDisable,
+		"enable":       executeEnable,
+		"add":          executeAdd,
+		"set":          executeSet,
+		"test":         executeTest,
+		"experimental": executeExperimental,
 	},
 	defaultHandler: executeHelp,
 }
@@ -78,6 +82,42 @@ func (ch CommandHandler) Handle(p *Plugin, c *plugin.Context, header *model.Comm
 		}
 	}
 	return ch.defaultHandler(p, c, header, args...)
+}
+
+func executeExperimental(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+	if len(args) == 0 {
+		return responsef("Please select a subcommand")
+	}
+
+	if args[0] != "app" {
+		return responsef("Unknown subcommand")
+	}
+
+	if len(args) == 1 {
+		return responsef("Please select a setting")
+	}
+
+	if args[1] == "off" {
+		return responsef("App is already disabled")
+	}
+
+	if args[1] != "on" {
+		return responsef("Please select either `off` or `on`")
+	}
+
+	appsPluginClient := mmclient.NewAppsPluginAPIClientFromPluginAPI(&pluginapi.NewClient(p.API).Plugin)
+
+	err := appsPluginClient.InstallApp(autolinkapp.Manifest, c.SessionId, header.UserId)
+	if err != nil {
+		return responsef("error occurred while installting the autolink app: %v", err)
+	}
+
+	apiError := p.API.UnregisterCommand("", "autolink")
+	if apiError != nil {
+		return responsef("error occurred while disabling the existing slash command: %v", apiError.Error())
+	}
+
+	return responsef("Successfully enabled autolink app")
 }
 
 func (p *Plugin) ExecuteCommand(c *plugin.Context, commandArgs *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
