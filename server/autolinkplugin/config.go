@@ -50,7 +50,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	})
 
 	go func() {
-		appsPluginClient := mmclient.NewAppsPluginAPIClientFromPluginAPI(&pluginapi.NewClient(p.API).Plugin)
+		appsPluginClient := mmclient.NewAppsPluginAPIClientFromPluginAPI(&pluginapi.NewClient(p.API, p.Driver).Plugin)
 
 		app, _ := appsPluginClient.GetApp(autolinkapp.Manifest.AppID)
 		if app == nil || app.Disabled {

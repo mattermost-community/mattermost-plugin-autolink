@@ -69,9 +69,9 @@ func (p *Plugin) IsAuthorizedAdmin(userID string) (bool, error) {
 }
 
 func (p *Plugin) DisableApp(appID apps.AppID, sessionID, actingUserID string) error {
-	appsPluginClient := mmclient.NewAppsPluginAPIClientFromPluginAPI(&pluginapi.NewClient(p.API).Plugin)
+	appsPluginClient := mmclient.NewAppsPluginAPIClientFromPluginAPI(&pluginapi.NewClient(p.API, p.Driver).Plugin)
 
-	err := appsPluginClient.DisableApp(appID, sessionID, actingUserID)
+	err := appsPluginClient.DisableApp(appID)
 	if err != nil {
 		return errors.Wrap(err, "failed to disable app")
 	}

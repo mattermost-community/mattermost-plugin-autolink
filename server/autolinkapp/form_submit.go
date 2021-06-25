@@ -35,7 +35,7 @@ func (a *app) handleFormSubmit(w http.ResponseWriter, r *http.Request) {
 	case submitButtonTest:
 		res = a.handleTestLink(call)
 	default:
-		httputils.WriteJSON(w, apps.NewErrorCallResponse(errors.Errorf("invalid submit button provided: '%s'", values.SubmitButtons)))
+		httputils.WriteJSON(w, apps.NewErrorCallResponse(errors.Errorf("invalid submit button provided: `%s`", values.SubmitButtons)))
 		return
 	}
 
@@ -54,18 +54,19 @@ func (a *app) handleSaveLink(call *apps.CallRequest) *apps.CallResponse {
 	newLinks := []autolink.Autolink{}
 
 	if values.Name == createOptionValue {
-		return apps.NewErrorCallResponse(errors.Errorf("invalid name '%s'", values.Name))
+		return apps.NewErrorCallResponse(errors.Errorf("invalid name `%s`", values.Name))
 	}
 
 	for _, link := range oldLinks {
-		if link.Name == values.Name {
+		switch link.Name {
+		case values.Name:
 			if link.Name != values.Link.Value {
-				return apps.NewErrorCallResponse(errors.Errorf("there is already a link named '%s'", values.Name))
+				return apps.NewErrorCallResponse(errors.Errorf("there is already a link named `%s`", values.Name))
 			}
 			newLinks = append(newLinks, newLink) // Overwrite existing link
-		} else if link.Name == values.Link.Value {
+		case values.Link.Value:
 			newLinks = append(newLinks, newLink) // Rename existing link
-		} else {
+		default:
 			newLinks = append(newLinks, link)
 		}
 	}
@@ -80,7 +81,7 @@ func (a *app) handleSaveLink(call *apps.CallRequest) *apps.CallResponse {
 	}
 
 	return &apps.CallResponse{
-		Markdown: md.Markdownf("Saved auto link '%s'", values.Name),
+		Markdown: md.Markdownf("Saved auto link `%s`", values.Name),
 	}
 }
 
@@ -105,7 +106,7 @@ func (a *app) handleDeleteLink(call *apps.CallRequest) *apps.CallResponse {
 	}
 
 	return &apps.CallResponse{
-		Markdown: md.Markdownf("Deleted auto link '%s'", values.Link.Value),
+		Markdown: md.Markdownf("Deleted auto link `%s`", values.Link.Value),
 	}
 }
 

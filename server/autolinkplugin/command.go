@@ -105,9 +105,9 @@ func executeExperimental(p *Plugin, c *plugin.Context, header *model.CommandArgs
 		return responsef("Please select either `off` or `on`")
 	}
 
-	appsPluginClient := mmclient.NewAppsPluginAPIClientFromPluginAPI(&pluginapi.NewClient(p.API).Plugin)
+	appsPluginClient := mmclient.NewAppsPluginAPIClientFromPluginAPI(&pluginapi.NewClient(p.API, p.Driver).Plugin)
 
-	err := appsPluginClient.InstallApp(autolinkapp.Manifest, c.SessionId, header.UserId)
+	err := appsPluginClient.InstallApp(autolinkapp.Manifest)
 	if err != nil {
 		return responsef("error occurred while installting the autolink app: %v", err)
 	}

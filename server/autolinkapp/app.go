@@ -2,7 +2,7 @@ package autolinkapp
 
 import (
 	"bytes"
-	_ "embed"
+	_ "embed" // needed for app icon
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -57,7 +57,6 @@ var Manifest = apps.Manifest{
 	Icon:        appIcon,
 	RequestedPermissions: apps.Permissions{
 		apps.PermissionActAsBot,
-		apps.PermissionActAsUser,
 	},
 	RequestedLocations: apps.Locations{
 		apps.LocationCommand,
@@ -71,6 +70,7 @@ func RegisterHandler(root *mux.Router, store Store, service Service) {
 	}
 
 	appRouter := root.PathPrefix(apps.PluginAppPath).Subrouter()
+	appRouter.Use(a.checkAppsPlugin)
 	appRouter.HandleFunc(iconRoute, a.handleIcon).Methods(http.MethodGet)
 
 	adminRoutes := appRouter.NewRoute().Subrouter()
@@ -188,6 +188,18 @@ func (a *app) handleAppDisable(w http.ResponseWriter, r *http.Request) {
 func (a *app) handleIcon(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/png")
 	_, _ = w.Write(iconData)
+}
+
+func (a *app) checkAppsPlugin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pluginID := r.Header.Get("Mattermost-Plugin-ID")
+		if pluginID != "com.mattermost.apps" {
+			httputils.WriteError(w, errors.New("not authorized"))
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (a *app) adminRequired(next http.Handler) http.Handler {
