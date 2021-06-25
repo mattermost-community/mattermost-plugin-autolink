@@ -187,6 +187,10 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 					if author == nil && authorErr == nil {
 						author, authorErr = p.API.GetUser(post.UserId)
 						if authorErr != nil {
+							// NOTE: Not sure how we want to handle errors here, we can either:
+							// * assume that occasional rewrites of Bot messges are ok
+							// * assume that occasional not rewriting of all messages is ok
+							// Let's assume for now that former is a lesser evil and carry on.
 							p.API.LogError("failed to check if message for rewriting was send by a bot", "error", authorErr)
 						}
 					}
