@@ -41,6 +41,7 @@ func TestPlugin(t *testing.T) {
 		*dest.(*Config) = conf
 		return nil
 	})
+	api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil))
 
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
@@ -87,6 +88,7 @@ func (suite *SuiteAuthorization) SetupTest() {
 			return nil
 		},
 	)
+	suite.api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 	suite.api.On(
 		"GetUser",
 		mock.AnythingOfType("string"),
@@ -326,6 +328,7 @@ func TestSpecialCases(t *testing.T) {
 		*dest.(*Config) = validConfig
 		return nil
 	})
+	api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil))
 
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
@@ -532,6 +535,7 @@ func TestBotMessagesAreRewritenWhenGetUserFails(t *testing.T) {
 		*dest.(*Config) = conf
 		return nil
 	}).Once()
+	api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil)).Once()
 
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil).Once()
@@ -575,6 +579,7 @@ func TestGetUserApiCallIsNotExecutedWhenThereAreNoChanges(t *testing.T) {
 		*dest.(*Config) = conf
 		return nil
 	}).Once()
+	api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil)).Once()
 
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil).Once()
@@ -614,6 +619,7 @@ func TestBotMessagesAreNotRewriten(t *testing.T) {
 		*dest.(*Config) = conf
 		return nil
 	}).Once()
+	api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil)).Once()
 
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil).Once()
@@ -660,6 +666,7 @@ func TestHashtags(t *testing.T) {
 		*dest.(*Config) = conf
 		return nil
 	})
+	api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil))
 
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
@@ -708,6 +715,7 @@ func TestAPI(t *testing.T) {
 		*dest.(*Config) = conf
 		return nil
 	})
+	api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil))
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
 	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
@@ -826,6 +834,7 @@ func TestProcessPost(t *testing.T) {
 			*dest.(*Config) = conf
 			return nil
 		})
+		api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 		api.On("UnregisterCommand", mock.AnythingOfType("string"),
 			mock.AnythingOfType("string")).Return((*model.AppError)(nil))
 
@@ -873,6 +882,7 @@ func TestProcessPost(t *testing.T) {
 			*dest.(*Config) = conf
 			return nil
 		})
+		api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 		api.On("UnregisterCommand", mock.AnythingOfType("string"),
 			mock.AnythingOfType("string")).Return((*model.AppError)(nil))
 		api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
@@ -923,6 +933,7 @@ func TestProcessPost(t *testing.T) {
 			*dest.(*Config) = conf
 			return nil
 		})
+		api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 		api.On("UnregisterCommand", mock.AnythingOfType("string"),
 			mock.AnythingOfType("string")).Return((*model.AppError)(nil))
 

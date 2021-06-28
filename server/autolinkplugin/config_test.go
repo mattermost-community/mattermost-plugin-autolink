@@ -51,6 +51,7 @@ func TestOnConfigurationChange(t *testing.T) {
 			mock.AnythingOfType("string"),
 			mock.AnythingOfType("string")).Return(nil)
 
+		api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 		api.On("UnregisterCommand", mock.AnythingOfType("string"),
 			mock.AnythingOfType("string")).Return((*model.AppError)(nil))
 

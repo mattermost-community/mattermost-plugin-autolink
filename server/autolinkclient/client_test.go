@@ -47,7 +47,7 @@ func TestAddAutolinks(t *testing.T) {
 func TestAddAutolinksErr(t *testing.T) {
 	mockPluginAPI := &plugintest.API{}
 
-	mockPluginAPI.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil)
+	mockPluginAPI.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil).Once()
 
 	client := NewClientPlugin(mockPluginAPI)
 	err := client.Add(autolink.Autolink{})
