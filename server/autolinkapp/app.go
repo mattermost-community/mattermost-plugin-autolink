@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/mattermost/mattermost-plugin-apps/apps"
+	"github.com/mattermost/mattermost-plugin-apps/apps/mmclient"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
 	"github.com/pkg/errors"
 
@@ -193,7 +194,7 @@ func (a *app) handleIcon(w http.ResponseWriter, r *http.Request) {
 func (a *app) checkAppsPlugin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pluginID := r.Header.Get("Mattermost-Plugin-ID")
-		if pluginID != "com.mattermost.apps" {
+		if pluginID != mmclient.AppsPluginName {
 			httputils.WriteError(w, errors.New("not authorized"))
 			return
 		}
