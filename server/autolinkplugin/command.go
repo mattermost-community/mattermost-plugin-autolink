@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	autolinkCommand         = "/autolink"
+	autolinkTrigger         = "autolink"
+	autolinkCommand         = "/" + autolinkTrigger
 	optName                 = "Name"
 	optTemplate             = "Template"
 	optPattern              = "Pattern"
@@ -112,7 +113,7 @@ func executeExperimental(p *Plugin, c *plugin.Context, header *model.CommandArgs
 		return responsef("error occurred while installting the autolink app: %v", err)
 	}
 
-	apiError := p.API.UnregisterCommand("", "autolink")
+	apiError := p.API.UnregisterCommand("", autolinkTrigger)
 	if apiError != nil {
 		return responsef("error occurred while disabling the existing slash command: %v", apiError.Error())
 	}

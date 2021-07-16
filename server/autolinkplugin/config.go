@@ -58,7 +58,7 @@ func (p *Plugin) OnConfigurationChange() error {
 
 			if c.EnableAdminCommand {
 				_ = p.API.RegisterCommand(&model.Command{
-					Trigger:          "autolink",
+					Trigger:          autolinkTrigger,
 					DisplayName:      "Autolink",
 					Description:      "Autolink administration.",
 					AutoComplete:     true,
@@ -67,7 +67,7 @@ func (p *Plugin) OnConfigurationChange() error {
 					AutocompleteData: getAutoCompleteData(),
 				})
 			} else {
-				_ = p.API.UnregisterCommand("", "autolink")
+				_ = p.API.UnregisterCommand("", autolinkTrigger)
 			}
 
 			return
@@ -78,7 +78,7 @@ func (p *Plugin) OnConfigurationChange() error {
 }
 
 func getAutoCompleteData() *model.AutocompleteData {
-	autolink := model.NewAutocompleteData("autolink", "[command]",
+	autolink := model.NewAutocompleteData(autolinkTrigger, "[command]",
 		"Available command : add, delete, disable, enable, list, set, test")
 
 	add := model.NewAutocompleteData("add", "",
