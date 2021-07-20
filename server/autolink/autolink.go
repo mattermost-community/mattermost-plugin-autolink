@@ -108,6 +108,12 @@ func (l Autolink) Replace(message string) string {
 		if submatch == nil {
 			break
 		}
+
+		// The beginning of the submatch is equal to the end of the submatch here. The regex pattern is non-terminal.
+		if len(submatch) > 1 && submatch[0] == submatch[1] {
+			break
+		}
+
 		out = append(out, in[:submatch[0]]...)
 		out = l.re.Expand(out, []byte(l.template), in, submatch)
 		in = in[submatch[1]:]
