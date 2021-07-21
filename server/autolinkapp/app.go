@@ -38,6 +38,7 @@ var iconData []byte
 const (
 	appID          = "com.mattermost.autolink"
 	appDisplayName = "Autolink"
+	appHomepageURL = "https://github.com/mattermost/mattermost-plugin-autolink"
 
 	autolinkCommand = "autolink"
 
@@ -54,6 +55,7 @@ const (
 var Manifest = apps.Manifest{
 	AppID:       appID,
 	DisplayName: appDisplayName,
+	HomepageURL: appHomepageURL,
 	AppType:     apps.AppTypePlugin,
 	Icon:        appIcon,
 	RequestedPermissions: apps.Permissions{
