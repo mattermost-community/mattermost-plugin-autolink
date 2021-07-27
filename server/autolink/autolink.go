@@ -104,13 +104,12 @@ func (l Autolink) Replace(message string) string {
 	in := []byte(message)
 	out := []byte{}
 	for {
-		submatch := l.re.FindSubmatchIndex(in)
-		if submatch == nil {
+		if len(in) == 0 {
 			break
 		}
 
-		// The beginning of the submatch is equal to the end of the submatch here. The regex pattern is non-terminal.
-		if len(submatch) > 1 && submatch[0] == submatch[1] {
+		submatch := l.re.FindSubmatchIndex(in)
+		if submatch == nil {
 			break
 		}
 
