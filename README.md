@@ -34,6 +34,8 @@ Autolinks have 3 parts: a **Pattern** which is a regular expression search patte
 
 In the template, a variable is denoted by a substring of the form `$name` or `${name}`, where `name` is a non-empty sequence of letters, digits, and underscores. A purely numeric name like $1 refers to the submatch with the corresponding index. In the $name form, name is taken to be as long as possible: $1x is equivalent to ${1x}, not ${1}x, and, $10 is equivalent to ${10}, not ${1}0. To insert a literal $ in the output, use $$ in the template.
 
+The scope must be either a team (`teamname`) or a team and a channel (`teamname/channelname`). Remember that you must provide the entity name, not the entity display name. Since Direct Messages do not belong to any team, scoped matches will not be autolinked on Direct Messages. If more than one scope is provided, matches in at least one of the scopes will be autolinked.
+
 Below is an example of regexp patterns used for autolinking at https://community.mattermost.com, modified in the `config.json` file:
 
 ```json5
@@ -125,6 +127,10 @@ Below is an example of regexp patterns used for autolinking at https://community
    - Pattern: `https://community\\.mattermost\\.com/(?P\u003cteamname\u003e(?a-zA-Z0-9]+)/(?P\u003cid\u003e[a-zA-Z0-9]+)`
    - Template: `[<jump to convo>](/${teamname}/pl/${id})/${id})`
 
+5. Autolink the word Handbook to a internal URL on the private team (called `office`), and a private channel (`staff`) in the public team (called `everyone`).
+    - Pattern: `(Handbook)`
+    - Template: `[Handbook](http://www.mywebsite.com/private/handbook)`
+    - Scope: `["office", "everyone/staff"]`
 
 **You can check your pattern with those Regex Testers:**
 - https://regex-golang.appspot.com/,
