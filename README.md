@@ -127,7 +127,7 @@ Below is an example of regexp patterns used for autolinking at https://community
    - Pattern: `https://community\\.mattermost\\.com/(?P\u003cteamname\u003e(?a-zA-Z0-9]+)/(?P\u003cid\u003e[a-zA-Z0-9]+)`
    - Template: `[<jump to convo>](/${teamname}/pl/${id})/${id})`
 
-5. Autolink the word Handbook to a internal URL on the private team (called `office`), and a private channel (`staff`) in the public team (called `everyone`).
+Autolink the word Handbook to a internal URL on the private team (called `office`), and a private channel (`staff`) in the public team (called `everyone`).
     - Pattern: `(Handbook)`
     - Template: `[Handbook](http://www.mywebsite.com/private/handbook)`
     - Scope: `["office", "everyone/staff"]`
