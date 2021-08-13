@@ -19,7 +19,7 @@ type Plugin struct {
 
 	handler *api.Handler
 
-	// configuration and a muttex to control concurrent access
+	// configuration and a mutex to control concurrent access
 	conf     *Config
 	confLock sync.RWMutex
 }
