@@ -74,10 +74,10 @@ func RegisterHandler(root *mux.Router, store Store, service Service) {
 	}
 
 	appRouter := root.PathPrefix(apps.PluginAppPath).Subrouter()
-	appRouter.Use(a.checkAppsPlugin)
 	appRouter.HandleFunc(iconRoute, a.handleIcon).Methods(http.MethodGet)
 
 	adminRoutes := appRouter.NewRoute().Subrouter()
+	adminRoutes.Use(a.checkAppsPlugin)
 	adminRoutes.Use(a.adminRequired)
 
 	adminRoutes.HandleFunc(bindingsRoute, a.handleBindings).Methods(http.MethodPost)
