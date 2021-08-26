@@ -2,11 +2,11 @@ package autolinkapp
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-apps/apps"
 	"github.com/mattermost/mattermost-plugin-apps/utils/httputils"
-	"github.com/mattermost/mattermost-plugin-apps/utils/md"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
@@ -81,7 +81,7 @@ func (a *app) handleSaveLink(call *apps.CallRequest) *apps.CallResponse {
 	}
 
 	return &apps.CallResponse{
-		Markdown: md.Markdownf("Saved auto link `%s`", values.Name),
+		Markdown: fmt.Sprintf("Saved auto link `%s`", values.Name),
 	}
 }
 
@@ -106,7 +106,7 @@ func (a *app) handleDeleteLink(call *apps.CallRequest) *apps.CallResponse {
 	}
 
 	return &apps.CallResponse{
-		Markdown: md.Markdownf("Deleted auto link `%s`", values.Link.Value),
+		Markdown: fmt.Sprintf("Deleted auto link `%s`", values.Link.Value),
 	}
 }
 

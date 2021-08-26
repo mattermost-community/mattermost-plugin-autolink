@@ -64,6 +64,7 @@ var Manifest = apps.Manifest{
 	RequestedLocations: apps.Locations{
 		apps.LocationCommand,
 	},
+	PluginID: "mattermost-autolink",
 }
 
 func RegisterHandler(root *mux.Router, store Store, service Service) {
