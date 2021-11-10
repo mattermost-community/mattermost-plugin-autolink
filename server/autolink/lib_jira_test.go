@@ -118,6 +118,42 @@ var jiraTests = []linkTest{
 		"Welcome https://mattermost.atlassian.net/browse/MM-12345",
 		"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345)",
 	},
+	{
+		"Jump To Comment With Jira Cloud",
+		autolink.Autolink{
+			Pattern:  "(https://mmtest.atlassian.net/browse/)(DP)(-)(?P<jira_id>\\d+)[?](focusedCommentId)(=)(?P<comment_id>\\d+)",
+			Template: "[DP-${jira_id} With Focused Comment($comment_id)](https://mmtest.atlassian.net/browse/DP-${jira_id}?focusedCommentId=$comment_id)",
+		},
+		"https://mmtest.atlassian.net/browse/DP-454?focusedCommentId=11347",
+		"[DP-454 With Focused Comment(11347)](https://mmtest.atlassian.net/browse/DP-454?focusedCommentId=11347)",
+	},
+	{
+		"Jump To Comment With Jira Ecc",
+		autolink.Autolink{
+			Pattern:  "(http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/)(DKHPROJ)(-)(?P<jira_id>\\d+)[?](focusedCommentId)(=)(?P<comment_id>\\d+)",
+			Template: "[DKHPROJ-${jira_id} With Focused Comment($comment_id)](http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-${jira_id}?focusedCommentId=$comment_id)",
+		},
+		"http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5?focusedCommentId=10200",
+		"[DKHPROJ-5 With Focused Comment(10200)](http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5?focusedCommentId=10200)",
+	},
+	{
+		"Jump To Comment With Jira Ecc Long Link",
+		autolink.Autolink{
+			Pattern:  "(http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/)(DKHPROJ)(-)(?P<jira_id>\\d+)[?](focusedCommentId)(=)(?P<comment_id>\\d+)",
+			Template: "[DKHPROJ-${jira_id} With Focused Comment($comment_id)](http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-${jira_id}?focusedCommentId=$comment_id)",
+		},
+		"http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5?focusedCommentId=10200&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-10200",
+		"http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5?focusedCommentId=10200&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-10200",
+	},
+	{
+		"Jump To Comment With Jira Ecc Long Short",
+		autolink.Autolink{
+			Pattern:  "(http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/)(DKHPROJ)(-)(?P<jira_id>\\d+)[?](focusedCommentId)(=)(?P<comment_id>\\d+)",
+			Template: "[DKHPROJ-${jira_id} With Focused Comment($comment_id)](http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-${jira_id}?focusedCommentId=$comment_id)",
+		},
+		"http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5",
+		"http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5",
+	},
 }
 
 func TestJira(t *testing.T) {
