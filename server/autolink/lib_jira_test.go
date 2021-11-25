@@ -154,6 +154,52 @@ var jiraTests = []linkTest{
 		"http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5",
 		"http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5",
 	},
+	{
+		"Jump To Comment With Jira Cloud Failed",
+		autolink.Autolink{
+			Pattern:  "(https://mmtest.atlassian.net/browse/)(DP)(-)(?P<jira_id>\\d+)[?](focusedCommentId)(=)(?P<comment_id>\\d+)",
+			Template: "[DP-${jira_id} With Focused Comment($comment_id)](https://mmtest.atlassian.net/browse/DP-${jira_id}",
+		},
+		"https://mmtest.atlassian.net/browse/DP-454",
+		"https://mmtest.atlassian.net/browse/DP-454",
+	},
+	// Trials Linker
+	{
+		"Trial With Jira Cloud",
+		autolink.Autolink{
+			Pattern:  "(?P<URI>.*/)(?P<IssueKey>[A-Za-z]+-[0-9]+)[?](focusedCommentId=*(?P<FocusedCommentId>[^\\s&]+))",
+			Template: "[${IssueKey} FocusedComment(${FocusedCommentId})](${URI}${IssueKey}?focusedCommentId=${FocusedCommentId})",
+		},
+		"https://mmtest.atlassian.net/browse/DP-454?focusedCommentId=11347",
+		"[DP-454 FocusedComment(11347)](https://mmtest.atlassian.net/browse/DP-454?focusedCommentId=11347)",
+	},
+	{
+		"Trial With Jira Server #1",
+		autolink.Autolink{
+			Pattern:  "(?P<URI>.*/)(?P<IssueKey>[A-Za-z]+-[0-9]+)[?](focusedCommentId=*(?P<FocusedCommentId>[^\\s&]+))",
+			Template: "[${IssueKey} FocusedComment(${FocusedCommentId})](${URI}${IssueKey}?focusedCommentId=${FocusedCommentId})",
+		},
+		"http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5?focusedCommentId=10200",
+		"[DKHPROJ-5 FocusedComment(10200)](http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5?focusedCommentId=10200)",
+	},
+	{
+		"Trial With Jira Server #2", //Not Worked here ?
+		autolink.Autolink{
+			Pattern:  "(?P<URI>.*/)(?P<IssueKey>[A-Za-z]+-[0-9]+)[?](focusedCommentId=*(?P<FocusedCommentId>[^\\s&]+))",
+			Template: "[${IssueKey} FocusedComment(${FocusedCommentId})](${URI}${IssueKey}?focusedCommentId=${FocusedCommentId})",
+		},
+		"http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5?focusedCommentId=10200&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-10200",
+		"http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5?focusedCommentId=10200&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-10200",
+	},
+	{
+		"Trial With Jira Cloud Without Focused Comment ID", //Not Worked here ?
+		autolink.Autolink{
+			Pattern:  "(?P<URI>.*/)(?P<IssueKey>[A-Za-z]+-[0-9]+)[?](focusedCommentId=*(?P<FocusedCommentId>[^\\s&]+))",
+			Template: "[${IssueKey} FocusedComment(${FocusedCommentId})](${URI}${IssueKey}?focusedCommentId=${FocusedCommentId})",
+		},
+		"https://mmtest.atlassian.net/browse/DP-454",
+		"https://mmtest.atlassian.net/browse/DP-454",
+	},
 }
 
 func TestJira(t *testing.T) {
