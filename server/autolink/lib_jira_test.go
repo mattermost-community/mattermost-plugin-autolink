@@ -183,7 +183,7 @@ var jiraTests = []linkTest{
 		"[DKHPROJ-5 FocusedComment(10200)](http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5?focusedCommentId=10200)",
 	},
 	{
-		"Trial With Jira Server #2", //Not Worked here ?
+		"Trial With Jira Server #2", // Not Worked here ?
 		autolink.Autolink{
 			Pattern:  "(?P<URI>.*/)(?P<IssueKey>[A-Za-z]+-[0-9]+)[?](focusedCommentId=*(?P<FocusedCommentId>[^\\s&]+))",
 			Template: "[${IssueKey} FocusedComment(${FocusedCommentId})](${URI}${IssueKey}?focusedCommentId=${FocusedCommentId})",
@@ -192,7 +192,7 @@ var jiraTests = []linkTest{
 		"http://ec2-54-157-116-101.compute-1.amazonaws.com/browse/DKHPROJ-5?focusedCommentId=10200&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-10200",
 	},
 	{
-		"Trial With Jira Cloud Without Focused Comment ID", //Not Worked here ?
+		"Trial With Jira Cloud Without Focused Comment ID", // Not Worked here ?
 		autolink.Autolink{
 			Pattern:  "(?P<URI>.*/)(?P<IssueKey>[A-Za-z]+-[0-9]+)[?](focusedCommentId=*(?P<FocusedCommentId>[^\\s&]+))",
 			Template: "[${IssueKey} FocusedComment(${FocusedCommentId})](${URI}${IssueKey}?focusedCommentId=${FocusedCommentId})",
