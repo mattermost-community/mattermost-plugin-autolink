@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
@@ -317,9 +317,9 @@ func executeHelp(p *Plugin, c *plugin.Context, header *model.CommandArgs, args .
 
 func responsef(format string, args ...interface{}) *model.CommandResponse {
 	return &model.CommandResponse{
-		ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
+		ResponseType: model.CommandResponseTypeEphemeral,
 		Text:         fmt.Sprintf(format, args...),
-		Type:         model.POST_DEFAULT,
+		Type:         model.PostTypeDefault,
 	}
 }
 

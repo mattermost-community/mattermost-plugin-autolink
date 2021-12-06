@@ -105,10 +105,15 @@ func (l Autolink) Replace(message string) string {
 	in := []byte(message)
 	out := []byte{}
 	for {
+		if len(in) == 0 {
+			break
+		}
+
 		submatch := l.re.FindSubmatchIndex(in)
 		if submatch == nil {
 			break
 		}
+
 		out = append(out, in[:submatch[0]]...)
 		out = l.re.Expand(out, []byte(l.template), in, submatch)
 		in = in[submatch[1]:]

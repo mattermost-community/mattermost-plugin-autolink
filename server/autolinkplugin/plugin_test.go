@@ -8,10 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest/mock"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
+	"github.com/mattermost/mattermost-server/v6/plugin/plugintest"
+	"github.com/mattermost/mattermost-server/v6/plugin/plugintest/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -771,7 +771,8 @@ func TestAPI(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	req, err := http.NewRequest("POST", "/api/v1/link", bytes.NewReader(jbyte))
 	require.NoError(t, err)
-	p.ServeHTTP(&plugin.Context{SourcePluginId: "somthing"}, recorder, req)
+	req.Header.Set("Mattermost-Plugin-ID", "somthing")
+	p.ServeHTTP(&plugin.Context{}, recorder, req)
 	resp := recorder.Result()
 	require.NotNil(t, resp)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
