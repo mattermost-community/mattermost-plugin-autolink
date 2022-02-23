@@ -392,7 +392,13 @@ func parseBoolArg(arg string) (bool, error) {
 func saveConfigLinks(p *Plugin, links []autolink.Autolink) error {
 	conf := p.getConfig()
 	conf.Links = links
-	appErr := p.API.SavePluginConfig(conf.ToConfig())
+
+	configMap, err := p.getConfig().ToMap()
+	if err != nil {
+		return err
+	}
+
+	appErr := p.API.SavePluginConfig(configMap)
 	if appErr != nil {
 		return appErr
 	}
