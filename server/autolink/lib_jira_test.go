@@ -10,32 +10,32 @@ var jiraTests = []linkTest{
 	{
 		"Jira example",
 		autolink.Autolink{
-			Pattern:  "(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
-			Template: "[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
+			Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
+			Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 		},
 		"Welcome MM-12345 should link!",
 		"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 	}, {
 		"Jira example 2 (within a ())",
 		autolink.Autolink{
-			Pattern:  "(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
-			Template: "[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
+			Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
+			Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 		},
 		"Link in brackets should link (see MM-12345)",
 		"Link in brackets should link (see [MM-12345](https://mattermost.atlassian.net/browse/MM-12345))",
 	}, {
 		"Jira example 3 (before ,)",
 		autolink.Autolink{
-			Pattern:  "(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
-			Template: "[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
+			Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
+			Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 		},
 		"Link a ticket MM-12345, before a comma",
 		"Link a ticket [MM-12345](https://mattermost.atlassian.net/browse/MM-12345), before a comma",
 	}, {
 		"Jira example 3 (at begin of the message)",
 		autolink.Autolink{
-			Pattern:  "(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
-			Template: "[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
+			Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
+			Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 		},
 		"MM-12345 should link!",
 		"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
