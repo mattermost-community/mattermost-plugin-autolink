@@ -42,8 +42,8 @@ var jiraTests = []linkTest{
 	}, {
 		"Pattern word prefix and suffix disabled",
 		autolink.Autolink{
-			Pattern:              "(?P<previous>^|\\s)(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
-			Template:             "${previous}[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
+			Pattern:              "(?P<previous>^|\\s)(MM)(-)(?P<jira_id>\\d+)",
+			Template:             "${previous}[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			DisableNonWordPrefix: true,
 			DisableNonWordSuffix: true,
 		},
@@ -52,8 +52,8 @@ var jiraTests = []linkTest{
 	}, {
 		"Pattern word prefix and suffix disabled (at begin of the message)",
 		autolink.Autolink{
-			Pattern:              "(?P<previous>^|\\s)(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
-			Template:             "${previous}[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
+			Pattern:              "(?P<previous>^|\\s)(MM)(-)(?P<jira_id>\\d+)",
+			Template:             "${previous}[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			DisableNonWordPrefix: true,
 			DisableNonWordSuffix: true,
 		},
@@ -62,21 +62,21 @@ var jiraTests = []linkTest{
 	}, {
 		"Pattern word prefix and suffix enable (in the middle of other text)",
 		autolink.Autolink{
-			Pattern:  "(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
-			Template: "[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
+			Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
+			Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 		},
 		"WelcomeMM-12345should not link!",
 		"WelcomeMM-12345should not link!",
 	}, {
 		"Pattern word prefix and suffix disabled (in the middle of other text)",
 		autolink.Autolink{
-			Pattern:              "(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
-			Template:             "[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
+			Pattern:              "(MM)(-)(?P<jira_id>\\d+)",
+			Template:             "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
 			DisableNonWordPrefix: true,
 			DisableNonWordSuffix: true,
 		},
-		"Welcome MM-12345should link!",
-		"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345)should link!",
+		"WelcomeMM-12345should link!",
+		"Welcome[MM-12345](https://mattermost.atlassian.net/browse/MM-12345)should link!",
 	}, {
 		"Not relinking",
 		autolink.Autolink{
