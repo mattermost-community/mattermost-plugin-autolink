@@ -358,7 +358,7 @@ func TestWildcard(t *testing.T) {
 
 		select {
 		case <-done:
-		case <-time.After(1 * time.Millisecond):
+		case <-time.After(50 * time.Millisecond):
 			panic("wildcard regex timed out")
 		}
 
