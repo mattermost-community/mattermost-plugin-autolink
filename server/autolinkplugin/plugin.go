@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
-	"github.com/mattermost/mattermost-server/v5/utils/markdown"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
+	"github.com/mattermost/mattermost-server/v6/shared/markdown"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/api"
 )
@@ -19,7 +19,7 @@ type Plugin struct {
 
 	handler *api.Handler
 
-	// configuration and a muttex to control concurrent access
+	// configuration and a mutex to control concurrent access
 	conf     *Config
 	confLock sync.RWMutex
 }
@@ -217,7 +217,6 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
-	r.Header.Add("Mattermost-Plugin-ID", c.SourcePluginId)
 	p.handler.ServeHTTP(w, r)
 }
 

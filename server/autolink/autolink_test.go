@@ -3,9 +3,10 @@ package autolink_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin/plugintest"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin/plugintest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -318,5 +319,50 @@ func TestEquals(t *testing.T) {
 			eq := tc.l1.Equals(tc.l2)
 			assert.Equal(t, tc.expectEqual, eq)
 		})
+	}
+}
+
+func TestWildcard(t *testing.T) {
+	for _, tc := range []struct {
+		Name string
+		Link autolink.Autolink
+	}{
+		{
+			Name: ".*",
+			Link: autolink.Autolink{
+				Pattern:  ".*",
+				Template: "My template",
+			},
+		},
+		{
+			Name: ".*.",
+			Link: autolink.Autolink{
+				Pattern:  ".*.",
+				Template: "My template",
+			},
+		},
+	} {
+		p := setupTestPlugin(t, tc.Link)
+
+		message := "Your message"
+
+		var post *model.Post
+		done := make(chan bool)
+		go func() {
+			post, _ = p.MessageWillBePosted(nil, &model.Post{
+				Message: message,
+			})
+
+			done <- true
+		}()
+
+		select {
+		case <-done:
+		case <-time.After(50 * time.Millisecond):
+			panic("wildcard regex timed out")
+		}
+
+		assert.NotNil(t, post, "post is nil")
+		assert.Equal(t, "My template", post.Message)
 	}
 }

@@ -34,6 +34,8 @@ Autolinks have 3 parts: a **Pattern** which is a regular expression search patte
 
 In the template, a variable is denoted by a substring of the form `$name` or `${name}`, where `name` is a non-empty sequence of letters, digits, and underscores. A purely numeric name like $1 refers to the submatch with the corresponding index. In the $name form, name is taken to be as long as possible: $1x is equivalent to ${1x}, not ${1}x, and, $10 is equivalent to ${10}, not ${1}0. To insert a literal $ in the output, use $$ in the template.
 
+The scope must be either a team (`teamname`) or a team and a channel (`teamname/channelname`). Remember that you must provide the entity name, not the entity display name. Since Direct Messages do not belong to any team, scoped matches will not be autolinked on Direct Messages. If more than one scope is provided, matches in at least one of the scopes will be autolinked.
+
 Below is an example of regexp patterns used for autolinking at https://community.mattermost.com, modified in the `config.json` file:
 
 ```json5
@@ -109,22 +111,26 @@ Below is an example of regexp patterns used for autolinking at https://community
 ## Examples
 
 1. Autolinking `Ticket ####:text with alphanumberic characters and spaces` to a ticket link. Use:
-  - Pattern: `(?i)(ticket )(?P<ticket_id>.+)(:)(?P<ticket_info>.*)`, or if the ticket_id is a number, then `(?i)(ticket )(?P<ticket_id>\d+)(:)(?P<ticket_info>.*)`
-  - Template: `[Ticket ${ticket_id}: ${ticket_info}](https://github.com/mattermost/mattermost-server/issues/${ticket_id})`
-  - Scope: `["teams/committers"]` (optional)
+   - Pattern: `(?i)(ticket )(?P<ticket_id>.+)(:)(?P<ticket_info>.*)`, or if the ticket_id is a number, then `(?i)(ticket )(?P<ticket_id>\d+)(:)(?P<ticket_info>.*)`
+   - Template: `[Ticket ${ticket_id}: ${ticket_info}](https://github.com/mattermost/mattermost-server/issues/${ticket_id})`
+   - Scope: `["teams/committers"]` (optional)
 
 2. Autolinking a link to a GitHub PR to a format "pr-repo-id". Use:
-  - Pattern: `https://github\\.com/mattermost/(?P<repo>.+)/pull/(?P<id>\\d+)`
-  - Template: `[pr-${repo}-${id}](https://github.com/mattermost/${repo}/pull/${id})`
+   - Pattern: `https://github\\.com/mattermost/(?P<repo>.+)/pull/(?P<id>\\d+)`
+   - Template: `[pr-${repo}-${id}](https://github.com/mattermost/${repo}/pull/${id})`
 
 3. Using autolinking to create group mentions. Use (note that clicking the resulting at-mention redirects to a broken page):
-  - Pattern: `@customgroup*`
-  - Template: `[@customgroup]( \\* @user1 @user2 @user3 \\* )`
+   - Pattern: `@customgroup*`
+   - Template: `[@customgroup]( \\* @user1 @user2 @user3 \\* )`
   
 4. For servers with multiple domains (like community and community-daily on the [public Mattermost Server](https://community.mattermost)), a substitution of absolute conversation links to relative links is recommended to prevent issues in the mobile app. Add one pattern for each domain used:
-  - Pattern: `https://community\\.mattermost\\.com/(?P\u003cteamname\u003e(?a-zA-Z0-9]+)/(?P\u003cid\u003e[a-zA-Z0-9]+)`
-  - Template: `[<jump to convo>](/${teamname}/pl/${id})/${id})`
+   - Pattern: `https://community\\.mattermost\\.com/(?P\u003cteamname\u003e(?a-zA-Z0-9]+)/(?P\u003cid\u003e[a-zA-Z0-9]+)`
+   - Template: `[<jump to convo>](/${teamname}/pl/${id})/${id})`
 
+Autolink the word Handbook to a internal URL on the private team (called `office`), and a private channel (`staff`) in the public team (called `everyone`).
+    - Pattern: `(Handbook)`
+    - Template: `[Handbook](http://www.mywebsite.com/private/handbook)`
+    - Scope: `["office", "everyone/staff"]`
 
 **You can check your pattern with those Regex Testers:**
 - https://regex-golang.appspot.com/,
@@ -132,18 +138,18 @@ Below is an example of regexp patterns used for autolinking at https://community
 - https://www.regextester.com/.
 
 ## Configuration Management
-The /autolink commands allow the users to easily edit the configurations.
+The `/autolink` commands allow the users to easily edit the configurations.
 
  Commands | Description | Usage
  ---|---|---|
- list | Lists all configured links |
- list \<*linkref*> | List a specific link which matched the link reference |
- test \<*linkref*> test-text | Test a link on the text provided | /autolink test Visa 4356-7891-2345-1111 -- (4111222233334444)
- enable \<*linkref*> | Enables the link | /autolink enable Visa
- disable \<*linkref*> | Disable the link |/autolink disable Visa
- add \<*name*> | Creates a new link with the name specified in the command  | /autolink add Visa
- delete \<*linkref*> |  Delete the link | /autolink delete Visa
- set \<*linkref*> \<*field*> *value* | Sets a link's field to a value <br> *Fields* - <br> <ul><li>Template - Sets the Template field</li><li>Pattern - Sets the Pattern field </li> <li> WordMatch - If true uses the [\b word boundaries](https://www.regular-expressions.info/wordboundaries.html) </li> <li> Scope - Sets the Scope field (`team` or `team/channel` or a whitespace-separated list thereof) </li> | <br> /autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4})) <br><br> /autolink set Visa Template VISA XXXX-XXXX-XXXX-$LastFour <br><br> /autolink set Visa WordMatch true <br><br> /autolink set Visa Scope team/townsquare <br><br>
+ list | Lists all configured links | `/autolink list`
+ list \<*linkref*> | List a specific link which matched the link reference | `/autolink list test`
+ test \<*linkref*> test-text | Test a link on the text provided | `/autolink test Visa 4356-7891-2345-1111 -- (4111222233334444)`
+ enable \<*linkref*> | Enables the link | `/autolink enable Visa`
+ disable \<*linkref*> | Disable the link | `/autolink disable Visa`
+ add \<*linkref*> | Creates a new link with the name specified in the command  | `/autolink add Visa`
+ delete \<*linkref*> |  Delete the link | `/autolink delete Visa`
+ set \<*linkref*> \<*field*> *value* | Sets a link's field to a value <br> *Fields* - <br> <ul><li>Template - Sets the Template field</li><li>Pattern - Sets the Pattern field </li> <li> WordMatch - If true uses the [\b word boundaries](https://www.regular-expressions.info/wordboundaries.html) </li> <li> Scope - Sets the Scope field (`team` or `team/channel` or a whitespace-separated list thereof) </li> | <br> `/autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))` <br><br> `/autolink set Visa Template VISA XXXX-XXXX-XXXX-$LastFour` <br><br> `/autolink set Visa WordMatch true` <br><br> `/autolink set Visa Scope team/townsquare` <br><br>
 
 
 ## Development
