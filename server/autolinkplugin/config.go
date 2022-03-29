@@ -1,34 +1,36 @@
 package autolinkplugin
 
 import (
-	"fmt"
+	"encoding/json"
 	"sort"
 	"strings"
 
 	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
 // Config from config.json
 type Config struct {
-	EnableAdminCommand bool
-	EnableOnUpdate     bool
-	PluginAdmins       string
-	Links              []autolink.Autolink
+	EnableAdminCommand bool                `json:"enableadmincommand"`
+	EnableOnUpdate     bool                `json:"enableonupdate"`
+	PluginAdmins       string              `json:"pluginadmins"`
+	Links              []autolink.Autolink `json:"links"`
 
 	// AdminUserIds is a set of UserIds that are permitted to perform
 	// administrative operations on the plugin configuration (i.e. plugin
 	// admins). On each configuration change the contents of PluginAdmins
 	// config field is parsed into this field.
-	AdminUserIds map[string]struct{}
+	AdminUserIds map[string]struct{} `json:"-"`
 }
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
 func (p *Plugin) OnConfigurationChange() error {
 	var c Config
 	if err := p.API.LoadPluginConfiguration(&c); err != nil {
-		return fmt.Errorf("failed to load configuration: %w", err)
+		return errors.Wrap(err, "failed to load plugin configuration")
 	}
 
 	for i := range c.Links {
@@ -40,7 +42,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	// Plugin admin UserId parsing and validation errors are
 	// not fatal, if everything fails only sysadmin will be able to manage the
 	// config which is still OK
-	c.parsePluginAdminList(p)
+	c.parsePluginAdminList(p.API)
 
 	p.UpdateConfig(func(conf *Config) {
 		*conf = c
@@ -169,9 +171,15 @@ func (p *Plugin) SaveLinks(links []autolink.Autolink) error {
 	p.UpdateConfig(func(conf *Config) {
 		conf.Links = links
 	})
-	appErr := p.API.SavePluginConfig(p.getConfig().ToConfig())
+
+	configMap, err := p.getConfig().ToMap()
+	if err != nil {
+		return errors.Wrap(err, "unable convert config to map")
+	}
+
+	appErr := p.API.SavePluginConfig(configMap)
 	if appErr != nil {
-		return fmt.Errorf("unable to save links: %w", appErr)
+		return errors.Wrap(appErr, "unable to save links")
 	}
 
 	return nil
@@ -186,17 +194,18 @@ func (p *Plugin) UpdateConfig(f func(conf *Config)) {
 
 // ToConfig marshals Config into a tree of map[string]interface{} to pass down
 // to p.API.SavePluginConfig, otherwise RPC/gob barfs at the unknown type.
-func (conf *Config) ToConfig() map[string]interface{} {
-	links := []interface{}{}
-	for _, l := range conf.Links {
-		links = append(links, l.ToConfig())
+func (conf *Config) ToMap() (map[string]interface{}, error) {
+	var out map[string]interface{}
+	data, err := json.Marshal(conf)
+	if err != nil {
+		return nil, err
 	}
-	return map[string]interface{}{
-		"EnableAdminCommand": conf.EnableAdminCommand,
-		"EnableOnUpdate":     conf.EnableOnUpdate,
-		"PluginAdmins":       conf.PluginAdmins,
-		"Links":              links,
+	err = json.Unmarshal(data, &out)
+	if err != nil {
+		return nil, err
 	}
+
+	return out, nil
 }
 
 // Sorted returns a clone of the Config, with links sorted alphabetically
@@ -210,8 +219,8 @@ func (conf *Config) Sorted() *Config {
 }
 
 // parsePluginAdminList parses the contents of PluginAdmins config field
-func (conf *Config) parsePluginAdminList(p *Plugin) {
-	conf.AdminUserIds = make(map[string]struct{})
+func (conf *Config) parsePluginAdminList(api plugin.API) {
+	conf.AdminUserIds = make(map[string]struct{}, len(conf.PluginAdmins))
 
 	if len(conf.PluginAdmins) == 0 {
 		// There were no plugin admin users defined
@@ -219,13 +228,12 @@ func (conf *Config) parsePluginAdminList(p *Plugin) {
 	}
 
 	userIDs := strings.Split(conf.PluginAdmins, ",")
-
-	for _, v := range userIDs {
-		userID := strings.TrimSpace(v)
+	for _, userID := range userIDs {
+		userID = strings.TrimSpace(userID)
 		// Let's verify that the given user really exists
-		_, appErr := p.API.GetUser(userID)
+		_, appErr := api.GetUser(userID)
 		if appErr != nil {
-			p.API.LogError(fmt.Sprintf("error occurred while verifying userID %s: %v", v, appErr))
+			api.LogWarn("Error occurred while verifying userID", "userID", userID, "error", appErr)
 		} else {
 			conf.AdminUserIds[userID] = struct{}{}
 		}
