@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/mattermost/mattermost-server/v6/model"
@@ -310,6 +311,9 @@ func TestSpecialCases(t *testing.T) {
 		Pattern:  "(example)",
 		Template: "test",
 		Scope:    []string{"other-team/town-square"},
+	}, autolink.Autolink{
+		Pattern:  "(toolong)",
+		Template: strings.Repeat("1", model.POST_MESSAGE_MAX_RUNES_V1+1),
 	})
 	validConfig := Config{
 		EnableAdminCommand: false,
@@ -336,6 +340,8 @@ func TestSpecialCases(t *testing.T) {
 	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
 	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
 
+	api.On("LogWarn", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("int"))
+
 	testUser := model.User{
 		IsBot: false,
 	}
@@ -349,115 +355,156 @@ func TestSpecialCases(t *testing.T) {
 	var tests = []struct {
 		inputMessage    string
 		expectedMessage string
+		expectedIgnored bool
 	}{
 		{
 			"hello ``` Mattermost ``` goodbye",
 			"hello ``` Mattermost ``` goodbye",
+			false,
 		}, {
 			"hello\n```\nMattermost\n```\ngoodbye",
 			"hello\n```\nMattermost\n```\ngoodbye",
+			false,
 		}, {
 			"Mattermost ``` Mattermost ``` goodbye",
 			"[Mattermost](https://mattermost.com) ``` Mattermost ``` goodbye",
+			false,
 		}, {
 			"``` Mattermost ``` Mattermost",
 			"``` Mattermost ``` [Mattermost](https://mattermost.com)",
+			false,
 		}, {
 			"Mattermost ``` Mattermost ```",
 			"[Mattermost](https://mattermost.com) ``` Mattermost ```",
+			false,
 		}, {
 			"Mattermost ``` Mattermost ```\n\n",
 			"[Mattermost](https://mattermost.com) ``` Mattermost ```\n\n",
+			false,
 		}, {
 			"hello ` Mattermost ` goodbye",
 			"hello ` Mattermost ` goodbye",
+			false,
 		}, {
 			"hello\n`\nMattermost\n`\ngoodbye",
 			"hello\n`\nMattermost\n`\ngoodbye",
+			false,
 		}, {
 			"Mattermost ` Mattermost ` goodbye",
 			"[Mattermost](https://mattermost.com) ` Mattermost ` goodbye",
+			false,
 		}, {
 			"` Mattermost ` Mattermost",
 			"` Mattermost ` [Mattermost](https://mattermost.com)",
+			false,
 		}, {
 			"Mattermost ` Mattermost `",
 			"[Mattermost](https://mattermost.com) ` Mattermost `",
+			false,
 		}, {
 			"Mattermost ` Mattermost `\n\n",
 			"[Mattermost](https://mattermost.com) ` Mattermost `\n\n",
+			false,
 		}, {
 			"hello ``` Mattermost ``` goodbye ` Mattermost ` end",
 			"hello ``` Mattermost ``` goodbye ` Mattermost ` end",
+			false,
 		}, {
 			"hello\n```\nMattermost\n```\ngoodbye ` Mattermost ` end",
 			"hello\n```\nMattermost\n```\ngoodbye ` Mattermost ` end",
+			false,
 		}, {
 			"Mattermost ``` Mattermost ``` goodbye ` Mattermost ` end",
 			"[Mattermost](https://mattermost.com) ``` Mattermost ``` goodbye ` Mattermost ` end",
+			false,
 		}, {
 			"``` Mattermost ``` Mattermost",
 			"``` Mattermost ``` [Mattermost](https://mattermost.com)",
+			false,
 		}, {
 			"```\n` Mattermost `\n```\nMattermost",
 			"```\n` Mattermost `\n```\n[Mattermost](https://mattermost.com)",
+			false,
 		}, {
 			"  Mattermost",
 			"  [Mattermost](https://mattermost.com)",
+			false,
 		}, {
 			"    Mattermost",
 			"    Mattermost",
+			false,
 		}, {
 			"    ```\nMattermost\n    ```",
 			"    ```\n[Mattermost](https://mattermost.com)\n    ```",
+			false,
 		}, {
 			"` ``` `\nMattermost\n` ``` `",
 			"` ``` `\n[Mattermost](https://mattermost.com)\n` ``` `",
+			false,
 		}, {
 			"Mattermost \n Mattermost",
 			"[Mattermost](https://mattermost.com) \n [Mattermost](https://mattermost.com)",
+			false,
 		}, {
 			"[Mattermost](https://mattermost.com)",
 			"[Mattermost](https://mattermost.com)",
+			false,
 		}, {
 			"[  Mattermost  ](https://mattermost.com)",
 			"[  Mattermost  ](https://mattermost.com)",
+			false,
 		}, {
 			"[  Mattermost  ][1]\n\n[1]: https://mattermost.com",
 			"[  Mattermost  ][1]\n\n[1]: https://mattermost.com",
+			false,
 		}, {
 			"![  Mattermost  ](https://mattermost.com/example.png)",
 			"![  Mattermost  ](https://mattermost.com/example.png)",
+			false,
 		}, {
 			"![  Mattermost  ][1]\n\n[1]: https://mattermost.com/example.png",
 			"![  Mattermost  ][1]\n\n[1]: https://mattermost.com/example.png",
+			false,
 		}, {
 			"foo!bar\nExample\nfoo!bar Mattermost",
 			"fb\n[Example](https://example.com)\nfb [Mattermost](https://mattermost.com)",
+			false,
 		}, {
 			"foo!bar",
 			"fb",
+			false,
 		}, {
 			"foo!barfoo!bar",
 			"foo!barfoo!bar",
+			false,
 		}, {
 			"foo!bar & foo!bar",
 			"fb & fb",
+			false,
 		}, {
 			"foo!bar & foo!bar\nfoo!bar & foo!bar\nfoo!bar & foo!bar",
 			"fb & fb\nfb & fb\nfb & fb",
+			false,
 		}, {
 			"https://mattermost.atlassian.net/browse/MM-12345",
 			"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345)",
+			false,
 		}, {
 			"Welcome https://mattermost.atlassian.net/browse/MM-12345",
 			"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345)",
+			false,
 		}, {
 			"text https://mattermost.atlassian.net/browse/MM-12345 other text",
 			"text [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) other text",
+			false,
 		}, {
 			"check out MM-12345 too",
 			"check out [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) too",
+			false,
+		}, {
+			"toolong",
+			"toolong",
+			true,
 		},
 	}
 
@@ -470,9 +517,15 @@ func TestSpecialCases(t *testing.T) {
 					Message: tt.inputMessage,
 				}
 
-				rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
+				rpost, err := p.MessageWillBePosted(&plugin.Context{}, post)
 
-				assert.Equal(t, tt.expectedMessage, rpost.Message)
+				if tt.expectedIgnored {
+					assert.Nil(t, rpost)
+				} else {
+					assert.Equal(t, tt.expectedMessage, rpost.Message)
+				}
+
+				assert.Equal(t, "", err)
 			}
 			{
 				// user updates the modified post but with no changes
@@ -481,9 +534,15 @@ func TestSpecialCases(t *testing.T) {
 					Message: tt.expectedMessage,
 				}
 
-				rpost, _ := p.MessageWillBeUpdated(&plugin.Context{}, post, post)
+				rpost, err := p.MessageWillBeUpdated(&plugin.Context{}, post, post)
 
-				assert.Equal(t, tt.expectedMessage, rpost.Message)
+				if tt.expectedIgnored {
+					assert.Same(t, post, rpost)
+				} else {
+					assert.Equal(t, tt.expectedMessage, rpost.Message)
+				}
+
+				assert.Equal(t, "", err)
 			}
 			{
 				// user updates the modified post and sets it back to the original text
@@ -495,9 +554,15 @@ func TestSpecialCases(t *testing.T) {
 					Message: tt.inputMessage,
 				}
 
-				rpost, _ := p.MessageWillBeUpdated(&plugin.Context{}, originalPost, post)
+				rpost, err := p.MessageWillBeUpdated(&plugin.Context{}, originalPost, post)
 
-				assert.Equal(t, tt.expectedMessage, rpost.Message)
+				if tt.expectedIgnored {
+					assert.Same(t, originalPost, rpost)
+				} else {
+					assert.Equal(t, tt.expectedMessage, rpost.Message)
+				}
+
+				assert.Equal(t, "", err)
 			}
 			{
 				// user updates an empty post to the original text
@@ -507,9 +572,15 @@ func TestSpecialCases(t *testing.T) {
 					Message: tt.inputMessage,
 				}
 
-				rpost, _ := p.MessageWillBeUpdated(&plugin.Context{}, post, emptyPost)
+				rpost, err := p.MessageWillBeUpdated(&plugin.Context{}, post, emptyPost)
 
-				assert.Equal(t, tt.expectedMessage, rpost.Message)
+				if tt.expectedIgnored {
+					assert.Same(t, post, rpost)
+				} else {
+					assert.Equal(t, tt.expectedMessage, rpost.Message)
+				}
+
+				assert.Equal(t, "", err)
 			}
 		})
 	}

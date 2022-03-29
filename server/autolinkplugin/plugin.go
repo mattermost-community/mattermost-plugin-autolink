@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
@@ -208,6 +209,11 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 			return nil, ""
 		}
 
+		if runes := utf8.RuneCountInString(postText); runes > model.POST_MESSAGE_MAX_RUNES_V1 {
+			p.API.LogWarn("Rewritten message would be too long, skipping", "rewrittenLength", runes)
+			return nil, ""
+		}
+
 		post.Message = postText
 	}
 
@@ -234,5 +240,11 @@ func (p *Plugin) MessageWillBeUpdated(c *plugin.Context, post *model.Post, _ *mo
 		return post, ""
 	}
 
-	return p.ProcessPost(c, post)
+	modifiedPost, reason := p.ProcessPost(c, post)
+
+	if modifiedPost == nil && reason == "" {
+		return post, ""
+	}
+
+	return modifiedPost, reason
 }
