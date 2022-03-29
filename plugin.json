@@ -23,7 +23,7 @@
         "footer": "",
         "settings": [
             {
-                "key": "EnableAdminCommand",
+                "key": "enableadmincommand",
                 "display_name": "Enable administration with /autolink command:",
                 "type": "bool",
                 "help_text": "",
@@ -31,7 +31,7 @@
                 "default": true
             },
             {
-                "key": "EnableOnUpdate",
+                "key": "enableonupdate",
                 "display_name": "Apply plugin to updated posts as well as new posts:",
                 "type": "bool",
                 "help_text": "",
@@ -39,7 +39,7 @@
                 "default": false
             },
             {
-                "key": "PluginAdmins",
+                "key": "pluginadmins",
                 "display_name": "Admin User IDs:",
                 "type": "text",
                 "help_text": "Comma-separated list of user IDs authorized to administer the plugin in addition to the System Admins.\n \n User IDs can be found by navigating to **System Console \u003e User Management \u003e Users**.",

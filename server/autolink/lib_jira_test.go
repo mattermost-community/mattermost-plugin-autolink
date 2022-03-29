@@ -80,43 +80,75 @@ var jiraTests = []linkTest{
 	}, {
 		"Not relinking",
 		autolink.Autolink{
-			Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
-			Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+			Pattern:  "(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
+			Template: "[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
 		},
 		"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should not re-link!",
 		"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should not re-link!",
 	}, {
 		"Url replacement",
 		autolink.Autolink{
-			Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
-			Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+			Pattern:  "(https://mattermost.atlassian.net/browse/)(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
+			Template: "[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
 		},
 		"Welcome https://mattermost.atlassian.net/browse/MM-12345 should link!",
 		"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should link!",
 	}, {
 		"Url replacement multiple times",
 		autolink.Autolink{
-			Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
-			Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+			Pattern:  "(https://mattermost.atlassian.net/browse/)(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
+			Template: "[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
 		},
 		"Welcome https://mattermost.atlassian.net/browse/MM-12345. should link https://mattermost.atlassian.net/browse/MM-12346 !",
 		"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345). should link [MM-12346](https://mattermost.atlassian.net/browse/MM-12346) !",
 	}, {
 		"Url replacement multiple times and at beginning",
 		autolink.Autolink{
-			Pattern:  "(https:\\/\\/mattermost.atlassian.net\\/browse\\/)(MM)(-)(?P<jira_id>\\d+)",
-			Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+			Pattern:  "(https:\\/\\/mattermost.atlassian.net\\/browse\\/)(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
+			Template: "[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
 		},
 		"https://mattermost.atlassian.net/browse/MM-12345 https://mattermost.atlassian.net/browse/MM-12345",
 		"[MM-12345](https://mattermost.atlassian.net/browse/MM-12345) [MM-12345](https://mattermost.atlassian.net/browse/MM-12345)",
 	}, {
 		"Url replacement at end",
 		autolink.Autolink{
-			Pattern:  "(https://mattermost.atlassian.net/browse/)(MM)(-)(?P<jira_id>\\d+)",
-			Template: "[MM-$jira_id](https://mattermost.atlassian.net/browse/MM-$jira_id)",
+			Pattern:  "(https://mattermost.atlassian.net/browse/)(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
+			Template: "[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
 		},
 		"Welcome https://mattermost.atlassian.net/browse/MM-12345",
 		"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345)",
+	}, {
+		"Comment url replacement",
+		autolink.Autolink{
+			Pattern:  "(https://mattermost.atlassian.net/browse/)(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)[?](focusedCommentId)(=)(?P<comment_id>\\d+)",
+			Template: "[${project_id}-${jira_id} With Comment #${comment_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id}?focusedCommentId=${comment_id})",
+		},
+		"Welcome https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210 should link!",
+		"Welcome [MM-12345 With Comment #10210](https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210) should link!",
+	}, {
+		"Comment url replacement multiple times",
+		autolink.Autolink{
+			Pattern:  "(https://mattermost.atlassian.net/browse/)(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)[?](focusedCommentId)(=)(?P<comment_id>\\d+)",
+			Template: "[${project_id}-${jira_id} With Comment #${comment_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id}?focusedCommentId=${comment_id})",
+		},
+		"Welcome https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210. should link https://mattermost.atlassian.net/browse/MM-12346?focusedCommentId=10210 !",
+		"Welcome [MM-12345 With Comment #10210](https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210). should link [MM-12346 With Comment #10210](https://mattermost.atlassian.net/browse/MM-12346?focusedCommentId=10210) !",
+	}, {
+		"Comment url replacement multiple times and at beginning",
+		autolink.Autolink{
+			Pattern:  "(https:\\/\\/mattermost.atlassian.net\\/browse\\/)(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)[?](focusedCommentId)(=)(?P<comment_id>\\d+)",
+			Template: "[${project_id}-${jira_id} With Comment #${comment_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id}?focusedCommentId=${comment_id})",
+		},
+		"https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210 https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210",
+		"[MM-12345 With Comment #10210](https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210) [MM-12345 With Comment #10210](https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210)",
+	}, {
+		"Comment url replacement at end",
+		autolink.Autolink{
+			Pattern:  "(https://mattermost.atlassian.net/browse/)(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)[?](focusedCommentId)(=)(?P<comment_id>\\d+)",
+			Template: "[${project_id}-${jira_id} With Comment #${comment_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id}?focusedCommentId=${comment_id})",
+		},
+		"Welcome https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210",
+		"Welcome [MM-12345 With Comment #10210](https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210)",
 	},
 }
 
