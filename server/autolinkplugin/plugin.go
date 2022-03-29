@@ -9,6 +9,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 	"github.com/mattermost/mattermost-server/v6/shared/markdown"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/api"
 )
@@ -39,8 +40,7 @@ func (p *Plugin) OnActivate() error {
 func (p *Plugin) IsAuthorizedAdmin(userID string) (bool, error) {
 	user, err := p.API.GetUser(userID)
 	if err != nil {
-		return false, fmt.Errorf(
-			"failed to obtain information about user `%s`: %w", userID, err)
+		return false, errors.Wrapf(err, "failed to obtain information about user `%s`", userID)
 	}
 	if strings.Contains(user.Roles, "system_admin") {
 		p.API.LogInfo(

@@ -7,15 +7,15 @@ import (
 
 // Autolink represents a pattern to autolink.
 type Autolink struct {
-	Name                 string
-	Disabled             bool
-	Pattern              string
-	Template             string
-	Scope                []string
-	WordMatch            bool
-	DisableNonWordPrefix bool
-	DisableNonWordSuffix bool
-	ProcessBotPosts      bool
+	Name                 string   `json:"Name"`
+	Disabled             bool     `json:"Disabled"`
+	Pattern              string   `json:"Pattern"`
+	Template             string   `json:"Template"`
+	Scope                []string `json:"Scope"`
+	WordMatch            bool     `json:"WordMatch"`
+	DisableNonWordPrefix bool     `json:"DisableNonWordPrefix"`
+	DisableNonWordSuffix bool     `json:"DisableNonWordSuffix"`
+	ProcessBotPosts      bool     `json:"ProcessBotPosts"`
 
 	template      string
 	re            *regexp.Regexp
@@ -26,6 +26,7 @@ func (l Autolink) Equals(x Autolink) bool {
 	if l.Disabled != x.Disabled ||
 		l.DisableNonWordPrefix != x.DisableNonWordPrefix ||
 		l.DisableNonWordSuffix != x.DisableNonWordSuffix ||
+		l.ProcessBotPosts != x.ProcessBotPosts ||
 		l.Name != x.Name ||
 		l.Pattern != x.Pattern ||
 		len(l.Scope) != len(x.Scope) ||
@@ -149,6 +150,9 @@ func (l Autolink) ToMarkdown(i int) string {
 	if l.DisableNonWordSuffix {
 		text += fmt.Sprintf("  - DisableNonWordSuffix: `%v`\n", l.DisableNonWordSuffix)
 	}
+	if l.ProcessBotPosts {
+		text += fmt.Sprintf("  - ProcessBotPosts: `%v`\n", l.ProcessBotPosts)
+	}
 	if len(l.Scope) != 0 {
 		text += fmt.Sprintf("  - Scope: `%v`\n", l.Scope)
 	}
@@ -156,20 +160,4 @@ func (l Autolink) ToMarkdown(i int) string {
 		text += fmt.Sprintf("  - WordMatch: `%v`\n", l.WordMatch)
 	}
 	return text
-}
-
-// ToConfig returns a JSON-encodable Link represented solely with map[string]
-// interface and []string types, compatible with gob/RPC, to be used in
-// SavePluginConfig
-func (l Autolink) ToConfig() map[string]interface{} {
-	return map[string]interface{}{
-		"Name":                 l.Name,
-		"Pattern":              l.Pattern,
-		"Template":             l.Template,
-		"Scope":                l.Scope,
-		"DisableNonWordPrefix": l.DisableNonWordPrefix,
-		"DisableNonWordSuffix": l.DisableNonWordSuffix,
-		"WordMatch":            l.WordMatch,
-		"Disabled":             l.Disabled,
-	}
 }

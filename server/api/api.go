@@ -2,10 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
@@ -90,7 +90,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 	var newLink autolink.Autolink
 	if err := json.NewDecoder(r.Body).Decode(&newLink); err != nil {
-		h.handleError(w, fmt.Errorf("unable to decode body: %w", err))
+		h.handleError(w, errors.Wrap(err, "unable to decode body"))
 		return
 	}
 
@@ -114,7 +114,7 @@ func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusNotModified
 	if changed {
 		if err := h.store.SaveLinks(links); err != nil {
-			h.handleError(w, fmt.Errorf("unable to save link: %w", err))
+			h.handleError(w, errors.Wrap(err, "unable to save link"))
 			return
 		}
 		status = http.StatusOK
