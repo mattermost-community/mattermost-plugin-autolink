@@ -122,7 +122,7 @@ Below is an example of regexp patterns used for autolinking at https://community
 3. Using autolinking to create group mentions. Use (note that clicking the resulting at-mention redirects to a broken page):
    - Pattern: `@customgroup*`
    - Template: `[@customgroup]( \\* @user1 @user2 @user3 \\* )`
-  
+
 4. For servers with multiple domains (like community and community-daily on the [public Mattermost Server](https://community.mattermost)), a substitution of absolute conversation links to relative links is recommended to prevent issues in the mobile app. Add one pattern for each domain used:
    - Pattern: `https://community\\.mattermost\\.com/(?P\u003cteamname\u003e(?a-zA-Z0-9]+)/(?P\u003cid\u003e[a-zA-Z0-9]+)`
    - Template: `[<jump to convo>](/${teamname}/pl/${id})/${id})`
@@ -149,7 +149,7 @@ The `/autolink` commands allow the users to easily edit the configurations.
  disable \<*linkref*> | Disable the link | `/autolink disable Visa`
  add \<*linkref*> | Creates a new link with the name specified in the command  | `/autolink add Visa`
  delete \<*linkref*> |  Delete the link | `/autolink delete Visa`
- set \<*linkref*> \<*field*> *value* | Sets a link's field to a value <br> *Fields* - <br> <ul><li>Template - Sets the Template field</li><li>Pattern - Sets the Pattern field </li> <li> WordMatch - If true uses the [\b word boundaries](https://www.regular-expressions.info/wordboundaries.html) </li> <li> Scope - Sets the Scope field (`team` or `team/channel` or a whitespace-separated list thereof) </li> | <br> `/autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))` <br><br> `/autolink set Visa Template VISA XXXX-XXXX-XXXX-$LastFour` <br><br> `/autolink set Visa WordMatch true` <br><br> `/autolink set Visa Scope team/townsquare` <br><br>
+ set \<*linkref*> \<*field*> *value* | Sets a link's field to a value <br> *Fields* - <br> <ul><li>Template - Sets the Template field</li><li>Pattern - Sets the Pattern field </li> <li> WordMatch - If true uses the [\b word boundaries](https://www.regular-expressions.info/wordboundaries.html) </li> <li> ProcessBotPosts - If true applies changes to posts made by bot accounts. </li> <li> Scope - Sets the Scope field (`team` or `team/channel` or a whitespace-separated list thereof) </li> | <br> `/autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))` <br><br> `/autolink set Visa Template VISA XXXX-XXXX-XXXX-$LastFour` <br><br> `/autolink set Visa WordMatch true` <br><br> `/autolink set Visa ProcessBotPosts true` <br><br> `/autolink set Visa Scope team/townsquare` <br><br>
 
 
 ## Development
