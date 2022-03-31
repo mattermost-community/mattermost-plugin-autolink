@@ -19,6 +19,7 @@ const (
 	optPattern              = "Pattern"
 	optScope                = "Scope"
 	optDisabled             = "Disabled"
+	optProcessBotPosts      = "ProcessBotPosts"
 	optDisableNonWordPrefix = "DisableNonWordPrefix"
 	optDisableNonWordSuffix = "DisableNonWordSuffix"
 	optWordMatch            = "WordMatch"
@@ -44,7 +45,8 @@ const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"/autolink set Visa Template VISA XXXX-XXXX-XXXX-$LastFour\n" +
 	"/autolink set Visa WordMatch true\n" +
 	"/autolink set Visa Scope team/townsquare\n" +
-	"/autolink test Vi 4356-7891-2345-1111 -- (4111222233334444)\n" +
+	"/autolink set Visa ProcessBotPosts true\n" +
+	"/autolink test Visa 4356-7891-2345-1111 -- (4111222233334444)\n" +
 	"/autolink enable Visa\n" +
 	"```\n" +
 	""
@@ -198,9 +200,15 @@ func executeSet(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 			return responsef("%v", e)
 		}
 		l.Disabled = boolValue
+	case optProcessBotPosts:
+		boolValue, e := parseBoolArg(value)
+		if e != nil {
+			return responsef("%v", e)
+		}
+		l.ProcessBotPosts = boolValue
 	default:
 		return responsef("%q is not a supported field, must be one of %q", fieldName,
-			[]string{optName, optDisabled, optPattern, optTemplate, optScope, optDisableNonWordPrefix, optDisableNonWordSuffix, optWordMatch})
+			[]string{optName, optDisabled, optPattern, optTemplate, optScope, optDisableNonWordPrefix, optDisableNonWordSuffix, optWordMatch, optProcessBotPosts})
 	}
 
 	err = saveConfigLinks(p, links)

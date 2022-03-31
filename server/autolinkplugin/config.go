@@ -134,6 +134,11 @@ func getAutoCompleteData() *model.AutocompleteData {
 				Item:     "WordMatch",
 			},
 			{
+				HelpText: "If true applies changes to posts created by bot accounts.",
+				Hint:     "",
+				Item:     "ProcessBotPosts",
+			},
+			{
 				HelpText: "team/channel the autolink applies to",
 				Hint:     "",
 				Item:     "Scope",

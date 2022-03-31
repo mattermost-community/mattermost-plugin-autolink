@@ -15,6 +15,7 @@ type Autolink struct {
 	WordMatch            bool     `json:"WordMatch"`
 	DisableNonWordPrefix bool     `json:"DisableNonWordPrefix"`
 	DisableNonWordSuffix bool     `json:"DisableNonWordSuffix"`
+	ProcessBotPosts      bool     `json:"ProcessBotPosts"`
 
 	template      string
 	re            *regexp.Regexp
@@ -25,6 +26,7 @@ func (l Autolink) Equals(x Autolink) bool {
 	if l.Disabled != x.Disabled ||
 		l.DisableNonWordPrefix != x.DisableNonWordPrefix ||
 		l.DisableNonWordSuffix != x.DisableNonWordSuffix ||
+		l.ProcessBotPosts != x.ProcessBotPosts ||
 		l.Name != x.Name ||
 		l.Pattern != x.Pattern ||
 		len(l.Scope) != len(x.Scope) ||
@@ -147,6 +149,9 @@ func (l Autolink) ToMarkdown(i int) string {
 	}
 	if l.DisableNonWordSuffix {
 		text += fmt.Sprintf("  - DisableNonWordSuffix: `%v`\n", l.DisableNonWordSuffix)
+	}
+	if l.ProcessBotPosts {
+		text += fmt.Sprintf("  - ProcessBotPosts: `%v`\n", l.ProcessBotPosts)
 	}
 	if len(l.Scope) != 0 {
 		text += fmt.Sprintf("  - Scope: `%v`\n", l.Scope)
