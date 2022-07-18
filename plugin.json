@@ -1,43 +1,51 @@
 {
-  "id": "mattermost-autolink",
-  "name": "Autolink",
-  "description": "Automatically rewrite text matching a regular expression into a Markdown link.",
-  "homepage_url": "https://github.com/mattermost/mattermost-plugin-autolink",
-  "support_url": "https://github.com/mattermost/mattermost-plugin-autolink/issues",
-  "release_notes_url": "https://github.com/mattermost/mattermost-plugin-autolink/releases/tag/v1.2.1",
-  "icon_path": "assets/icon.svg",
-  "version": "1.2.1",
-  "min_server_version": "5.37.0",
-  "server": {
-    "executables": {
-      "linux-amd64": "server/dist/plugin-linux-amd64",
-      "linux-arm64": "server/dist/plugin-linux-arm64",
-      "darwin-amd64": "server/dist/plugin-darwin-amd64",
-      "darwin-arm64": "server/dist/plugin-darwin-arm64",
-      "windows-amd64": "server/dist/plugin-windows-amd64.exe"
+    "id": "mattermost-autolink",
+    "name": "Autolink",
+    "description": "Automatically rewrite text matching a regular expression into a Markdown link.",
+    "homepage_url": "https://github.com/mattermost/mattermost-plugin-autolink",
+    "support_url": "https://github.com/mattermost/mattermost-plugin-autolink/issues",
+    "release_notes_url": "https://github.com/mattermost/mattermost-plugin-autolink/releases/tag/v1.3.0",
+    "icon_path": "assets/icon.svg",
+    "version": "1.3.0",
+    "min_server_version": "5.16.0",
+    "server": {
+        "executables": {
+            "linux-amd64": "server/dist/plugin-linux-amd64",
+            "linux-arm64": "server/dist/plugin-linux-arm64",
+            "darwin-amd64": "server/dist/plugin-darwin-amd64",
+            "darwin-arm64": "server/dist/plugin-darwin-arm64",
+            "windows-amd64": "server/dist/plugin-windows-amd64.exe"
+        },
+        "executable": ""
+    },
+    "settings_schema": {
+        "header": "Configure this plugin directly in the `config.json` file, or using the `/autolink` command. Learn more [in our documentation](https://github.com/mattermost/mattermost-plugin-autolink/blob/master/README.md).\n\n To report an issue, make a suggestion, or contribute, [check the plugin repository](https://github.com/mattermost/mattermost-plugin-autolink).",
+        "footer": "",
+        "settings": [
+            {
+                "key": "enableadmincommand",
+                "display_name": "Enable administration with /autolink command:",
+                "type": "bool",
+                "help_text": "",
+                "placeholder": "",
+                "default": true
+            },
+            {
+                "key": "enableonupdate",
+                "display_name": "Apply plugin to updated posts as well as new posts:",
+                "type": "bool",
+                "help_text": "",
+                "placeholder": "",
+                "default": false
+            },
+            {
+                "key": "pluginadmins",
+                "display_name": "Admin User IDs:",
+                "type": "text",
+                "help_text": "Comma-separated list of user IDs authorized to administer the plugin in addition to the System Admins.\n \n User IDs can be found by navigating to **System Console \u003e User Management \u003e Users**.",
+                "placeholder": "",
+                "default": null
+            }
+        ]
     }
-  },
-  "settings_schema": {
-    "header": "Configure this plugin directly in the `config.json` file, or using the `/autolink` command. Learn more [in our documentation](https://github.com/mattermost/mattermost-plugin-autolink/blob/master/README.md).\n\n To report an issue, make a suggestion, or contribute, [check the plugin repository](https://github.com/mattermost/mattermost-plugin-autolink).",
-    "settings": [
-      {
-        "key": "enableadmincommand",
-        "display_name": "Enable administration with /autolink command:",
-        "type": "bool",
-        "default": true
-      },
-      {
-        "key": "enableonupdate",
-        "display_name": "Apply plugin to updated posts as well as new posts:",
-        "type": "bool",
-        "default": false
-      },
-      {
-        "key": "pluginadmins",
-        "display_name": "Admin User IDs:",
-        "type": "text",
-        "help_text": "Comma-separated list of user IDs authorized to administer the plugin in addition to the System Admins.\n \n User IDs can be found by navigating to **System Console > User Management > Users**."
-      }
-    ]
-  }
 }
