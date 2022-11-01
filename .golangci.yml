@@ -10,8 +10,8 @@ linters-settings:
     simplify: true
   goimports:
     local-prefixes: github.com/mattermost/mattermost-plugin-autolink
-  golint:
-    min-confidence: 0
+  # golint:
+  #   min-confidence: 0
   govet:
     check-shadowing: true
     enable-all: true
@@ -28,13 +28,11 @@ linters:
     - gocritic
     - gofmt
     - goimports
-    - golint
     - gosec
     - gosimple
     - govet
     - ineffassign
-    - interfacer
-    - misspell
+    - revive
     - nakedret
     - staticcheck
     - structcheck
@@ -47,6 +45,18 @@ linters:
 
 issues:
   exclude-rules:
+    - path: server/api/api_test.go
+      linters:
+        - govet
+    - path: server/autolink/autolink.go
+      linters:
+        - govet
+    - path: server/autolinkplugin/config.go
+      linters:
+        - govet
+    - path: server/autolinkplugin/plugin_test.go
+      linters:
+        - govet
     - path: server/manifest.go
       linters:
         - deadcode

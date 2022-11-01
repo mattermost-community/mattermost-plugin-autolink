@@ -337,7 +337,7 @@ func searchLinkRef(p *Plugin, requireUnique bool, args ...string) ([]autolink.Au
 	n, err := strconv.ParseUint(args[0], 10, 32)
 	if err == nil {
 		if n < 1 || int(n) > len(links) {
-			return nil, nil, errors.Errorf("%v is not a valid link number.", n)
+			return nil, nil, errors.Errorf("%v is not a valid link number", n)
 		}
 		return links, []int{int(n) - 1}, nil
 	}
@@ -349,7 +349,7 @@ func searchLinkRef(p *Plugin, requireUnique bool, args ...string) ([]autolink.Au
 		}
 	}
 	if len(found) == 0 {
-		return nil, nil, errors.Errorf("%q not found.", args[0])
+		return nil, nil, errors.Errorf("%q not found", args[0])
 	}
 	if requireUnique && len(found) > 1 {
 		names := []string{}
@@ -381,7 +381,7 @@ func searchLinkRefByTemplateOrPattern(p *Plugin, header *model.CommandArgs, args
 	}
 
 	if len(found) == 0 {
-		return nil, nil, errors.Errorf("%q not found.", value)
+		return nil, nil, errors.Errorf("%q not found", value)
 	}
 
 	return links, found, nil
