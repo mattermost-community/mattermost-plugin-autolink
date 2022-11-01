@@ -13,6 +13,8 @@ linters-settings:
   govet:
     check-shadowing: true
     enable-all: true
+    disable:
+      - fieldalignment
   misspell:
     locale: US
 
@@ -20,7 +22,6 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - errcheck
     - goconst
     - gocritic
@@ -30,31 +31,18 @@ linters:
     - gosimple
     - govet
     - ineffassign
+    - misspell
     - revive
     - nakedret
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unused
-    - varcheck
     - whitespace
 
 issues:
   exclude-rules:
-    - path: server/api/api_test.go
-      linters:
-        - govet
-    - path: server/autolink/autolink.go
-      linters:
-        - govet
-    - path: server/autolinkplugin/config.go
-      linters:
-        - govet
-    - path: server/autolinkplugin/plugin_test.go
-      linters:
-        - govet
     - path: server/manifest.go
       linters:
         - deadcode
