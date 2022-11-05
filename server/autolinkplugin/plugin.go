@@ -136,84 +136,77 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 	var authorErr *model.AppError
 
 	markdown.Inspect(post.Message, func(node interface{}) bool {
-		switch node.(type) {
+		if node == nil {
+			return false
+		}
+
+		body, bodyStart, bodyEnd := "", 0, 0
+		switch node := node.(type) {
 		// never descend into the text content of a link/image
-		case *markdown.InlineLink:
+		case *markdown.InlineLink, *markdown.InlineImage, *markdown.ReferenceLink, *markdown.ReferenceImage:
 			return false
-		case *markdown.InlineImage:
-			return false
-		case *markdown.ReferenceLink:
-			return false
-		case *markdown.ReferenceImage:
-			return false
-		}
 
-		origText := ""
-		startPos := 0
-		endPos := 0
-
-		if autolinkNode, ok := node.(*markdown.Autolink); ok {
-			startPos, endPos = autolinkNode.RawDestination.Position+offset, autolinkNode.RawDestination.End+offset
-			origText = postText[startPos:endPos]
-			if autolinkNode.Destination() != origText {
-				p.API.LogError(fmt.Sprintf("Markdown autolink did not match range text, '%s' != '%s'",
-					autolinkNode.Destination(), origText))
+		case *markdown.Autolink:
+			bodyStart, bodyEnd = node.RawDestination.Position+offset, node.RawDestination.End+offset
+			body = postText[bodyStart:bodyEnd]
+			// Do not process escaped links. Not exactly sure why but preserving the previous behavior.
+			// https://mattermost.atlassian.net/browse/MM-42669
+			if markdown.Unescape(body) != body {
+				p.API.LogDebug("skipping escaped autolink", "original", body, "post_id", post.Id)
 				return true
 			}
-		} else if textNode, ok := node.(*markdown.Text); ok {
-			startPos, endPos = textNode.Range.Position+offset, textNode.Range.End+offset
-			origText = postText[startPos:endPos]
-			if textNode.Text != origText {
-				p.API.LogError(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", textNode.Text,
-					origText))
+
+		case *markdown.Text:
+			bodyStart, bodyEnd = node.Range.Position+offset, node.Range.End+offset
+			body = postText[bodyStart:bodyEnd]
+			if node.Text != body {
+				p.API.LogDebug("skipping text: parsed markdown did not match original", "parsed", node.Text, "original", body, "post_id", post.Id)
 				return true
 			}
 		}
 
-		if origText != "" {
-			newText := origText
+		if body == "" {
+			return true
+		}
 
-			for _, link := range conf.Links {
-				if !p.inScope(link.Scope, channelName, teamName) {
-					continue
-				}
+		replaced := body
+		for _, link := range conf.Links {
+			if !p.inScope(link.Scope, channelName, teamName) {
+				continue
+			}
 
-				out := link.Replace(newText)
-				if out == newText {
-					continue
-				}
+			out := link.Replace(replaced)
+			if out == replaced {
+				continue
+			}
 
-				if !link.ProcessBotPosts {
-					if author == nil && authorErr == nil {
-						author, authorErr = p.API.GetUser(post.UserId)
-						if authorErr != nil {
-							// NOTE: Not sure how we want to handle errors here, we can either:
-							// * assume that occasional rewrites of Bot messges are ok
-							// * assume that occasional not rewriting of all messages is ok
-							// Let's assume for now that former is a lesser evil and carry on.
-							p.API.LogError("failed to check if message for rewriting was send by a bot", "error", authorErr)
-						}
-					}
-
-					if author != nil && author.IsBot {
-						continue
+			if !link.ProcessBotPosts {
+				if author == nil && authorErr == nil {
+					author, authorErr = p.API.GetUser(post.UserId)
+					if authorErr != nil {
+						// NOTE: Not sure how we want to handle errors here, we can either:
+						// * assume that occasional rewrites of Bot messges are ok
+						// * assume that occasional not rewriting of all messages is ok
+						// Let's assume for now that former is a lesser evil and carry on.
+						p.API.LogError("failed to check if message for rewriting was send by a bot", "error", authorErr)
 					}
 				}
 
-				newText = out
+				if author != nil && author.IsBot {
+					continue
+				}
 			}
-			if origText != newText {
-				postText = postText[:startPos] + newText + postText[endPos:]
-				offset += len(newText) - len(origText)
-			}
+
+			replaced = out
+		}
+		if body != replaced {
+			postText = postText[:bodyStart] + replaced + postText[bodyEnd:]
+			offset += len(replaced) - len(body)
 		}
 
 		return true
 	})
-	if post.Message != postText {
-		post.Message = postText
-	}
-
+	post.Message = postText
 	post.Hashtags, _ = model.ParseHashtags(post.Message)
 
 	return post, ""
