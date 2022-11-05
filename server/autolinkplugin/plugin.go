@@ -109,7 +109,9 @@ func (p *Plugin) inScope(scope []string, channelName string, teamName string) bo
 
 func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, string) {
 	conf := p.getConfig()
-	postText := post.Message
+
+	message := post.Message
+	changed := false
 	offset := 0
 
 	hasOneOrMoreScopes := false
@@ -140,43 +142,43 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 			return false
 		}
 
-		body, bodyStart, bodyEnd := "", 0, 0
+		toProcess, start, end := "", 0, 0
 		switch node := node.(type) {
 		// never descend into the text content of a link/image
 		case *markdown.InlineLink, *markdown.InlineImage, *markdown.ReferenceLink, *markdown.ReferenceImage:
 			return false
 
 		case *markdown.Autolink:
-			bodyStart, bodyEnd = node.RawDestination.Position+offset, node.RawDestination.End+offset
-			body = postText[bodyStart:bodyEnd]
+			start, end = node.RawDestination.Position+offset, node.RawDestination.End+offset
+			toProcess = message[start:end]
 			// Do not process escaped links. Not exactly sure why but preserving the previous behavior.
 			// https://mattermost.atlassian.net/browse/MM-42669
-			if markdown.Unescape(body) != body {
-				p.API.LogDebug("skipping escaped autolink", "original", body, "post_id", post.Id)
+			if markdown.Unescape(toProcess) != toProcess {
+				p.API.LogDebug("skipping escaped autolink", "original", toProcess, "post_id", post.Id)
 				return true
 			}
 
 		case *markdown.Text:
-			bodyStart, bodyEnd = node.Range.Position+offset, node.Range.End+offset
-			body = postText[bodyStart:bodyEnd]
-			if node.Text != body {
-				p.API.LogDebug("skipping text: parsed markdown did not match original", "parsed", node.Text, "original", body, "post_id", post.Id)
+			start, end = node.Range.Position+offset, node.Range.End+offset
+			toProcess = message[start:end]
+			if node.Text != toProcess {
+				p.API.LogDebug("skipping text: parsed markdown did not match original", "parsed", node.Text, "original", toProcess, "post_id", post.Id)
 				return true
 			}
 		}
 
-		if body == "" {
+		if toProcess == "" {
 			return true
 		}
 
-		replaced := body
+		processed := toProcess
 		for _, link := range conf.Links {
 			if !p.inScope(link.Scope, channelName, teamName) {
 				continue
 			}
 
-			out := link.Replace(replaced)
-			if out == replaced {
+			out := link.Replace(processed)
+			if out == processed {
 				continue
 			}
 
@@ -197,18 +199,22 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 				}
 			}
 
-			replaced = out
+			processed = out
 		}
-		if body != replaced {
-			postText = postText[:bodyStart] + replaced + postText[bodyEnd:]
-			offset += len(replaced) - len(body)
+
+		if toProcess != processed {
+			message = message[:start] + processed + message[end:]
+			offset += len(processed) - len(toProcess)
+			changed = true
 		}
 
 		return true
 	})
-	post.Message = postText
-	post.Hashtags, _ = model.ParseHashtags(post.Message)
 
+	if changed {
+		post.Message = message
+		post.Hashtags, _ = model.ParseHashtags(message)
+	}
 	return post, ""
 }
 
