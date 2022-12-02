@@ -109,7 +109,9 @@ func (p *Plugin) inScope(scope []string, channelName string, teamName string) bo
 
 func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, string) {
 	conf := p.getConfig()
-	postText := post.Message
+
+	message := post.Message
+	changed := false
 	offset := 0
 
 	hasOneOrMoreScopes := false
@@ -136,86 +138,83 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 	var authorErr *model.AppError
 
 	markdown.Inspect(post.Message, func(node interface{}) bool {
-		switch node.(type) {
+		if node == nil {
+			return false
+		}
+
+		toProcess, start, end := "", 0, 0
+		switch node := node.(type) {
 		// never descend into the text content of a link/image
-		case *markdown.InlineLink:
+		case *markdown.InlineLink, *markdown.InlineImage, *markdown.ReferenceLink, *markdown.ReferenceImage:
 			return false
-		case *markdown.InlineImage:
-			return false
-		case *markdown.ReferenceLink:
-			return false
-		case *markdown.ReferenceImage:
-			return false
-		}
 
-		origText := ""
-		startPos := 0
-		endPos := 0
-
-		if autolinkNode, ok := node.(*markdown.Autolink); ok {
-			startPos, endPos = autolinkNode.RawDestination.Position+offset, autolinkNode.RawDestination.End+offset
-			origText = postText[startPos:endPos]
-			if autolinkNode.Destination() != origText {
-				p.API.LogError(fmt.Sprintf("Markdown autolink did not match range text, '%s' != '%s'",
-					autolinkNode.Destination(), origText))
+		case *markdown.Autolink:
+			start, end = node.RawDestination.Position+offset, node.RawDestination.End+offset
+			toProcess = message[start:end]
+			// Do not process escaped links. Not exactly sure why but preserving the previous behavior.
+			// https://mattermost.atlassian.net/browse/MM-42669
+			if markdown.Unescape(toProcess) != toProcess {
+				p.API.LogDebug("skipping escaped autolink", "original", toProcess, "post_id", post.Id)
 				return true
 			}
-		} else if textNode, ok := node.(*markdown.Text); ok {
-			startPos, endPos = textNode.Range.Position+offset, textNode.Range.End+offset
-			origText = postText[startPos:endPos]
-			if textNode.Text != origText {
-				p.API.LogError(fmt.Sprintf("Markdown text did not match range text, '%s' != '%s'", textNode.Text,
-					origText))
+
+		case *markdown.Text:
+			start, end = node.Range.Position+offset, node.Range.End+offset
+			toProcess = message[start:end]
+			if node.Text != toProcess {
+				p.API.LogDebug("skipping text: parsed markdown did not match original", "parsed", node.Text, "original", toProcess, "post_id", post.Id)
 				return true
 			}
 		}
 
-		if origText != "" {
-			newText := origText
+		if toProcess == "" {
+			return true
+		}
 
-			for _, link := range conf.Links {
-				if !p.inScope(link.Scope, channelName, teamName) {
-					continue
-				}
+		processed := toProcess
+		for _, link := range conf.Links {
+			if !p.inScope(link.Scope, channelName, teamName) {
+				continue
+			}
 
-				out := link.Replace(newText)
-				if out == newText {
-					continue
-				}
+			out := link.Replace(processed)
+			if out == processed {
+				continue
+			}
 
-				if !link.ProcessBotPosts {
-					if author == nil && authorErr == nil {
-						author, authorErr = p.API.GetUser(post.UserId)
-						if authorErr != nil {
-							// NOTE: Not sure how we want to handle errors here, we can either:
-							// * assume that occasional rewrites of Bot messges are ok
-							// * assume that occasional not rewriting of all messages is ok
-							// Let's assume for now that former is a lesser evil and carry on.
-							p.API.LogError("failed to check if message for rewriting was send by a bot", "error", authorErr)
-						}
-					}
-
-					if author != nil && author.IsBot {
-						continue
+			if !link.ProcessBotPosts {
+				if author == nil && authorErr == nil {
+					author, authorErr = p.API.GetUser(post.UserId)
+					if authorErr != nil {
+						// NOTE: Not sure how we want to handle errors here, we can either:
+						// * assume that occasional rewrites of Bot messges are ok
+						// * assume that occasional not rewriting of all messages is ok
+						// Let's assume for now that former is a lesser evil and carry on.
+						p.API.LogError("failed to check if message for rewriting was send by a bot", "error", authorErr)
 					}
 				}
 
-				newText = out
+				if author != nil && author.IsBot {
+					continue
+				}
 			}
-			if origText != newText {
-				postText = postText[:startPos] + newText + postText[endPos:]
-				offset += len(newText) - len(origText)
-			}
+
+			processed = out
+		}
+
+		if toProcess != processed {
+			message = message[:start] + processed + message[end:]
+			offset += len(processed) - len(toProcess)
+			changed = true
 		}
 
 		return true
 	})
-	if post.Message != postText {
-		post.Message = postText
+
+	if changed {
+		post.Message = message
+		post.Hashtags, _ = model.ParseHashtags(message)
 	}
-
-	post.Hashtags, _ = model.ParseHashtags(post.Message)
-
 	return post, ""
 }
 
