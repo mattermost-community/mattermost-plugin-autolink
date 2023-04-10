@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
+	"github.com/mattermost/mattermost-plugin-autolink/server/autolinkclient"
 )
 
 type Store interface {
@@ -34,7 +35,10 @@ func NewHandler(store Store, authorization Authorization) *Handler {
 	root := mux.NewRouter()
 	api := root.PathPrefix("/api/v1").Subrouter()
 	api.Use(h.adminOrPluginRequired)
-	api.HandleFunc("/link", h.setLink).Methods("POST")
+	link := api.PathPrefix("/link").Subrouter()
+	link.HandleFunc("", h.setLink).Methods(http.MethodPost)
+	link.HandleFunc("", h.deleteLink).Methods(http.MethodDelete)
+	link.HandleFunc("", h.getLinks).Methods(http.MethodGet)
 
 	api.Handle("{anything:.*}", http.NotFoundHandler())
 
@@ -114,12 +118,85 @@ func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusNotModified
 	if changed {
 		if err := h.store.SaveLinks(links); err != nil {
-			h.handleError(w, errors.Wrap(err, "unable to save link"))
+			h.handleError(w, errors.Wrap(err, "unable to save the link"))
 			return
 		}
 		status = http.StatusOK
 	}
 
+	ReturnStatusOK(status, w)
+}
+
+func (h *Handler) deleteLink(w http.ResponseWriter, r *http.Request) {
+	autolinkName := r.URL.Query().Get(autolinkclient.AutolinkNameQueryParam)
+	if autolinkName == "" {
+		h.handleError(w, errors.New("autolink name or pattern should not be empty"))
+		return
+	}
+
+	links := h.store.GetLinks()
+	found := false
+	for i := 0; i < len(links); i++ {
+		if links[i].Name == autolinkName || links[i].Pattern == autolinkName {
+			links = append(links[:i], links[i+1:]...)
+			found = true
+		}
+	}
+
+	status := http.StatusNotModified
+	if found {
+		if err := h.store.SaveLinks(links); err != nil {
+			h.handleError(w, errors.Wrap(err, "unable to save the link"))
+			return
+		}
+		status = http.StatusOK
+	}
+
+	ReturnStatusOK(status, w)
+}
+
+func (h *Handler) getLinks(w http.ResponseWriter, r *http.Request) {
+	links := h.store.GetLinks()
+
+	autolinkName := r.URL.Query().Get(autolinkclient.AutolinkNameQueryParam)
+	if autolinkName == "" {
+		h.handleSendingJSONContent(w, links)
+		return
+	}
+
+	found := false
+	var autolinks []autolink.Autolink
+	for _, link := range links {
+		if link.Name == autolinkName || link.Pattern == autolinkName {
+			autolinks = append(autolinks, link)
+			found = true
+		}
+	}
+
+	if !found {
+		h.handleError(w, errors.Errorf("no autolink found with name or pattern %s", autolinkName))
+		return
+	}
+
+	h.handleSendingJSONContent(w, autolinks)
+	return
+}
+
+func (h *Handler) handleSendingJSONContent(w http.ResponseWriter, v interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	b, err := json.Marshal(v)
+	if err != nil {
+		h.handleError(w, errors.Wrap(err, "failed to marshal JSON response"))
+		return
+	}
+
+	if _, err = w.Write(b); err != nil {
+		h.handleError(w, errors.Wrap(err, "failed to write JSON response"))
+		return
+	}
+}
+
+func ReturnStatusOK(status int, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_, _ = w.Write([]byte(`{"status": "OK"}`))
