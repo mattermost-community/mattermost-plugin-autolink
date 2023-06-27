@@ -119,6 +119,9 @@ func executeList(p *Plugin, c *plugin.Context, header *model.CommandArgs, args .
 			text += links[i].ToMarkdown(i + 1)
 		}
 	} else {
+		if len(links) == 0 {
+			text += "There are no links to list"
+		}
 		for i, l := range links {
 			text += l.ToMarkdown(i + 1)
 		}
