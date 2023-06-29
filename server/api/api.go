@@ -102,7 +102,7 @@ func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 	found := false
 	changed := false
 	for i := range links {
-		if links[i].Name == newLink.Name || links[i].Pattern == newLink.Pattern {
+		if links[i].Name == newLink.Name {
 			if !links[i].Equals(newLink) {
 				links[i] = newLink
 				changed = true
@@ -137,7 +137,7 @@ func (h *Handler) deleteLink(w http.ResponseWriter, r *http.Request) {
 	links := h.store.GetLinks()
 	found := false
 	for i := 0; i < len(links); i++ {
-		if links[i].Name == autolinkName || links[i].Pattern == autolinkName {
+		if links[i].Name == autolinkName {
 			links = append(links[:i], links[i+1:]...)
 			found = true
 		}
@@ -167,14 +167,14 @@ func (h *Handler) getLinks(w http.ResponseWriter, r *http.Request) {
 	found := false
 	var autolinks []autolink.Autolink
 	for _, link := range links {
-		if link.Name == autolinkName || link.Pattern == autolinkName {
+		if link.Name == autolinkName {
 			autolinks = append(autolinks, link)
 			found = true
 		}
 	}
 
 	if !found {
-		h.handleError(w, errors.Errorf("no autolink found with name or pattern %s", autolinkName))
+		h.handleError(w, errors.Errorf("no autolink found with name %s", autolinkName))
 		return
 	}
 

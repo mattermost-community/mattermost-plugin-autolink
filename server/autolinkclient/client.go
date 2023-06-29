@@ -56,7 +56,7 @@ func (c *Client) Add(links ...autolink.Autolink) error {
 
 		if resp.StatusCode != http.StatusOK {
 			respBody, _ := ioutil.ReadAll(resp.Body)
-			return fmt.Errorf("unable to install autolink. Error: %v, %v", resp.StatusCode, string(respBody))
+			return fmt.Errorf("unable to add the link %s. Error: %v, %v", link.Name, resp.StatusCode, string(respBody))
 		}
 	}
 
@@ -76,7 +76,7 @@ func (c *Client) Delete(links ...string) error {
 
 		if resp.StatusCode != http.StatusOK {
 			respBody, _ := ioutil.ReadAll(resp.Body)
-			return fmt.Errorf("unable to install autolink. Error: %v, %v", resp.StatusCode, string(respBody))
+			return fmt.Errorf("unable to delete the link %s. Error: %v, %v", link, resp.StatusCode, string(respBody))
 		}
 	}
 
@@ -93,13 +93,13 @@ func (c *Client) Get(autolinkName string) ([]*autolink.Autolink, error) {
 		return nil, err
 	}
 
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
+	var respBody []byte
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unable to install autolink. Error: %v, %v", resp.StatusCode, string(respBody))
+		respBody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("unable to get the link %s. Error: %v, %v", autolinkName, resp.StatusCode, string(respBody))
 	}
 
 	var response []*autolink.Autolink
@@ -122,7 +122,6 @@ func (c *Client) call(url, method string, body []byte, queryParams url.Values) (
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	return resp, nil
 }
