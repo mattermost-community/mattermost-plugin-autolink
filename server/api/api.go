@@ -130,7 +130,7 @@ func (h *Handler) setLink(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) deleteLink(w http.ResponseWriter, r *http.Request) {
 	autolinkName := r.URL.Query().Get(autolinkclient.AutolinkNameQueryParam)
 	if autolinkName == "" {
-		h.handleError(w, errors.New("autolink name or pattern should not be empty"))
+		h.handleError(w, errors.New("autolink name should not be empty"))
 		return
 	}
 
@@ -140,6 +140,7 @@ func (h *Handler) deleteLink(w http.ResponseWriter, r *http.Request) {
 		if links[i].Name == autolinkName {
 			links = append(links[:i], links[i+1:]...)
 			found = true
+			break
 		}
 	}
 
@@ -164,21 +165,19 @@ func (h *Handler) getLinks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	found := false
-	var autolinks []autolink.Autolink
+	var autolink *autolink.Autolink
 	for _, link := range links {
 		if link.Name == autolinkName {
-			autolinks = append(autolinks, link)
-			found = true
+			autolink = &link
+			break
 		}
 	}
-
-	if !found {
+	if autolink == nil {
 		h.handleError(w, errors.Errorf("no autolink found with name %s", autolinkName))
 		return
 	}
 
-	h.handleSendingJSONContent(w, autolinks)
+	h.handleSendingJSONContent(w, autolink)
 	return
 }
 

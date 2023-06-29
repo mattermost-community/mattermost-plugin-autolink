@@ -53,6 +53,7 @@ func (c *Client) Add(links ...autolink.Autolink) error {
 		if err != nil {
 			return err
 		}
+		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			respBody, _ := ioutil.ReadAll(resp.Body)
@@ -73,6 +74,7 @@ func (c *Client) Delete(links ...string) error {
 		if err != nil {
 			return err
 		}
+		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			respBody, _ := ioutil.ReadAll(resp.Body)
@@ -83,7 +85,7 @@ func (c *Client) Delete(links ...string) error {
 	return nil
 }
 
-func (c *Client) Get(autolinkName string) ([]*autolink.Autolink, error) {
+func (c *Client) Get(autolinkName string) (*autolink.Autolink, error) {
 	queryParams := url.Values{
 		AutolinkNameQueryParam: {autolinkName},
 	}
@@ -92,17 +94,18 @@ func (c *Client) Get(autolinkName string) ([]*autolink.Autolink, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
-	var respBody []byte
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		respBody, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
 		return nil, fmt.Errorf("unable to get the link %s. Error: %v, %v", autolinkName, resp.StatusCode, string(respBody))
 	}
 
-	var response []*autolink.Autolink
+	var response *autolink.Autolink
 	if err = json.Unmarshal(respBody, &response); err != nil {
 		return nil, err
 	}
