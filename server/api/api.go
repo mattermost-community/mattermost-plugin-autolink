@@ -144,7 +144,7 @@ func (h *Handler) deleteLink(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	status := http.StatusNotModified
+	status := http.StatusNotFound
 	if found {
 		if err := h.store.SaveLinks(links); err != nil {
 			h.handleError(w, errors.Wrap(err, "unable to save the link"))

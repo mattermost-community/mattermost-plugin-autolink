@@ -1,7 +1,10 @@
 package autolinkclient
 
 import (
+	"errors"
+	"io/ioutil"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/mattermost/mattermost-server/v6/plugin/plugintest"
@@ -52,4 +55,78 @@ func TestAddAutolinksErr(t *testing.T) {
 	client := NewClientPlugin(mockPluginAPI)
 	err := client.Add(autolink.Autolink{})
 	require.Error(t, err)
+}
+
+func TestDeleteAutolinks(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		setupAPI func(*plugintest.API)
+		err      error
+	}{
+		{
+			name: "delete the autolink",
+			setupAPI: func(api *plugintest.API) {
+				body := ioutil.NopCloser(strings.NewReader("{}"))
+				api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(&http.Response{StatusCode: http.StatusOK, Body: body})
+			},
+		},
+		{
+			name: "got error",
+			setupAPI: func(api *plugintest.API) {
+				api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil)
+			},
+			err: errors.New("not able to delete the autolink"),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			mockPluginAPI := &plugintest.API{}
+			tc.setupAPI(mockPluginAPI)
+
+			client := NewClientPlugin(mockPluginAPI)
+			err := client.Delete("")
+
+			if tc.err != nil {
+				require.Error(t, err)
+			} else {
+				require.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestGetAutolinks(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		setupAPI func(*plugintest.API)
+		err      error
+	}{
+		{
+			name: "get the autolink",
+			setupAPI: func(api *plugintest.API) {
+				body := ioutil.NopCloser(strings.NewReader("{}"))
+				api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(&http.Response{StatusCode: http.StatusOK, Body: body})
+			},
+		},
+		{
+			name: "got error",
+			setupAPI: func(api *plugintest.API) {
+				api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(nil)
+			},
+			err: errors.New("not able to get the autolink"),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			mockPluginAPI := &plugintest.API{}
+			tc.setupAPI(mockPluginAPI)
+
+			client := NewClientPlugin(mockPluginAPI)
+			_, err := client.Get("")
+
+			if tc.err != nil {
+				require.Error(t, err)
+			} else {
+				require.Nil(t, err)
+			}
+		})
+	}
 }
