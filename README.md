@@ -21,12 +21,17 @@ Use it to add custom auto-linking on your Mattermost system, such as adding link
 *..automatically links to the corresponding issue in the Jira project*
 
 ## Configuration
-1. Go to **System Console > Plugins > Management** and click **Enable** to enable the Autolink plugin.
+1. Go to **System Console > Plugins > Plugin Management** and click **Enable** to enable the Autolink plugin.
     - If you are running Mattermost v5.11 or earlier, you must first go to the [releases page of this GitHub repository](https://github.com/mattermost/mattermost-plugin-autolink), download the latest release, and upload it to your Mattermost instance [following this documentation](https://docs.mattermost.com/administration/plugins.html#plugin-uploads).
 
 2. Modify your `config.json` file to include the types of regexp patterns you wish to match, under the `PluginSettings`. See below for an example of what this should look like.
 
 **Tip**: There are useful Regular Expression tools online to help test and validate that your formulas are working as expected.  One such tool is [Regex101](https://regex101.com/) . Here is an example Regular Expression to capture a post that includes a [VISA card number](https://regex101.com/r/JGKCTN/1) - which you could then obfuscate with the `Pattern` so people don't accidentally share sensitive info in your channels.
+
+3. Go to **System Console > Plugins > Autolink** to configure the following additional plugin options:
+    - **Enable administration with /autolink command**: Select **true** to enables administration of the plugin using the ``/autolink`` slash command. Select **false** to disable this functionality.
+    - **Apply plugin to updated posts as well as new posts**: Select **true** to apply the plugin to updated posts as well as new posts. Select **false** to apply the plugin to new posts only 
+    - **Admin user IDs**: Authorize non-System Admin users to administer the plugin when enabled. Find user IDs by going to **System Console > User Management > Users**. Separate multiple user IDs with commas.
 
 ## Usage
 
