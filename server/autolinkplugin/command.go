@@ -23,6 +23,7 @@ const (
 	optDisableNonWordPrefix = "DisableNonWordPrefix"
 	optDisableNonWordSuffix = "DisableNonWordSuffix"
 	optWordMatch            = "WordMatch"
+	newLine                 = "```n"
 )
 
 const helpText = "###### Mattermost Autolink Plugin Administration\n" +
@@ -38,7 +39,7 @@ const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"* `/autolink test <linkref> test-text...` - test a link on a sample.\n" +
 	"\n" +
 	"Example:\n" +
-	"```\n" +
+	newLine +
 	"/autolink add Visa\n" +
 	"/autolink disable Visa\n" +
 	`/autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))` + "\n" +
@@ -48,7 +49,7 @@ const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"/autolink set Visa ProcessBotPosts true\n" +
 	"/autolink test Visa 4356-7891-2345-1111 -- (4111222233334444)\n" +
 	"/autolink enable Visa\n" +
-	"```\n" +
+	newLine +
 	""
 
 type CommandHandlerFunc func(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse
@@ -99,7 +100,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, commandArgs *model.CommandArg
 	return autolinkCommandHandler.Handle(p, c, commandArgs, args[1:]...), nil
 }
 
-func executeList(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+func executeList(p *Plugin, _ *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
 	var links []autolink.Autolink
 	var refs []int
 	var err error
@@ -129,7 +130,7 @@ func executeList(p *Plugin, c *plugin.Context, header *model.CommandArgs, args .
 	return responsef(text)
 }
 
-func executeDelete(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+func executeDelete(p *Plugin, _ *plugin.Context, _ *model.CommandArgs, args ...string) *model.CommandResponse {
 	if len(args) != 1 {
 		return responsef(helpText)
 	}
@@ -226,7 +227,7 @@ func executeSet(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 	return executeList(p, c, header, ref)
 }
 
-func executeTest(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+func executeTest(p *Plugin, _ *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
 	if len(args) < 2 {
 		return responsef(helpText)
 	}
@@ -315,7 +316,7 @@ func executeAdd(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 	return executeList(p, c, header, name)
 }
 
-func executeHelp(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+func executeHelp(_ *Plugin, _ *plugin.Context, _ *model.CommandArgs, _ ...string) *model.CommandResponse {
 	return responsef(helpText)
 }
 

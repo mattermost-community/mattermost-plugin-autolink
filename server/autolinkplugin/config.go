@@ -76,10 +76,10 @@ func getAutoCompleteData() *model.AutocompleteData {
 	add.AddTextArgument("Name for a new link", "[name]", "")
 	autolink.AddCommand(add)
 
-	delete := model.NewAutocompleteData("delete", "",
+	deleteLink := model.NewAutocompleteData("delete", "",
 		"Delete a link with a given name")
-	delete.AddTextArgument("Name of the link to delete", "[name]", "")
-	autolink.AddCommand(delete)
+	deleteLink.AddTextArgument("Name of the link to delete", "[name]", "")
+	autolink.AddCommand(deleteLink)
 
 	disable := model.NewAutocompleteData("disable", "",
 		"Disable a link with a given name")
