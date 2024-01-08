@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/plugin"
-	"github.com/mattermost/mattermost-server/v6/shared/markdown"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/plugin"
+	"github.com/mattermost/mattermost/server/public/shared/markdown"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/api"
