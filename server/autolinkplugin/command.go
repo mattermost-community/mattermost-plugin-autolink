@@ -23,7 +23,6 @@ const (
 	optDisableNonWordPrefix = "DisableNonWordPrefix"
 	optDisableNonWordSuffix = "DisableNonWordSuffix"
 	optWordMatch            = "WordMatch"
-	newLine                 = "```n"
 )
 
 const helpText = "###### Mattermost Autolink Plugin Administration\n" +
@@ -39,7 +38,7 @@ const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"* `/autolink test <linkref> test-text...` - test a link on a sample.\n" +
 	"\n" +
 	"Example:\n" +
-	newLine +
+	"```\n" +
 	"/autolink add Visa\n" +
 	"/autolink disable Visa\n" +
 	`/autolink set Visa Pattern (?P<VISA>(?P<part1>4\d{3})[ -]?(?P<part2>\d{4})[ -]?(?P<part3>\d{4})[ -]?(?P<LastFour>[0-9]{4}))` + "\n" +
@@ -49,7 +48,7 @@ const helpText = "###### Mattermost Autolink Plugin Administration\n" +
 	"/autolink set Visa ProcessBotPosts true\n" +
 	"/autolink test Visa 4356-7891-2345-1111 -- (4111222233334444)\n" +
 	"/autolink enable Visa\n" +
-	newLine +
+	"```\n" +
 	""
 
 type CommandHandlerFunc func(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse
