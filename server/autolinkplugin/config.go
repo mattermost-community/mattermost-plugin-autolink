@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/plugin"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/plugin"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
@@ -76,10 +76,10 @@ func getAutoCompleteData() *model.AutocompleteData {
 	add.AddTextArgument("Name for a new link", "[name]", "")
 	autolink.AddCommand(add)
 
-	delete := model.NewAutocompleteData("delete", "",
+	deleteLink := model.NewAutocompleteData("delete", "",
 		"Delete a link with a given name")
-	delete.AddTextArgument("Name of the link to delete", "[name]", "")
-	autolink.AddCommand(delete)
+	deleteLink.AddTextArgument("Name of the link to delete", "[name]", "")
+	autolink.AddCommand(deleteLink)
 
 	disable := model.NewAutocompleteData("disable", "",
 		"Disable a link with a given name")

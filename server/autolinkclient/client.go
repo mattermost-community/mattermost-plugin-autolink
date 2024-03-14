@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
@@ -57,7 +57,7 @@ func (c *Client) Add(links ...autolink.Autolink) error {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			respBody, _ := ioutil.ReadAll(resp.Body)
+			respBody, _ := io.ReadAll(resp.Body)
 			return fmt.Errorf("unable to install autolink. Error: %v, %v", resp.StatusCode, string(respBody))
 		}
 	}

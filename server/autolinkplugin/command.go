@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/plugin"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/plugin"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
@@ -99,7 +99,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, commandArgs *model.CommandArg
 	return autolinkCommandHandler.Handle(p, c, commandArgs, args[1:]...), nil
 }
 
-func executeList(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+func executeList(p *Plugin, _ *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
 	var links []autolink.Autolink
 	var refs []int
 	var err error
@@ -129,7 +129,7 @@ func executeList(p *Plugin, c *plugin.Context, header *model.CommandArgs, args .
 	return responsef(text)
 }
 
-func executeDelete(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+func executeDelete(p *Plugin, _ *plugin.Context, _ *model.CommandArgs, args ...string) *model.CommandResponse {
 	if len(args) != 1 {
 		return responsef(helpText)
 	}
@@ -226,7 +226,7 @@ func executeSet(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 	return executeList(p, c, header, ref)
 }
 
-func executeTest(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+func executeTest(p *Plugin, _ *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
 	if len(args) < 2 {
 		return responsef(helpText)
 	}
@@ -315,7 +315,7 @@ func executeAdd(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ..
 	return executeList(p, c, header, name)
 }
 
-func executeHelp(p *Plugin, c *plugin.Context, header *model.CommandArgs, args ...string) *model.CommandResponse {
+func executeHelp(_ *Plugin, _ *plugin.Context, _ *model.CommandArgs, _ ...string) *model.CommandResponse {
 	return responsef(helpText)
 }
 
