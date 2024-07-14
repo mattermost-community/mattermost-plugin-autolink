@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
 )
 
-const autolinkPluginID = "mattermost-autolink"
+const (
+	autolinkPluginID       = "mattermost-autolink"
+	AutolinkNameQueryParam = "autolinkName"
+)
 
 type PluginAPI interface {
 	PluginHTTP(*http.Request) *http.Response
@@ -45,12 +49,7 @@ func (c *Client) Add(links ...autolink.Autolink) error {
 			return err
 		}
 
-		req, err := http.NewRequest("POST", "/"+autolinkPluginID+"/api/v1/link", bytes.NewReader(linkBytes))
-		if err != nil {
-			return err
-		}
-
-		resp, err := c.Do(req)
+		resp, err := c.call("/"+autolinkPluginID+"/api/v1/link", http.MethodPost, linkBytes, nil)
 		if err != nil {
 			return err
 		}
@@ -58,9 +57,74 @@ func (c *Client) Add(links ...autolink.Autolink) error {
 
 		if resp.StatusCode != http.StatusOK {
 			respBody, _ := io.ReadAll(resp.Body)
-			return fmt.Errorf("unable to install autolink. Error: %v, %v", resp.StatusCode, string(respBody))
+			return fmt.Errorf("unable to add the link %s. Error: %v, %v", link.Name, resp.StatusCode, string(respBody))
 		}
 	}
 
 	return nil
+}
+
+func (c *Client) Delete(links ...string) error {
+	for _, link := range links {
+		queryParams := url.Values{
+			AutolinkNameQueryParam: {link},
+		}
+
+		resp, err := c.call("/"+autolinkPluginID+"/api/v1/link", http.MethodDelete, nil, queryParams)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			respBody, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("unable to delete the link %s. Error: %v, %v", link, resp.StatusCode, string(respBody))
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) Get(autolinkName string) (*autolink.Autolink, error) {
+	queryParams := url.Values{
+		AutolinkNameQueryParam: {autolinkName},
+	}
+
+	resp, err := c.call("/"+autolinkPluginID+"/api/v1/link", http.MethodGet, nil, queryParams)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unable to get the link %s. Error: %v, %v", autolinkName, resp.StatusCode, string(respBody))
+	}
+
+	var response *autolink.Autolink
+	if err = json.Unmarshal(respBody, &response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (c *Client) call(url, method string, body []byte, queryParams url.Values) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	req.URL.RawQuery = queryParams.Encode()
+
+	resp, err := c.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
