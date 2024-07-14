@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -219,7 +219,7 @@ func TestGetLink(t *testing.T) {
 
 			h.ServeHTTP(w, r)
 
-			respBody, err := ioutil.ReadAll(w.Body)
+			respBody, err := io.ReadAll(w.Body)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expectStatus, w.Code)

@@ -167,8 +167,9 @@ func (h *Handler) getLinks(w http.ResponseWriter, r *http.Request) {
 
 	var autolink *autolink.Autolink
 	for _, link := range links {
-		if link.Name == autolinkName {
-			autolink = &link
+		currentLink := link
+		if currentLink.Name == autolinkName {
+			autolink = &currentLink
 			break
 		}
 	}
@@ -178,7 +179,6 @@ func (h *Handler) getLinks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.handleSendingJSONContent(w, autolink)
-	return
 }
 
 func (h *Handler) handleSendingJSONContent(w http.ResponseWriter, v interface{}) {
