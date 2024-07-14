@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -56,7 +56,7 @@ func (c *Client) Add(links ...autolink.Autolink) error {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			respBody, _ := ioutil.ReadAll(resp.Body)
+			respBody, _ := io.ReadAll(resp.Body)
 			return fmt.Errorf("unable to add the link %s. Error: %v, %v", link.Name, resp.StatusCode, string(respBody))
 		}
 	}
@@ -77,7 +77,7 @@ func (c *Client) Delete(links ...string) error {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			respBody, _ := ioutil.ReadAll(resp.Body)
+			respBody, _ := io.ReadAll(resp.Body)
 			return fmt.Errorf("unable to delete the link %s. Error: %v, %v", link, resp.StatusCode, string(respBody))
 		}
 	}
@@ -96,7 +96,7 @@ func (c *Client) Get(autolinkName string) (*autolink.Autolink, error) {
 	}
 	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

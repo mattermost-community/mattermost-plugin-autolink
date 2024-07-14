@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/plugin"
-	"github.com/mattermost/mattermost-server/v6/shared/markdown"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/plugin"
+	"github.com/mattermost/mattermost/server/public/shared/markdown"
 	"github.com/pkg/errors"
 
 	"github.com/mattermost/mattermost-plugin-autolink/server/api"
@@ -107,7 +107,7 @@ func (p *Plugin) inScope(scope []string, channelName string, teamName string) bo
 	return false
 }
 
-func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, string) {
+func (p *Plugin) ProcessPost(_ *plugin.Context, post *model.Post) (*model.Post, string) {
 	conf := p.getConfig()
 
 	message := post.Message
@@ -218,7 +218,7 @@ func (p *Plugin) ProcessPost(c *plugin.Context, post *model.Post) (*model.Post, 
 	return post, ""
 }
 
-func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Request) {
 	p.handler.ServeHTTP(w, r)
 }
 

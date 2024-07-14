@@ -61,9 +61,10 @@ func (l *Autolink) Compile() error {
 	canReplaceAll := false
 	pattern := l.Pattern
 	template := l.Template
+	replacingCharacter := `\b`
 	if !l.DisableNonWordPrefix {
 		if l.WordMatch {
-			pattern = `\b` + pattern
+			pattern = fmt.Sprint(replacingCharacter, pattern)
 			canReplaceAll = true
 		} else {
 			pattern = `(?P<MattermostNonWordPrefix>(^|\s))` + pattern
@@ -72,7 +73,7 @@ func (l *Autolink) Compile() error {
 	}
 	if !l.DisableNonWordSuffix {
 		if l.WordMatch {
-			pattern += `\b`
+			pattern += replacingCharacter
 			canReplaceAll = true
 		} else {
 			pattern += `(?P<MattermostNonWordSuffix>$|[\s\.\!\?\,\)])`

@@ -1,3 +1,7 @@
+# Disclaimer
+
+**This repository is community supported and not maintained by Mattermost. Mattermost disclaims liability for integrations, including Third Party Integrations and Mattermost Integrations. Integrations may be modified or discontinued at any time.**
+
 # Autolink Plugin
 
 [![Build Status](https://img.shields.io/circleci/project/github/mattermost/mattermost-plugin-autolink/master.svg)](https://circleci.com/gh/mattermost/mattermost-plugin-autolink)
@@ -21,12 +25,17 @@ Use it to add custom auto-linking on your Mattermost system, such as adding link
 *..automatically links to the corresponding issue in the Jira project*
 
 ## Configuration
-1. Go to **System Console > Plugins > Management** and click **Enable** to enable the Autolink plugin.
+1. Go to **System Console > Plugins > Plugin Management** and click **Enable** to enable the Autolink plugin.
     - If you are running Mattermost v5.11 or earlier, you must first go to the [releases page of this GitHub repository](https://github.com/mattermost/mattermost-plugin-autolink), download the latest release, and upload it to your Mattermost instance [following this documentation](https://docs.mattermost.com/administration/plugins.html#plugin-uploads).
 
 2. Modify your `config.json` file to include the types of regexp patterns you wish to match, under the `PluginSettings`. See below for an example of what this should look like.
 
 **Tip**: There are useful Regular Expression tools online to help test and validate that your formulas are working as expected.  One such tool is [Regex101](https://regex101.com/) . Here is an example Regular Expression to capture a post that includes a [VISA card number](https://regex101.com/r/JGKCTN/1) - which you could then obfuscate with the `Pattern` so people don't accidentally share sensitive info in your channels.
+
+3. Go to **System Console > Plugins > Autolink** to configure the following additional plugin options:
+    - **Enable administration with /autolink command**: Select **true** to enables administration of the plugin using the ``/autolink`` slash command. Select **false** to disable this functionality.
+    - **Apply plugin to updated posts as well as new posts**: Select **true** to apply the plugin to updated posts as well as new posts. Select **false** to apply the plugin to new posts only 
+    - **Admin user IDs**: Authorize non-System Admin users to administer the plugin when enabled. Find user IDs by going to **System Console > User Management > Users**. Separate multiple user IDs with commas.
 
 ## Usage
 
@@ -154,10 +163,13 @@ The `/autolink` commands allow the users to easily edit the configurations.
 
 ## Development
 
-This plugin contains a server portion.
+This plugin contains a server portion. Read our documentation about the [Developer Workflow](https://developers.mattermost.com/integrate/plugins/developer-workflow/) and [Developer Setup](https://developers.mattermost.com/integrate/plugins/developer-setup/) for more information about developing and extending plugins.
 
-Use `make dist` to build distributions of the plugin that you can upload to a Mattermost server.
-Use `make check-style` to check the style.
-Use `make deploy` to deploy the plugin to your local server.
+### Releasing new versions
 
-For additional information on developing plugins, refer to [our plugin developer documentation](https://developers.mattermost.com/extend/plugins/).
+The version of a plugin is determined at compile time, automatically populating a `version` field in the [plugin manifest](plugin.json):
+* If the current commit matches a tag, the version will match after stripping any leading `v`, e.g. `1.3.1`.
+* Otherwise, the version will combine the nearest tag with `git rev-parse --short HEAD`, e.g. `1.3.1+d06e53e1`.
+* If there is no version tag, an empty version will be combined with the short hash, e.g. `0.0.0+76081421`.
+
+To disable this behaviour, manually populate and maintain the `version` field.
