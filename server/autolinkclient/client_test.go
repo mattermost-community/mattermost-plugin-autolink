@@ -2,7 +2,7 @@ package autolinkclient
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -66,7 +66,7 @@ func TestDeleteAutolinks(t *testing.T) {
 		{
 			name: "delete the autolink",
 			setupAPI: func(api *plugintest.API) {
-				body := ioutil.NopCloser(strings.NewReader("{}"))
+				body := io.NopCloser(strings.NewReader("{}"))
 				api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(&http.Response{StatusCode: http.StatusOK, Body: body})
 			},
 		},
@@ -103,7 +103,7 @@ func TestGetAutolinks(t *testing.T) {
 		{
 			name: "get the autolink",
 			setupAPI: func(api *plugintest.API) {
-				body := ioutil.NopCloser(strings.NewReader("{}"))
+				body := io.NopCloser(strings.NewReader("{}"))
 				api.On("PluginHTTP", mock.AnythingOfType("*http.Request")).Return(&http.Response{StatusCode: http.StatusOK, Body: body})
 			},
 		},
