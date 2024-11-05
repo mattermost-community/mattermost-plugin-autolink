@@ -6,8 +6,8 @@
 
 [![Build Status](https://img.shields.io/circleci/project/github/mattermost/mattermost-plugin-autolink/master.svg)](https://circleci.com/gh/mattermost/mattermost-plugin-autolink)
 [![Code Coverage](https://img.shields.io/codecov/c/github/mattermost/mattermost-plugin-autolink/master.svg)](https://codecov.io/gh/mattermost/mattermost-plugin-autolink)
-[![Release](https://img.shields.io/github/v/release/mattermost/mattermost-plugin-autolink)](https://github.com/mattermost/mattermost-plugin-autolink/releases/latest)
-[![HW](https://img.shields.io/github/issues/mattermost/mattermost-plugin-autolink/Up%20For%20Grabs?color=dark%20green&label=Help%20Wanted)](https://github.com/mattermost/mattermost-plugin-autolink/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22Up+For+Grabs%22+label%3A%22Help+Wanted%22)
+[![Release](https://img.shields.io/github/v/release/mattermost/mattermost-plugin-autolink)](https://github.com/mattermost-community/mattermost-plugin-autolink/releases/latest)
+[![HW](https://img.shields.io/github/issues/mattermost/mattermost-plugin-autolink/Up%20For%20Grabs?color=dark%20green&label=Help%20Wanted)](https://github.com/mattermost-community/mattermost-plugin-autolink/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22Up+For+Grabs%22+label%3A%22Help+Wanted%22)
 
 **Maintainer:** [@levb](https://github.com/levb)
 **Co-Maintainer:** [@iomodo](https://github.com/iomodo)
@@ -26,7 +26,7 @@ Use it to add custom auto-linking on your Mattermost system, such as adding link
 
 ## Configuration
 1. Go to **System Console > Plugins > Plugin Management** and click **Enable** to enable the Autolink plugin.
-    - If you are running Mattermost v5.11 or earlier, you must first go to the [releases page of this GitHub repository](https://github.com/mattermost/mattermost-plugin-autolink), download the latest release, and upload it to your Mattermost instance [following this documentation](https://docs.mattermost.com/administration/plugins.html#plugin-uploads).
+    - If you are running Mattermost v5.11 or earlier, you must first go to the [releases page of this GitHub repository](https://github.com/mattermost-community/mattermost-plugin-autolink), download the latest release, and upload it to your Mattermost instance [following this documentation](https://docs.mattermost.com/administration/plugins.html#plugin-uploads).
 
 2. Modify your `config.json` file to include the types of regexp patterns you wish to match, under the `PluginSettings`. See below for an example of what this should look like.
 
