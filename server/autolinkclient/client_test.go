@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
+	"github.com/mattermost-community/mattermost-plugin-autolink/server/autolink"
 )
 
 func TestRoundTripper(t *testing.T) {

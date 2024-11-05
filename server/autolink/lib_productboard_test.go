@@ -3,7 +3,7 @@ package autolink_test
 import (
 	"testing"
 
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
+	"github.com/mattermost-community/mattermost-plugin-autolink/server/autolink"
 )
 
 var productboardLink = autolink.Autolink{

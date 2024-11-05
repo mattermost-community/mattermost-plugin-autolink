@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
+	"github.com/mattermost-community/mattermost-plugin-autolink/server/autolink"
 )
 
 func TestPlugin(t *testing.T) {

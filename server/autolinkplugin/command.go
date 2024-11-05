@@ -9,7 +9,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/plugin"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-autolink/server/autolink"
+	"github.com/mattermost-community/mattermost-plugin-autolink/server/autolink"
 )
 
 const (
