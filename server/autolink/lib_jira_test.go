@@ -80,8 +80,8 @@ var jiraTests = []linkTest{
 	}, {
 		"Not relinking",
 		autolink.Autolink{
-			Pattern:  "(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)",
-			Template: "[${project_id}-${jira_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id})",
+			Pattern:  "(MM)(-)(?P<jira_id>\\d+)",
+			Template: "[MM-${jira_id}](https://mattermost.atlassian.net/browse/MM-${jira_id})",
 		},
 		"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should not re-link!",
 		"Welcome [MM-12345](https://mattermost.atlassian.net/browse/MM-12345) should not re-link!",
@@ -121,18 +121,18 @@ var jiraTests = []linkTest{
 		"Comment url replacement",
 		autolink.Autolink{
 			Pattern:  "(https://mattermost.atlassian.net/browse/)(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)[?](focusedCommentId)(=)(?P<comment_id>\\d+)",
-			Template: "[${project_id}-${jira_id} With Comment #${comment_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id}?focusedCommentId=${comment_id})",
+			Template: "[${project_id}-${jira_id} (comment)](https://mattermost.atlassian.net/browse/${project_id}-${jira_id}?focusedCommentId=${comment_id})",
 		},
 		"Welcome https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210 should link!",
-		"Welcome [MM-12345 With Comment #10210](https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210) should link!",
+		"Welcome [MM-12345 (comment)](https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210) should link!",
 	}, {
 		"Comment url replacement multiple times",
 		autolink.Autolink{
 			Pattern:  "(https://mattermost.atlassian.net/browse/)(?P<project_id>\\w+)(-)(?P<jira_id>\\d+)[?](focusedCommentId)(=)(?P<comment_id>\\d+)",
 			Template: "[${project_id}-${jira_id} With Comment #${comment_id}](https://mattermost.atlassian.net/browse/${project_id}-${jira_id}?focusedCommentId=${comment_id})",
 		},
-		"Welcome https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210. should link https://mattermost.atlassian.net/browse/MM-12346?focusedCommentId=10210 !",
-		"Welcome [MM-12345 With Comment #10210](https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210). should link [MM-12346 With Comment #10210](https://mattermost.atlassian.net/browse/MM-12346?focusedCommentId=10210) !",
+		"Welcome https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210. should link https://mattermost.atlassian.net/browse/MM-12346?focusedCommentId=10210!",
+		"Welcome [MM-12345 With Comment #10210](https://mattermost.atlassian.net/browse/MM-12345?focusedCommentId=10210). should link [MM-12346 With Comment #10210](https://mattermost.atlassian.net/browse/MM-12346?focusedCommentId=10210)!",
 	}, {
 		"Comment url replacement multiple times and at beginning",
 		autolink.Autolink{
