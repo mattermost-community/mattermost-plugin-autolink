@@ -62,6 +62,53 @@ func TestPlugin(t *testing.T) {
 	assert.Equal(t, "Welcome to [Mattermost](https://mattermost.com)!", rpost.Message)
 }
 
+// TestAttachmentRewrite covers integration payloads (Gitea, Jira, GitHub, …)
+// that carry their linkable text in message attachments rather than in the post
+// body. All visible attachment fields must be rewritten just like the body.
+func TestAttachmentRewrite(t *testing.T) {
+	conf := Config{
+		Links: []autolink.Autolink{{
+			Pattern:  "(Mattermost)",
+			Template: "[Mattermost](https://mattermost.com)",
+		}},
+	}
+
+	testChannel := model.Channel{Name: "TestChanel"}
+	testTeam := model.Team{Name: "TestTeam"}
+
+	api := &plugintest.API{}
+	api.On("LoadPluginConfiguration", mock.AnythingOfType("*autolinkplugin.Config")).Return(func(dest interface{}) error {
+		*dest.(*Config) = conf
+		return nil
+	})
+	api.On("UnregisterCommand", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return((*model.AppError)(nil))
+	api.On("GetChannel", mock.AnythingOfType("string")).Return(&testChannel, nil)
+	api.On("GetTeam", mock.AnythingOfType("string")).Return(&testTeam, nil)
+	api.On("GetUser", mock.AnythingOfType("string")).Return(&model.User{IsBot: false}, nil)
+
+	p := New()
+	p.SetAPI(api)
+	require.NoError(t, p.OnConfigurationChange())
+
+	post := &model.Post{Message: "see Mattermost"}
+	post.AddProp("attachments", []*model.SlackAttachment{{
+		Pretext: "pretext Mattermost",
+		Title:   "title Mattermost",
+		Text:    "body Mattermost",
+		Fields:  []*model.SlackAttachmentField{{Title: "f", Value: "field Mattermost"}},
+	}})
+
+	rpost, _ := p.MessageWillBePosted(&plugin.Context{}, post)
+
+	assert.Equal(t, "see [Mattermost](https://mattermost.com)", rpost.Message)
+	atts := rpost.Attachments()
+	require.Len(t, atts, 1)
+	assert.Equal(t, "pretext [Mattermost](https://mattermost.com)", atts[0].Pretext)
+	assert.Equal(t, "title [Mattermost](https://mattermost.com)", atts[0].Title)
+	assert.Equal(t, "body [Mattermost](https://mattermost.com)", atts[0].Text)
+	assert.Equal(t, "field [Mattermost](https://mattermost.com)", atts[0].Fields[0].Value)
+}
+
 type SuiteAuthorization struct {
 	suite.Suite
 
