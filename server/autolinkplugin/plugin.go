@@ -110,10 +110,6 @@ func (p *Plugin) inScope(scope []string, channelName string, teamName string) bo
 func (p *Plugin) ProcessPost(_ *plugin.Context, post *model.Post) (*model.Post, string) {
 	conf := p.getConfig()
 
-	message := post.Message
-	changed := false
-	offset := 0
-
 	hasOneOrMoreScopes := false
 	for _, link := range conf.Links {
 		if len(link.Scope) > 0 {
@@ -134,10 +130,79 @@ func (p *Plugin) ProcessPost(_ *plugin.Context, post *model.Post) (*model.Post, 
 		}
 	}
 
+	// Author (bot) resolution is shared across the message body and any
+	// attachments, resolved lazily on first need.
 	var author *model.User
 	var authorErr *model.AppError
+	authorResolved := false
+	isBotAuthor := func() bool {
+		if !authorResolved {
+			author, authorErr = p.API.GetUser(post.UserId)
+			authorResolved = true
+			if authorErr != nil {
+				// NOTE: Not sure how we want to handle errors here, we can either:
+				// * assume that occasional rewrites of Bot messges are ok
+				// * assume that occasional not rewriting of all messages is ok
+				// Let's assume for now that former is a lesser evil and carry on.
+				p.API.LogError("failed to check if message for rewriting was send by a bot", "error", authorErr)
+			}
+		}
+		return author != nil && author.IsBot
+	}
 
-	markdown.Inspect(post.Message, func(node interface{}) bool {
+	if message, changed := p.autolinkText(post.Message, conf, channelName, teamName, isBotAuthor, post.Id); changed {
+		post.Message = message
+		post.Hashtags, _ = model.ParseHashtags(message)
+	}
+
+	// Integrations such as Gitea, Jira and GitHub deliver their payload as
+	// message attachments, so the linkable tokens live in attachment text
+	// rather than in post.Message. Rewrite the visible attachment fields too.
+	attachments := post.Attachments()
+	attachmentsChanged := false
+	for _, attachment := range attachments {
+		if v, changed := p.autolinkText(attachment.Pretext, conf, channelName, teamName, isBotAuthor, post.Id); changed {
+			attachment.Pretext = v
+			attachmentsChanged = true
+		}
+		if v, changed := p.autolinkText(attachment.Title, conf, channelName, teamName, isBotAuthor, post.Id); changed {
+			attachment.Title = v
+			attachmentsChanged = true
+		}
+		if v, changed := p.autolinkText(attachment.Text, conf, channelName, teamName, isBotAuthor, post.Id); changed {
+			attachment.Text = v
+			attachmentsChanged = true
+		}
+		for _, field := range attachment.Fields {
+			if s, ok := field.Value.(string); ok {
+				if v, changed := p.autolinkText(s, conf, channelName, teamName, isBotAuthor, post.Id); changed {
+					field.Value = v
+					attachmentsChanged = true
+				}
+			}
+		}
+	}
+	if attachmentsChanged {
+		post.AddProp("attachments", attachments)
+	}
+
+	return post, ""
+}
+
+// autolinkText applies the configured link rules to a single markdown string,
+// returning the rewritten text and whether anything changed. It backs both the
+// post body and message-attachment rewriting so the two share identical
+// matching, scope and bot-author semantics.
+func (p *Plugin) autolinkText(text string, conf *Config, channelName, teamName string, isBotAuthor func() bool, postID string) (string, bool) {
+	if text == "" {
+		return text, false
+	}
+
+	message := text
+	changed := false
+	offset := 0
+
+	markdown.Inspect(text, func(node interface{}) bool {
 		if node == nil {
 			return false
 		}
@@ -154,7 +219,7 @@ func (p *Plugin) ProcessPost(_ *plugin.Context, post *model.Post) (*model.Post, 
 			// Do not process escaped links. Not exactly sure why but preserving the previous behavior.
 			// https://mattermost.atlassian.net/browse/MM-42669
 			if markdown.Unescape(toProcess) != toProcess {
-				p.API.LogDebug("skipping escaped autolink", "original", toProcess, "post_id", post.Id)
+				p.API.LogDebug("skipping escaped autolink", "original", toProcess, "post_id", postID)
 				return true
 			}
 
@@ -162,7 +227,7 @@ func (p *Plugin) ProcessPost(_ *plugin.Context, post *model.Post) (*model.Post, 
 			start, end = node.Range.Position+offset, node.Range.End+offset
 			toProcess = message[start:end]
 			if node.Text != toProcess {
-				p.API.LogDebug("skipping text: parsed markdown did not match original", "parsed", node.Text, "original", toProcess, "post_id", post.Id)
+				p.API.LogDebug("skipping text: parsed markdown did not match original", "parsed", node.Text, "original", toProcess, "post_id", postID)
 				return true
 			}
 		}
@@ -182,21 +247,8 @@ func (p *Plugin) ProcessPost(_ *plugin.Context, post *model.Post) (*model.Post, 
 				continue
 			}
 
-			if !link.ProcessBotPosts {
-				if author == nil && authorErr == nil {
-					author, authorErr = p.API.GetUser(post.UserId)
-					if authorErr != nil {
-						// NOTE: Not sure how we want to handle errors here, we can either:
-						// * assume that occasional rewrites of Bot messges are ok
-						// * assume that occasional not rewriting of all messages is ok
-						// Let's assume for now that former is a lesser evil and carry on.
-						p.API.LogError("failed to check if message for rewriting was send by a bot", "error", authorErr)
-					}
-				}
-
-				if author != nil && author.IsBot {
-					continue
-				}
+			if !link.ProcessBotPosts && isBotAuthor() {
+				continue
 			}
 
 			processed = out
@@ -211,11 +263,7 @@ func (p *Plugin) ProcessPost(_ *plugin.Context, post *model.Post) (*model.Post, 
 		return true
 	})
 
-	if changed {
-		post.Message = message
-		post.Hashtags, _ = model.ParseHashtags(message)
-	}
-	return post, ""
+	return message, changed
 }
 
 func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Request) {
